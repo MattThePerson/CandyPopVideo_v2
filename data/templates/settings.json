@@ -1,0 +1,13 @@
+{
+    "preview_media_directory": "",
+    "db_path" : "",
+    "gifs_directory" : "",
+    "scene_filename_formats" : [
+        "{sort_performers} - {studio:S} - [{year:d}];opt [{date_released:%Y-%m-%d}];opt [{line:S}];opt {scene_title} [{mention_performers:D}];opt {{{video_id:S}}};opt [id=={id:S}];opt",
+        "[{studio:S}] [{year:d}];opt [{date_released:%Y-%m-%d}];opt [{line:S}];opt {scene_title} [{mention_performers:D}];opt",
+        "{sort_performers} [{jave_code:S}] [{date_released:%Y-%m-%d}];opt [{studio:S}];opt {scene_title}",
+        "[{jav_code:S}]",
+        "{sort_performers} - {scene_title}",
+        "{scene_title}"
+    ]
+}

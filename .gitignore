@@ -1,0 +1,24 @@
+# media dirs, TO BE REMOVED
+**/media/*
+!*/media/default*
+
+# genercal
+.venv
+venv
+__pycache__
+.vscode
+
+# custom
+tests/
+.logs
+BAK
+*.bak
+**.pkl
+/data/*
+!/data/templates/
+!/data/stopwords_eng.txt
+.discard
+TODO.md
+
+# TEMP
+frontend/
