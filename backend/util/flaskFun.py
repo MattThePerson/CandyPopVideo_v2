@@ -5,19 +5,21 @@ from pathlib import Path
 import random
 from datetime import datetime
 import pickle
-from scipy.sparse import csr_matrix, vstack
 import math
 
+from scipy.sparse import csr_matrix, vstack
+
 from handymatt import StringParser
+from handymatt.wsl_paths import convert_to_wsl_path
 from handymatt_media.video_analyser import video_analyser
 
 import backend.util.backendFun as bf
 from backend.util.metadata import metadata_load
 from backend.util.search import *
 
-# from handymatt_media.video_analyser import VideoAnalyser
 
-VIDEO_EXTENSIONS = ['mkv', 'mp4', 'mov', 'avi', 'flv', 'wmv', 'vid', 'flv', 'webm']
+VIDEO_EXTENSIONS = ['.mkv', '.mp4', '.mov', '.avi', '.flv', '.wmv', '.vid', '.flv', '.webm']
+
 
 def readFoldersAndCollections(fn):
     if not os.path.exists(fn):
@@ -43,52 +45,26 @@ def readFoldersAndCollections(fn):
 
 
 # v 2.0
-def getVideosInFolders_new(folders, ignore_folders=None):
-    videos = []
+def getVideosInFolders(folders: list[str], ignore_folders=None):
+    file_objects = []
     if ignore_folders is None:
         ignore_folders = []
     ignore_folders.append('/.')
-    for x, base_folder in enumerate(folders):
-        for ext in VIDEO_EXTENSIONS:
-            for y, vid_path in enumerate( Path(base_folder).rglob(f'*.{ext}') ):
-                print("\r  base folder: {}/{}   videos: {:<5}".format(x+1, len(folders), len(videos)), end='')
-                # print("\r  base folder: {}/{}   videos: {:<5}  [{}]".format(x+1, len(folders), len(videos), vid_path.stem[:80]), end='')
-                flag = False
-                for ignore_folder in ignore_folders:
-                    if ignore_folder in str(vid_path):
-                        flag = True
-                        break
-                if not flag:
-                    videos.append(str(vid_path))
-    print()
-    return sorted(set(videos))
-
-
-# NOTE: DEPRECATED
-def getVideosInFolders_old(folders, ignore_folders=None):
-    if ignore_folders == None:
-        ignore_folders = []
-    check_folders = []
-    queue = folders.copy()
-    while queue != []:
-        print("\r  Finding folders to check. {} folders in list.".format(len(check_folders)),end='')
-        folder = queue.pop(0)
-        check_folders.append(folder)
-        for item in os.listdir(folder):
-            itempath = os.path.join( folder, item )
-            if os.path.isdir(itempath) and itempath not in ignore_folders and item not in ignore_folders and not item.startswith('.'):
-                queue.append(itempath)
-    print()
-    videos = []
-    for i, folder in enumerate(check_folders):
-        print("\r  Getting videos. Handling folder ({}/{}). Videos found: {}".format(i+1, len(check_folders), len(videos)) ,end='')
-        for item in os.listdir(folder):
-            itempath = os.path.join( folder, item )
-            if os.path.isfile(itempath) and item.split(".")[-1] in VIDEO_EXTENSIONS:
-                if itempath not in videos:
-                    videos.append(itempath)
-    print()
-    return videos
+    folders =           [ convert_to_wsl_path(pth) for pth in folders ]
+    ignore_folders =    [ convert_to_wsl_path(pth) for pth in ignore_folders ]
+    # fetch files
+    start = time.time()
+    for idx, base_folder in enumerate(sorted(folders)):
+        print('\rScanning files in folders ({}/{}) files: {:_}'.format(idx, len(folders), len(file_objects)), end='')
+        file_objects.extend(list(Path(base_folder).rglob('*')))
+    print('\rScanning files ({:_}) from folders ({}/{})'.format(len(file_objects), len(folders), len(folders)), end='')
+    print(' took {:.1f} seconds'.format(time.time()-start))
+    # filter files
+    file_objects = [ obj for obj in file_objects if obj.suffix not in VIDEO_EXTENSIONS ]
+    for igfol in ignore_folders:
+        file_objects = [ obj for obj in file_objects if igfol not in str(obj) ]
+    video_paths = sorted(set([str(obj) for obj in file_objects]))
+    return video_paths
 
 
 def getPerformers(videos_dict):
@@ -355,10 +331,10 @@ def get_ordered_set(arr):
     return newarr
 
 def parseFilenameJAV(fn):
-    fn = removeExtension(fn)
-    parts = fn.split('[')
+    stem = Path(fn).stem
+    parts = stem.split('[')
     actor = parts[0]
-    title = fn[len(actor):]
+    title = stem[len(actor):]
     return actor.strip(), None, title
 
 
@@ -561,11 +537,6 @@ def actor_in_video(actor, vid):
             mention_performers = vid['mention_performer'].lower()
         return actor in performers_str or actor in mention_performers
 
-def removeExtension(fn):
-    ps = fn.split(".")
-    if ps[-1] in VIDEO_EXTENSIONS:
-        return fn[:-len(ps[-1])-1]
-    return fn
 
 def limit_collections(folders_in, dict, filter):
     terms = filter.lower().split(' ')
