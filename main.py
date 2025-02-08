@@ -1,11 +1,17 @@
+# command line: uvicorn main:app --workers 1
 # production: gunicorn -w 4 -k uvicorn.workers.UvicornWorker app:app
 import os
-from fastapi import FastAPI
+import sys
+from fastapi import FastAPI, Response
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from backend.fastapi_routers import router
+from handymatt.wsl_paths import convert_to_wsl_path
+
+from backend.routes import api_router, api_media_router, search_router
 from backend.app_state import AppState
+
 
 _project_dir = os.path.dirname(__file__)
 _data_dir = os.path.join( _project_dir, 'data' )
@@ -19,21 +25,57 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
             response.headers["Expires"] = "0"
         return response
 
-# MAIN
+# State
 
 state = AppState()
-state.load(
-    _data_dir,
-    quick_start = False,
-)
-print(len(state.videos_dict))
-input('...')
+try:
+    state.load(
+        _data_dir,
+        quick_start = False,
+    )
+except KeyboardInterrupt:
+    print('\n\n... caught Keyboard Interrupt during state load')
+    sys.exit(0)
+
+
+# FastAPI
 
 app = FastAPI()
-app.add_middleware(NoCacheMiddleware)
+app.add_middleware(NoCacheMiddleware) # TODO: test removing
 
-app.include_router(router, prefix="/api")
+# add routers
+app.include_router(api_router, prefix="/api")
+app.include_router(api_media_router, prefix="/api/media")
+app.include_router(search_router, prefix="/search")
+
+@app.get('/video/{video_hash}')
+def xyz(video_hash: str):
+    # video_path = convert_to_wsl_path(r'a:\Whispera\videos\SemiAmateur\_GoonMuse\Emma Hix - GoonMuse - make me fucking take it [Zac Wild].mp4')
+    # return FileResponse(video_path, media_type='video/mp4')
+    data = state.videos_dict.get(video_hash)
+    if data is None:
+        return Response(f'Data not found for hash {video_hash}', 404)
+    video_path = convert_to_wsl_path(data['path'])
+    print('video_hash:', video_hash)
+    print('video_path', video_path)
+    if not os.path.exists(video_path):
+        return Response(f'Video path doesnt exist "{video_path}"', 404)
+    return FileResponse(video_path, media_type='video/mp4')
+
+media_dir = convert_to_wsl_path('A:\\WhisperaHQ/MyPrograms/MyApplications/CandyPopApp/Frontend/media')
+app.mount("/media", StaticFiles(directory=media_dir), name="media")
 
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
 
 
+# START
+if __name__ == '__main__':
+    import uvicorn
+    print('Starting uvicorn')
+    uvicorn.run(
+        app,
+        host='0.0.0.0',
+        port=8000,
+        workers=1,
+        reload=False
+    )
