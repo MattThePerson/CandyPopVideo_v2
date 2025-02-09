@@ -16,12 +16,12 @@ Improvements from v1:
 - ffmpeg
 - tmux (optional)
 
-## Installing
+## Installing (Linux)
 
 - install system dependencies & clone repo
 - run `tools/install.sh`
 
-## Running
+## Running (Linux)
 
 - (either) run `tools/run.sh`
 - (or) run `tools/run_tmux.sh` for tmux session
