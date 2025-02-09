@@ -5,8 +5,8 @@ import threading
 
 from handymatt import JsonHandler
 
-from backend.util import flaskFun as ff
-# from backend.util import backendFun as bf
+from .util import flaskFun as ff
+# from .util import backendFun as bf
 
 
 ### 

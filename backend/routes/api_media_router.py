@@ -1,7 +1,35 @@
 from fastapi import APIRouter, Response
 
+from ..util import media
+from ..app_state import AppState
+from config import PREVIEW_MEDIA_DIR, CUSTOM_THUMBS_DIR
 
+# _media_dir, _custom_thumbs_dir = '', ''
+
+state = AppState()
 api_media_router = APIRouter()
+
+
+# CONFIRM SEEK THUMBNAIL
+@api_media_router.get("/get-poster/{video_hash}")
+def confirm_poster(video_hash: str):
+    # return Response('Not yet implemented', 501)
+    video_object = state.videos_dict.get(video_hash)
+    if not video_object:
+        print("Could not find video with hash:", video_hash)
+        return Response("No video with that hash", 404)
+    poster = media.hasPreviewThumbs(video_hash, PREVIEW_MEDIA_DIR, small=False)
+    if poster is None:
+        poster = media.hasPoster(video_hash, PREVIEW_MEDIA_DIR)
+        if poster is None:
+            print("Generating early poster for:", video_object['filename'])
+            poster = media.generatePosterSimple(video_object['path'], video_hash, PREVIEW_MEDIA_DIR, video_object['duration_seconds'])
+            if poster is None:
+                return Response("Failed to generate poster", 500)
+    custom_thumb = media.hasCustomThumb(video_hash, CUSTOM_THUMBS_DIR)
+    return_obj = {'poster': poster, 'custom_thumb': custom_thumb}
+    return { 'main': return_obj }
+
 
 # CONFIRM SEEK THUMBNAIL
 @api_media_router.get("/get-seek-thumbnails/{video_hash}")
@@ -25,28 +53,6 @@ def confirm_seek_thumbnails(video_hash: str):
         print("[GENERATE] Seek thumbnails generated!")
         return jsonify("Seek thumbnails generated!"), 200
     return jsonify("Seek thumbnails already exist!"), 200
-
-
-# CONFIRM SEEK THUMBNAIL
-@api_media_router.get("/get-poster/{video_hash}")
-def confirm_poster(video_hash: str):
-    return Response('Not yet implemented', 501)
-    return jsonify("Not implemented"), 404
-    r = videos_dict.get(hash)
-    if not r:
-        print("Could not find video with hash:", hash)
-        return jsonify("No video with that hash"), 404
-    poster = bf.media_hasPreviewThumbs(hash, MEDIADIR, small=False)
-    if poster == None:
-        poster = bf.media_hasPoster(hash, MEDIADIR)
-        if poster == None:
-            print("Generating early poster for:", r['filename'])
-            poster = bf.media_generatePosterSimple(r['path'], hash, MEDIADIR, r['duration_seconds'])
-            if poster == None:
-                return jsonify(generateReponse("Failed to generate poster")), 400
-    custom_thumb = bf.media_hasCustomThumb(hash, CUSTOM_THUMBS_DIR)
-    return_obj = {'poster': poster, 'custom_thumb': custom_thumb}
-    return jsonify(generateReponse(return_obj)), 200
 
 
 # CONFIRM PREVIEW THUMBNAILS

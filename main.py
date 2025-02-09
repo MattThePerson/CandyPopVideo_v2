@@ -11,7 +11,7 @@ from handymatt.wsl_paths import convert_to_wsl_path
 
 from backend.routes import api_router, api_media_router, search_router
 from backend.app_state import AppState
-
+from config import PREVIEW_MEDIA_DIR
 
 _project_dir = os.path.dirname(__file__)
 _data_dir = os.path.join( _project_dir, 'data' )
@@ -50,8 +50,6 @@ app.include_router(search_router, prefix="/search")
 
 @app.get('/video/{video_hash}')
 def xyz(video_hash: str):
-    # video_path = convert_to_wsl_path(r'a:\Whispera\videos\SemiAmateur\_GoonMuse\Emma Hix - GoonMuse - make me fucking take it [Zac Wild].mp4')
-    # return FileResponse(video_path, media_type='video/mp4')
     data = state.videos_dict.get(video_hash)
     if data is None:
         return Response(f'Data not found for hash {video_hash}', 404)
@@ -62,8 +60,7 @@ def xyz(video_hash: str):
         return Response(f'Video path doesnt exist "{video_path}"', 404)
     return FileResponse(video_path, media_type='video/mp4')
 
-media_dir = convert_to_wsl_path('A:\\WhisperaHQ/MyPrograms/MyApplications/CandyPopApp/Frontend/media')
-app.mount("/media", StaticFiles(directory=media_dir), name="media")
+app.mount("/media", StaticFiles(directory=PREVIEW_MEDIA_DIR), name="media")
 
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
 
