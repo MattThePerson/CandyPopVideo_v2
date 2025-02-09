@@ -22,4 +22,5 @@ BAK
 TODO.md
 
 # TEMP
-frontend/
+frontend/*
+!frontend/README.md
