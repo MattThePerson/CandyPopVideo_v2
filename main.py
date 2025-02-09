@@ -30,6 +30,7 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
 state = AppState()
 try:
     state.load(
+        _project_dir,
         _data_dir,
         quick_start = False,
     )

@@ -1,4 +1,5 @@
 """ Functions for computing video, performer and studio similarity """
+import math
 from ..search import tfidf  # Weird import
 from scipy.sparse import csr_matrix, vstack
 
@@ -58,8 +59,9 @@ def _get_mean_embedding_profiles_TFIDF(posessor_item_indices: dict[str, list], t
     for i, indices in enumerate(posessor_item_indices.values()):
         print('\rGenerating profile for ({}/{}) ({:.1f}%)'.format( i+1, embeddings_n, (i+1)/embeddings_n*100 ), end='')
         item_embeddings = vstack([ tfidf_matrix[idx] for idx in indices ])
-        embeddings_mean = csr_matrix(item_embeddings.mean(axis=0)) * (1 + math.log(item_embeddings.shape[0])) # type: ignore
-        posessor_embeddings.append(embeddings_mean)
+        if item_embeddings.shape:
+            embeddings_mean = csr_matrix(item_embeddings.mean(axis=0)) * (1 + math.log(item_embeddings.shape[0]))
+            posessor_embeddings.append(embeddings_mean)
     print(' Done. Converting to vstack ...')
     posessor_embeddings = vstack(posessor_embeddings)
     return posessor_embeddings, posessor_index_map, video_count

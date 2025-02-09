@@ -7,7 +7,8 @@ import threading
 from handymatt import JsonHandler
 
 from config import VIDEO_EXTENSIONS, SCENE_FILENAME_FORMATS
-from ..util import process, general
+from .video_data import VideoData
+from ..util import load, process, general
 from ..search import tfidf, similarity
 
 ### 
@@ -37,7 +38,7 @@ class AppState:
         self.metadataHandler: JsonHandler | None = None
         self.settingsHandler: JsonHandler | None = None
 
-        self.videos_dict: dict[str, Any] = {}
+        self.videos_dict: dict[str, VideoData] = {}
 
         self.tfidf_model = None
         self.performer_embeddings = None
@@ -45,6 +46,7 @@ class AppState:
     # region LOAD
     
     def load(self,
+            project_dir: str,
             data_dir: str,
             reparse_filenames: bool = False,
             quick_start: bool = False,
@@ -53,42 +55,31 @@ class AppState:
             purge_unloaded_video_objects: bool = False,
             backup_videos_handler: bool = False,
     ):
-        # if not os.path.exists(DATADIR):
-        #     os.mkdir(DATADIR)
         self.videosHandler =     JsonHandler( os.path.join( data_dir, 'videos.json' ), prettify=True)
         self.metadataHandler =   JsonHandler( os.path.join( data_dir, 'metadata.json' ))
-        self.settingsHandler =   JsonHandler( os.path.join( data_dir, 'settings.json' ))
 
         # read collection folders and get video paths
-        if quick_start:
+        if False:# quick_start:
             print('Loading existing videos from videos handler ...')
             start = time.time()
             existing_videos_dict = self.videosHandler.jsonObject
-            self.videos_dict = process.getLinkedVideosFromJson(existing_videos_dict)
+            self.videos_dict = load.getLinkedVideosFromJson(existing_videos_dict)
             print('Done. Loaded {} videos in {:.2f}s'.format(len(self.videos_dict), (time.time()-start)))
         else:
-            include_folders, ignore_folders, collections_dict = process.readFoldersAndCollections_YAML( os.path.join( data_dir, 'video_folders.yaml' ) )
+            include_folders, ignore_folders, collections_dict = load.readFoldersAndCollections_YAML( os.path.join( project_dir, 'video_folders.yaml' ) )
             if include_folders == None:
                 print("ERROR: No input folders found in:", 'videos.json')
                 return
-            video_paths = process.getVideosInFolders(include_folders, ignore_folders, include_extensions=VIDEO_EXTENSIONS)
+            video_paths = load.getVideosInFolders(include_folders, ignore_folders, include_extensions=VIDEO_EXTENSIONS)
             print("Found {} videos in {} folders from UNKNOWN collections".format(len(video_paths), len(include_folders)))
             # process videos
             print("Processing videos ...")
             start = time.time()
-            self.videos_dict = process.processVideos(video_paths, self.videosHandler, collections_dict, SCENE_FILENAME_FORMATS, reparse_filenames=reparse_filenames, show_collisions=False)
+            existing_videos = {}
+            self.videos_dict = process.process_videos(video_paths, existing_videos, collections_dict, SCENE_FILENAME_FORMATS)
             print("Successfully loaded {} videos (took {:.2f}s)\n".format(len(self.videos_dict), (time.time()-start)))
         
         self.load_tfidf(regen_tfidf_profiles, recalculate_performer_embeddings)
-
-        if purge_unloaded_video_objects:
-            print('Cleaning videos.json file ...')
-            self.videosHandler.backup()
-            self.videosHandler.jsonObject = self.videos_dict
-            self.videosHandler.save()
-
-        if backup_videos_handler:
-            self.videosHandler.backup()
 
 
     def load_tfidf(self, regen_tfidf_profiles: bool = False, recalculate_performer_embeddings: bool = False):
@@ -113,7 +104,8 @@ class AppState:
             print('[TFIFD] Saving TF-IDF model ...')
             general.pickle_save(tfidf_model, tfidf_model_fn)
         performer_embeddings = general.pickle_load(performer_embeddings_fn)
-        if (not performer_embeddings or recalculate_performer_embeddings) and tfidf_model:
+        if False:
+        # if (not performer_embeddings or recalculate_performer_embeddings) and tfidf_model:
             print('[TFIDF] Generating performer profiles ...')
             video_objects = list(self.videos_dict.values())
             embeddings, name_index_map, video_count = similarity.generate_performer_embeddings(video_objects, tfidf_model['matrix'], tfidf_model['hash_index_map'])

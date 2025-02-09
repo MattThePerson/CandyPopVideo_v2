@@ -1,313 +1,199 @@
-""" Functions for the scanning and processing of files """
-from typing import Any
+""" Functions for the processing if videos """
 import os
-from pathlib import Path
 import time
-
+from pathlib import Path
+from dataclasses import fields
 from handymatt import StringParser
-from handymatt.wsl_paths import convert_to_wsl_path
 from handymatt_media import video_analyser
 
-# from ..search import tfidf
+from ..objects.video_data import VideoData
 
-from .metadata import metadata_load # TODO: outsource to handymatt dep
+from .hold import _get_video_hashes_multi
 
-__all__ = [
-    'readFoldersAndCollections',
-    'getVideosInFolders',
-    'getPerformers',
-    'getStudios',
-    'processVideos',
-]
+#region ### PUBLIC ###
 
-# region #### PUBLIC #### 
+def process_videos(
+    video_paths: list[str],
+    existing_videos: dict[str, VideoData],
+    collections_dict: dict[str, str],
+    scene_filename_formats: list[str],
+    rehash_videos = False,
+    # readd_video_attributes = False, # TODO: rename!
+) -> dict[str, VideoData]:
+    """
+    Given a list of video path and a dictionary of previously scanned video data objects,
+    find existing video data by filename, if needed, hash video, and process video. 
+    Returns -> dict with all processed videos
+    """
+    
+    videos_dict: dict[str, VideoData] = {}
+    # hash_path_map: dict[str, str] = _get_video_hashes(video_paths, existing_videos, rehash_videos=rehash_videos)
+    hash_path_map: dict[str, str] = _get_video_hashes_multi(video_paths, existing_videos, rehash_videos=rehash_videos)
 
-# TODO: Replace
-def getLinkedVideosFromJson(existing_videos_dict: dict) -> dict[str, dict]:
-    """ From the existing `videos.json` file, return those video objects that are linked (path exists) """
-    videos_dict = {}
-    unlinked = []
-    for i, (hash, obj) in enumerate(existing_videos_dict.items()):
-        print('\r[LOAD] getting linked videos ({:_}/{:_}) ({:.1f}%) ({:_} unlinked)'
-                .format(i+1, len(existing_videos_dict), (i+1)/len(existing_videos_dict)*100, len(unlinked)), end='')
-        if os.path.exists(obj['path']):
-            videos_dict[hash] = obj
-        else:
-            unlinked.append(obj)
-    print()
-    return videos_dict
-    # videos_dict = { hash: obj for hash, obj in videosHandler.getItems() if os.path.exists(obj['path']) }
-
-
-# DEPRECATED!
-def readFoldersAndCollections(include_folders_file_path: str) -> tuple[list[str], list[str], dict]:
-    """ DEPRECATED!!! Reads the list of colders and the collections they belong to from `video_folders.yaml` """
-    if not os.path.exists(include_folders_file_path):
-        raise FileNotFoundError("File doesnt exist")
-    with open(include_folders_file_path, 'r') as file:
-        lines = [ line.strip() for line in file if (line != '\n' and not line.startswith('#')) ]
-    include_folders: list[str] = []
-    ignore_folders: list[str] = []
-    collections_dict: dict = {}
-    current_collection = 'No Collection'
-    for line in lines:
-        if line == 'END':
-            break
-        elif line.startswith('!'):
-            ignore_folders.append(line[1:])
-        elif ":" in line:
-            include_folders.append(line)
-            dirpath = convert_to_wsl_path(line)
-            collections_dict[dirpath] = current_collection
-        else:
-            current_collection = line
-    return include_folders, ignore_folders, collections_dict
-
-
-def readFoldersAndCollections_YAML(include_folders_file_path: str) -> tuple[list[str], list[str], dict]:
-    """ Reads the list of colders and the collections they belong to from `video_folders.yaml` """
-    if not os.path.exists(include_folders_file_path):
-        raise FileNotFoundError("File doesnt exist")
-    with open(include_folders_file_path, 'r') as file:
-        lines = [ line.strip() for line in file if (line != '\n' and not line.strip().startswith('#')) ]
-    include_folders: list[str] = []
-    ignore_folders: list[str] = []
-    collections_dict: dict = {}
-    current_collection = 'No Collection'
-    for line in lines:
-        if line == 'END: HERE':
-            break
-        if line.endswith(':'):
-            current_collection = line
-        else:
-            folder_path = line
-            folder_path = convert_to_wsl_path(folder_path)
-            if line.startswith('!'):
-                ignore_folders.append(folder_path)
-            else:
-                include_folders.append(folder_path)
-                collections_dict[folder_path] = current_collection
-    return include_folders, ignore_folders, collections_dict
-
-
-def getVideosInFolders(folders: list[str], ignore_folders: list[str] = [], include_extensions: list[str] = []) -> list[str]:
-    """ Given a list of folder and exclude folders (abspath or folder name) returns """
-    file_objects: list[Path] = []
-    ignore_folders.append('/.') # exclude all hidden folders
-    folders =           [ convert_to_wsl_path(pth) for pth in folders ]
-    ignore_folders =    [ convert_to_wsl_path(pth) for pth in ignore_folders ]
-    # fetch files
-    start = time.time()
-    for idx, base_folder in enumerate(sorted(folders)):
-        print('\rScanning files in folders ({}/{}) files: {:_}'.format(idx, len(folders), len(file_objects)), end='')
-        file_objects.extend(list(Path(base_folder).rglob('*')))
-    print('\rScanning files ({:_}) from folders ({}/{})'.format(len(file_objects), len(folders), len(folders)), end='')
-    print(' took {:.1f} seconds'.format(time.time()-start))
-    # filter files
-    file_objects = [ obj for obj in file_objects if obj.is_file() and obj.suffix in include_extensions ]
-    for igfol in ignore_folders:
-        file_objects = [ obj for obj in file_objects if igfol not in str(obj) ]
-    video_paths = sorted(set([str(obj) for obj in file_objects]))
-    return video_paths
-
-
-def getPerformers(videos_dict):
-    d = {}
-    for vid in videos_dict.values():
-        for p in vid.get('performers', []):
-            d[p] = d.get(p, 0) + 1
-    if '' in d:
-        del d['']
-    return d
-
-
-def getStudios(videos_dict):
-    d = {}
-    for vid in videos_dict.values():
-        k = vid.get('studio')
-        if k:
-            d[k] = d.get(k, 0) + 1
-    return d
-
-
-# TODO: Decouple from JsonHandler
-def processVideos(video_paths: list[str], handler, collections_dict: dict[str, str], scene_filename_formats: list[str], reparse_filenames=False, show_collisions=False) -> dict[str, dict]:
-    """ Given a list of video paths """
+    # process videos
     parser = StringParser(scene_filename_formats)
-    path_hash_map = { vd['path'].lower(): hash for hash, vd in handler.getItems() if 'path' in vd }
-    
-    hashing_failed, had_to_hash, collisions = [], [], []
-    save_flag = True
-    videos_dict: dict[str, dict] = {}
-    
-    for i, path in enumerate(video_paths):
-        path = convert_to_wsl_path(path)
-        path_in_db = path.lower() in path_hash_map
-        print("\r  Loading ({}/{}) (hashed:{} f:{}) {:<7}  {:<50}  "
-            .format(i+1, len(video_paths), len(had_to_hash), len(hashing_failed), ("HASHING" if not path_in_db else ""), f'"{_remove_nonascii_chars(Path(path).stem[:46])}"' ), end='')
-        # Check if path in DB
-        if path_in_db:
-            hash = path_hash_map[path.lower()]
-        else:
-            try:
-                hash = video_analyser.getVideoHash(path) # can return -1
-                had_to_hash.append((path, hash))
-            except Exception as e:
-                hash = -1
-                print('\nEXCEPTION')
-                print(os.path.exists(path))
-                print(os.path.isfile(path))
-                print(e)
-                exit(1)
-        # Add data if hash exists
-        if hash == -1:
-            hashing_failed.append(path)
-        else:
-            video_data: dict[str, Any] = handler.getValue(hash)
-            if not video_data: # New entry
-                video_data = {'hash': hash}
-                extracted_data = video_analyser.getVideoData(path)
-                for k, v in extracted_data.items():
-                    video_data[k] = v
-            elif not path_in_db:
-                if os.path.exists(video_data.get('path', '')): # if video exists with same hash
-                    collisions.append(hash)
-                    if show_collisions:
-                        existing_hash = video_analyser.getVideoHash(video_data.get('path', '')) # hash existing video to print
-                        print('\nFound entry with same has that exists')
-                        print('HASH1: [{}]  HASH2: [{}]'.format(hash, existing_hash))
-                        print('EXISTING PATH: "{}"'.format(video_data.get('path')))
-                        print('REPLACE PATH:  "{}"\n'.format(path))
-            if reparse_filenames or not path_in_db: # path changed, re-parse filename
-                video_data['path'] = path
-                video_data['tags'] = []
-                video_data = _add_parsed_data_to_obj(video_data, path, parser)
-                video_data = _add_collection_to_obj(video_data, collections_dict)
-                video_id = video_data.get('id')
-                if video_id:
-                    metadata = metadata_load(path, video_id)
-                    if metadata:
-                        video_data['metadata'] = metadata
-                        for key in ['tags', 'stars']:
-                            for tag in metadata.get(key, []):
-                                video_data['tags'].append(tag)
-            videos_dict[hash] = video_data
-            handler.setValue(hash, video_data, nosave=True)
-            if (len(had_to_hash)+1)%50 == 0:
-                # print('\nSAVING ...')
-                if save_flag:
-                    handler.save()
-                    save_flag = False
-            else:
-                save_flag = True
-    handler.save()
+    for idx, (video_hash, video_path) in enumerate(hash_path_map.items()):
+        print('\rprocessing videos ({:_}/{:_})'.format(idx+1, len(hash_path_map)), end='')
+        video_data: VideoData|None = existing_videos.get(video_hash)
+        if video_data is None:
+            video_data = _get_new_video_data_object(video_hash, video_path)
+        
+        video_data.path = video_path
+        video_data.filename = Path(video_path).name
+        video_data = _add_collection_attributes(video_data, collections_dict)
+        
+        # add data parsed from filename / path
+        video_data = _add_filename_parsed_data(video_data, parser)
+        
+        # read tags from json file and add them
+        ...
+        
+        # organize tags
+        ...
+    print()
 
-    print("\nTried to hash {} videos ({} collisions):".format(len(had_to_hash), len(collisions)))
-    for i, (path, hash) in enumerate(had_to_hash[:10]):
-        print('   {:>3} : [{}] "{}/{}"'.format(i+1, hash, Path(path).parent.name, Path(path).name[:90]))
-    if hashing_failed != []:
-        print("\nFailed to hash {} videos:\n".format(len(hashing_failed)))
-        for i, path in enumerate(hashing_failed):
-            print("   {:>3} : '{}'".format(i+1, path[:100]))
     return videos_dict
 
 
-# region #### PRIVATE #### 
+#region ### PRIVATE ###
 
-def _add_collection_to_obj(obj: dict, collections_dict: dict) -> dict:
-    """ Given a video object, determine its collection and add collection and split up paths (parents & relative path) """
-    video_path = obj['path']
-    parentdir = None
-    collections_dict_paths = sorted(collections_dict.keys(), reverse=True, key=lambda path: len(path))
-    for dir in collections_dict_paths:
-        if video_path.startswith(dir):
-            parentdir = dir
-            break
-    collection = collections_dict.get(parentdir)
-    if collection is None or parentdir is None:
-        raise KeyError('Collection not defined for parentdir: "{}"'.format(parentdir))
-    obj['collection'] = collection
-    obj['parentdir'] = parentdir
-    path_relative = str(Path(video_path).relative_to(Path(parentdir)))
-    obj['path_relative'] = path_relative
+def _get_video_hashes(
+    video_paths: list[str],
+    existing_videos: dict[str, VideoData],
+    rehash_videos = False
+) -> dict[str, str]:
+    """ Gets video hashes for a list of video paths and a dict of existing video data objects """
+
+    hash_path_map: dict[str, str] = {}
+    hashing_failed, had_to_hash, collisions = [], [], []
+    path_hash_map = { video_data.path: hash for hash, video_data in existing_videos.items() }
+    for idx, video_path in enumerate(video_paths):
+        print('\rgetting video hash ({:_}/{:_})'.format(idx+1, len(video_paths)), end='')
+        video_hash: str|None = path_hash_map.get(video_path)
+        if video_hash is None or rehash_videos:
+            try:
+                had_to_hash.append(video_path)
+                video_hash = video_analyser.getVideoHash(video_path)
+            except Exception as e:
+                ...
+        if video_hash is None:
+            hashing_failed.append(video_path)
+        else:
+            if video_hash in hash_path_map:
+                collisions.append(video_hash)
+            else:
+                hash_path_map[video_hash] = video_path
+    print()
+    # print hashing report
+    return hash_path_map
+
+
+
+def _get_new_video_data_object(
+        video_hash: str, 
+        video_path: str, 
+    ) -> VideoData:
+    """ Get initial video data object. Add only hash, path, filename, and video attributes """
     
+    extracted_data = video_analyser.getVideoData(video_path)
+    video_data = VideoData(
+        hash = video_hash,
+        path = video_path,
+        date_added = time.strftime('%Y-%m-%d %H:%M', time.localtime(os.path.getctime(video_path))), # ctime
+        duration =          extracted_data['duration'],
+        duration_seconds =  extracted_data['duration_seconds'],
+        filesize_mb =       extracted_data['filesize_mb'],
+        fps =               extracted_data['fps'],
+        resolution =        extracted_data['resolution'],
+        bitrate =           extracted_data['bitrate'],
+    )
+    return video_data
+
+
+def _add_collection_attributes(data: VideoData, collections_dict: dict) -> VideoData:
+    """ Determine collection and add collection attributes 
+        (collection, parent_dir, path_relative) to VideoDict """
+    parent_dir = None
+    collections_dict_paths = sorted(collections_dict.keys(), reverse=True, key=lambda path: len(path))
+    for collection_dir in reversed(collections_dict_paths):
+        if data.path.startswith(collection_dir):
+            parent_dir = collection_dir  # may happen more than once
+    collection = collections_dict.get(parent_dir)
+    if collection is None or parent_dir is None:
+        raise KeyError('Collection not defined for parentdir: "{}"'.format(parent_dir))
+    
+    data.collection = collection
+    data.parent_dir = parent_dir
+    data.path_relative = str(Path(data.path).relative_to(Path(parent_dir)))
+    return data
+
+
+""" 
+TAGS:
     tags_from_path = [ p.replace('_', '') for p in path_relative.split(os.sep)[:-1] if p != '' ]
     obj['tags_from_path'] = [ t for t in tags_from_path if (t not in obj.get('performers', []) and t != obj.get('studio', '')) ]
     tags = obj.get('tags', [])
     tags.extend(obj['tags_from_path'])
     obj['tags'] = sorted(set(tags))
     
-    return obj
+"""
 
-# 
-def _add_parsed_data_to_obj(obj, path, parser):
-    path_obj = Path(path)
-    obj['filename'] = path_obj.name
-    scene_info = {}
-    scene_info = _parseFilenameForSceneInfo(path_obj.stem, parser)
-    if len(scene_info) == 1:
+
+
+def _add_filename_parsed_data(data: VideoData, parser: StringParser):
+    """ Parse data from video filename, format slightly, and add to VideoData """
+
+    path_obj = Path(data.path)
+    scene_info = _parse_filename(path_obj.stem, parser)
+    if len(scene_info) == 1:  # matched only title, using dirname as sort_performers
         fn = "{} - {}".format(path_obj.parent.name, path_obj.stem)
-        scene_info = _parseFilenameForSceneInfo(fn, parser)
+        scene_info = _parse_filename(fn, parser)
     
-    if 'date_released' not in scene_info or scene_info['date_released'] == None:
-        scene_info['date_released'] = str(scene_info.get('year')) if scene_info.get('year') else None
-    else:
-        scene_info['date_released'] = str(scene_info['date_released'])
+    scene_info = _filter_scene_info(scene_info)
     
-    # delete previous scene info
-    for k in ['mention_performer', 'line', 'other_info', 'year', 'studio', 'jav_code']:
-        if k in obj:
-            del obj[k]
-    obj['actor'] = ''
+    data = _update_dataclass_from_dict(data, scene_info)
     
-    if 'tags' in scene_info:
-        obj['tags_from_filename'] = scene_info['tags']
-        del scene_info['tags']
-    
-    for k, v in scene_info.items():
-        obj[k] = v
-
-    obj['date_added'] = time.strftime('%Y-%m-%d %H:%M', time.localtime(os.path.getctime(path)))
-    
-    tags = obj.get('tags', [])
-    tags.extend(obj.get('tags_from_filename', []))
-    obj['tags'] = sorted(set(tags))
-    
-    return obj
+    return data
 
 
-
-def _parseFilenameForSceneInfo(filename: str, parser: StringParser):
-    info = parser.parse(filename)
-    if info is None:
-        raise TypeError('String parser returned `None` for filename: "{}"'.format(filename))
-    performers = []
+def _filter_scene_info(info: dict) -> dict:
+    # use year if no date_released
+    if info.get('date_released') is None and 'year' in info:
+        info['date_released'] = str(info['year'])
+        del info['year']
+    
+    # add tags from filename
+    if 'tags' in info:
+        info['tags_from_filename'] = info['tags']
+        del info['tags']
+    
+    # combine performers
     if 'sort_performers' in info:
-        info['actor'] = info['sort_performers']
-        performers += info['sort_performers'].split(", ")
-        # del info['sort_performers']
+        info['sort_performers'] = info['sort_performers'].split(", ")
     if 'mention_performers' in info:
-        if info['mention_performers'].islower():
-            if 'scene_id' not in info:
-                info['scene_id'] = info['mention_performers']
-            else:
-                info['scene_title'] += ' [{}]'.format(info['mention_performers'])
-            del info['mention_performers']
-        else:
-            performers += info['mention_performers'].split(', ')
+        info['mention_performers'] = info['mention_performers'].split(', ')
+    performers = info.get('sort_performers', []) + info.get('mention_performers', [])
     info['performers'] = _get_ordered_set(performers)
-    if 'scene_title' in info:
-        info['title'] = info['scene_title']
-        del info['scene_title']
-    if 'year' not in info and 'line' in info and info['line'].replace('-','').isnumeric():
-        info['date_released'] = info['line']
-        info['year'] = info['line'][:4]
-        del info['line']
+    
     return info
 
 
+def _parse_filename(filename: str, parser: StringParser):
+    info = parser.parse(filename)
+    if info is None:
+        raise TypeError('String parser returned `None` for filename: "{}"'.format(filename))
+    return info
 
-# region #### HELPERS #### 
+
+#region ### HELPERS ###
+
+def _update_dataclass_from_dict(instance, update_dict: dict):
+    for key, value in update_dict.items():
+        if key in {field.name for field in fields(instance)}:
+            setattr(instance, key, value)
+        else:
+            raise Exception('Key not found in dataclass: "{}"'.format(key))
+    return instance
 
 # list of unique items which preserves order of original list
 def _get_ordered_set(arr):
@@ -318,10 +204,3 @@ def _get_ordered_set(arr):
             newarr.append(item)
             seen.add(item)
     return newarr
-
-def _remove_nonascii_chars(string):
-    ch = []
-    for c in string:
-        if ord(c) < 256:
-            ch.append(c)
-    return ''.join(ch)

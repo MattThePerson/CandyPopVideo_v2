@@ -14,6 +14,7 @@ Improvements from v1:
 - python >= 3.8
 - npm
 - ffmpeg
+- MKVToolNix (optional, improves re-hashing speed for mkv videos)
 - tmux (optional)
 
 ## Installing (Linux)

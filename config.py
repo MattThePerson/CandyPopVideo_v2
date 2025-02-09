@@ -5,8 +5,8 @@ DB_PATH = 'data/app.db' # maybe include in settings.json?
 
 
 SCENE_FILENAME_FORMATS = [
-    '{sort_performers} - {studio:S} - [{year:d}];opt [{date_released:%Y-%m-%d}];opt [{line:S}];opt {scene_title} [{mention_performers:D}];opt {{{video_id:S}}};opt [id=={id:S}];opt',
-    '[{studio:S}] [{year:d}];opt [{date_released:%Y-%m-%d}];opt [{line:S}];opt {scene_title} [{mention_performers:D}];opt',
+    '{sort_performers} - {studio:S} - [{year:d}];opt [{date_released:%Y-%m-%d}];opt [{line:S}];opt {scene_title} [{mention_performers}];opt {{{source_id:S}}};opt [id=={source_id:S}];opt',
+    '[{studio:S}] [{year:d}];opt [{date_released:%Y-%m-%d}];opt [{line:S}];opt {scene_title} [{mention_performers}];opt',
     '{sort_performers} [{jave_code:S}] [{date_released:%Y-%m-%d}];opt [{studio:S}];opt {scene_title}',
     '[{jav_code:S}]',
     '{sort_performers} - {scene_title}',
