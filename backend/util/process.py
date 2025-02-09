@@ -8,8 +8,7 @@ from handymatt import StringParser
 from handymatt.wsl_paths import convert_to_wsl_path
 from handymatt_media import video_analyser
 
-from config import VIDEO_EXTENSIONS
-from ..search.tfidf import *
+# from ..search import tfidf
 
 from .metadata import metadata_load # TODO: outsource to handymatt dep
 
@@ -23,27 +22,71 @@ __all__ = [
 
 # region #### PUBLIC #### 
 
-# TODO: refactor to be able to read from .yaml file
-def readFoldersAndCollections(video_folders_path: str) -> tuple[list[str], list[str], dict]:
-    """ Reads the list of colders and the collections they belong to from `video_folders.yaml` """
-    if not os.path.exists(video_folders_path):
+# TODO: Replace
+def getLinkedVideosFromJson(existing_videos_dict: dict) -> dict[str, dict]:
+    """ From the existing `videos.json` file, return those video objects that are linked (path exists) """
+    videos_dict = {}
+    unlinked = []
+    for i, (hash, obj) in enumerate(existing_videos_dict.items()):
+        print('\r[LOAD] getting linked videos ({:_}/{:_}) ({:.1f}%) ({:_} unlinked)'
+                .format(i+1, len(existing_videos_dict), (i+1)/len(existing_videos_dict)*100, len(unlinked)), end='')
+        if os.path.exists(obj['path']):
+            videos_dict[hash] = obj
+        else:
+            unlinked.append(obj)
+    print()
+    return videos_dict
+    # videos_dict = { hash: obj for hash, obj in videosHandler.getItems() if os.path.exists(obj['path']) }
+
+
+# DEPRECATED!
+def readFoldersAndCollections(include_folders_file_path: str) -> tuple[list[str], list[str], dict]:
+    """ DEPRECATED!!! Reads the list of colders and the collections they belong to from `video_folders.yaml` """
+    if not os.path.exists(include_folders_file_path):
         raise FileNotFoundError("File doesnt exist")
-    with open(video_folders_path, 'r') as file:
+    with open(include_folders_file_path, 'r') as file:
         lines = [ line.strip() for line in file if (line != '\n' and not line.startswith('#')) ]
     include_folders: list[str] = []
     ignore_folders: list[str] = []
     collections_dict: dict = {}
-    current_collection = None
+    current_collection = 'No Collection'
     for line in lines:
-        if line ==  'END':
+        if line == 'END':
             break
         elif line.startswith('!'):
             ignore_folders.append(line[1:])
         elif ":" in line:
             include_folders.append(line)
-            collections_dict[line] = current_collection
+            dirpath = convert_to_wsl_path(line)
+            collections_dict[dirpath] = current_collection
         else:
             current_collection = line
+    return include_folders, ignore_folders, collections_dict
+
+
+def readFoldersAndCollections_YAML(include_folders_file_path: str) -> tuple[list[str], list[str], dict]:
+    """ Reads the list of colders and the collections they belong to from `video_folders.yaml` """
+    if not os.path.exists(include_folders_file_path):
+        raise FileNotFoundError("File doesnt exist")
+    with open(include_folders_file_path, 'r') as file:
+        lines = [ line.strip() for line in file if (line != '\n' and not line.strip().startswith('#')) ]
+    include_folders: list[str] = []
+    ignore_folders: list[str] = []
+    collections_dict: dict = {}
+    current_collection = 'No Collection'
+    for line in lines:
+        if line == 'END: HERE':
+            break
+        if line.endswith(':'):
+            current_collection = line
+        else:
+            folder_path = line
+            folder_path = convert_to_wsl_path(folder_path)
+            if line.startswith('!'):
+                ignore_folders.append(folder_path)
+            else:
+                include_folders.append(folder_path)
+                collections_dict[folder_path] = current_collection
     return include_folders, ignore_folders, collections_dict
 
 
@@ -91,7 +134,6 @@ def getStudios(videos_dict):
 def processVideos(video_paths: list[str], handler, collections_dict, scene_filename_formats, reparse_filenames=False, show_collisions=False):
     """ Given a list of video paths """
     parser = StringParser(scene_filename_formats)
-    collections_dict_paths = sorted(collections_dict.keys(), reverse=True, key=lambda path: len(path))
     path_hash_map = { vd['path'].lower(): hash for hash, vd in handler.getItems() if 'path' in vd }
     
     hashing_failed, had_to_hash, collisions = [], [], []
@@ -140,7 +182,7 @@ def processVideos(video_paths: list[str], handler, collections_dict, scene_filen
                 video_data['path'] = path
                 video_data['tags'] = []
                 video_data = _add_parsed_data_to_obj(video_data, path, parser)
-                video_data = _add_collection_to_obj(video_data, path, collections_dict, collections_dict_paths)
+                video_data = _add_collection_to_obj(video_data, collections_dict)
                 video_id = video_data.get('id')
                 if video_id:
                     metadata = metadata_load(path, video_id)
@@ -172,18 +214,24 @@ def processVideos(video_paths: list[str], handler, collections_dict, scene_filen
 
 # region #### PRIVATE #### 
 
-def _add_collection_to_obj(obj, path, collections_dict, collections_dict_paths):
-    parentdir = ''
+def _add_collection_to_obj(obj: dict, collections_dict: dict) -> dict:
+    """ Given a video object, determine its collection and add collection and split up paths (parents & relative path) """
+    video_path = obj['path']
+    parentdir = None
+    collections_dict_paths = sorted(collections_dict.keys(), reverse=True, key=lambda path: len(path))
     for dir in collections_dict_paths:
-        if path.lower().startswith(dir.lower()):
+        if video_path.startswith(dir):
             parentdir = dir
             break
-    obj['collection'] = collections_dict.get(parentdir)
+    collection = collections_dict.get(parentdir)
+    if collection is None or parentdir is None:
+        raise KeyError('Collection not defined for parentdir: "{}"'.format(parentdir))
+    obj['collection'] = collection
     obj['parentdir'] = parentdir
-    obj['path_relative'] = path.lower().replace(parentdir.lower(), '')
+    path_relative = str(Path(video_path).relative_to(Path(parentdir)))
+    obj['path_relative'] = path_relative
     
-    cut_fn = path.replace(parentdir, '')
-    tags_from_path = [ p.replace('_', '') for p in cut_fn.split("\\")[:-1] if p != '' ]
+    tags_from_path = [ p.replace('_', '') for p in path_relative.split(os.sep)[:-1] if p != '' ]
     obj['tags_from_path'] = [ t for t in tags_from_path if (t not in obj.get('performers', []) and t != obj.get('studio', '')) ]
     tags = obj.get('tags', [])
     tags.extend(obj['tags_from_path'])
@@ -245,7 +293,7 @@ def _parseFilenameForSceneInfo(fn, parser):
             del info['mention_performers']
         else:
             performers += info['mention_performers'].split(', ')
-    info['performers'] = get_ordered_set(performers)
+    info['performers'] = _get_ordered_set(performers)
     if 'scene_title' in info:
         info['title'] = info['scene_title']
         del info['scene_title']
@@ -260,7 +308,7 @@ def _parseFilenameForSceneInfo(fn, parser):
 # region #### HELPERS #### 
 
 # list of unique items which preserves order of original list
-def get_ordered_set(arr):
+def _get_ordered_set(arr):
     newarr = []
     seen = set()
     for item in arr:

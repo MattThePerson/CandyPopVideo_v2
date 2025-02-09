@@ -8,7 +8,7 @@ from handymatt import JsonHandler
 
 from config import VIDEO_EXTENSIONS
 from ..util import process, general
-from ..search import tfidf
+from ..search import tfidf, similarity
 
 from ..util import flaskFun as ff # TODO: remove dep
 
@@ -71,7 +71,7 @@ class AppState:
             self.videos_dict = process.getLinkedVideosFromJson(existing_videos_dict)
             print('Done. Loaded {} videos in {:.2f}s'.format(len(self.videos_dict), (time.time()-start)))
         else:
-            include_folders, ignore_folders, collections_dict = process.readFoldersAndCollections( os.path.join( data_dir, 'video_folders.txt' ) )
+            include_folders, ignore_folders, collections_dict = process.readFoldersAndCollections_YAML( os.path.join( data_dir, 'video_folders.yaml' ) )
             if include_folders == None:
                 print("ERROR: No input folders found in:", 'videos.json')
                 return
@@ -105,7 +105,7 @@ class AppState:
         if tfidf_model and not regen_tfidf_profiles:
             print('[TFIFD] Loaded TF-IDF model')
             video_hashes = list(self.videos_dict.keys())
-            if ff.newHashNotInTFIDF(video_hashes, tfidf_model['hash_index_map']):
+            if similarity.newHashNotInTFIDF(video_hashes, tfidf_model['hash_index_map']):
                 print('[TFIFD] Found novel video hashes, retraining ...')
                 retrain_model = True
         if retrain_model:
@@ -120,7 +120,7 @@ class AppState:
         if (not performer_embeddings or recalculate_performer_embeddings) and tfidf_model:
             print('[TFIDF] Generating performer profiles ...')
             video_objects = list(self.videos_dict.values())
-            embeddings, name_index_map, video_count = ff.generate_performer_embeddings(video_objects, tfidf_model['matrix'], tfidf_model['hash_index_map'])
+            embeddings, name_index_map, video_count = similarity.generate_performer_embeddings(video_objects, tfidf_model['matrix'], tfidf_model['hash_index_map'])
             performer_embeddings = { 'embeddings': embeddings, 'name_index_map': name_index_map, 'video_count': video_count }
             print('[TFIFD] Saving performer embeddings ...')
             general.pickle_save(performer_embeddings, performer_embeddings_fn)
