@@ -131,14 +131,14 @@ def getStudios(videos_dict):
 
 
 # TODO: Decouple from JsonHandler
-def processVideos(video_paths: list[str], handler, collections_dict, scene_filename_formats, reparse_filenames=False, show_collisions=False):
+def processVideos(video_paths: list[str], handler, collections_dict: dict[str, str], scene_filename_formats: list[str], reparse_filenames=False, show_collisions=False) -> dict[str, dict]:
     """ Given a list of video paths """
     parser = StringParser(scene_filename_formats)
     path_hash_map = { vd['path'].lower(): hash for hash, vd in handler.getItems() if 'path' in vd }
     
     hashing_failed, had_to_hash, collisions = [], [], []
     save_flag = True
-    videos_dict = {}
+    videos_dict: dict[str, dict] = {}
     
     for i, path in enumerate(video_paths):
         path = convert_to_wsl_path(path)
@@ -277,8 +277,10 @@ def _add_parsed_data_to_obj(obj, path, parser):
 
 
 
-def _parseFilenameForSceneInfo(fn, parser):
-    info = parser.parse(fn)
+def _parseFilenameForSceneInfo(filename: str, parser: StringParser):
+    info = parser.parse(filename)
+    if info is None:
+        raise TypeError('String parser returned `None` for filename: "{}"'.format(filename))
     performers = []
     if 'sort_performers' in info:
         info['actor'] = info['sort_performers']

@@ -24,6 +24,10 @@ with open('data/settings.json', 'r') as f:
 PREVIEW_MEDIA_DIR = convert_to_wsl_path(settings['preview_media_dir'])
 
 # Optional fields
-CUSTOM_THUMBS_DIR = convert_to_wsl_path(settings.get('custom_thumbs_dir'))
-GIFS_DIR = convert_to_wsl_path(settings.get('gifs_dir'))
+CUSTOM_THUMBS_DIR = settings.get('custom_thumbs_dir')
+if CUSTOM_THUMBS_DIR:   CUSTOM_THUMBS_DIR = convert_to_wsl_path(CUSTOM_THUMBS_DIR)
+
+GIFS_DIR = settings.get('gifs_dir')
+if GIFS_DIR:   GIFS_DIR = convert_to_wsl_path(GIFS_DIR)
+
 

@@ -6,7 +6,7 @@ import threading
 
 from handymatt import JsonHandler
 
-from config import VIDEO_EXTENSIONS
+from config import VIDEO_EXTENSIONS, SCENE_FILENAME_FORMATS
 from ..util import process, general
 from ..search import tfidf, similarity
 
@@ -59,8 +59,6 @@ class AppState:
         self.metadataHandler =   JsonHandler( os.path.join( data_dir, 'metadata.json' ))
         self.settingsHandler =   JsonHandler( os.path.join( data_dir, 'settings.json' ))
 
-        scene_filename_formats = self.settingsHandler.getValue('scene_filename_formats', [])
-        
         # read collection folders and get video paths
         if quick_start:
             print('Loading existing videos from videos handler ...')
@@ -78,7 +76,7 @@ class AppState:
             # process videos
             print("Processing videos ...")
             start = time.time()
-            self.videos_dict = process.processVideos(video_paths, self.videosHandler, collections_dict, scene_filename_formats, reparse_filenames=reparse_filenames, show_collisions=False)
+            self.videos_dict = process.processVideos(video_paths, self.videosHandler, collections_dict, SCENE_FILENAME_FORMATS, reparse_filenames=reparse_filenames, show_collisions=False)
             print("Successfully loaded {} videos (took {:.2f}s)\n".format(len(self.videos_dict), (time.time()-start)))
         
         self.load_tfidf(regen_tfidf_profiles, recalculate_performer_embeddings)
