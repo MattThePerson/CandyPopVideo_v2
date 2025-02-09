@@ -3,10 +3,11 @@
 !*/media/default*
 
 # genercal
+.vscode
+.idea
 .venv
 venv
 __pycache__
-.vscode
 
 # custom
 tests/

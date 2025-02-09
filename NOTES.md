@@ -34,3 +34,40 @@ main() stages:
 - loads and processes videos
 - loads/generates video/performer TF-IDF profiles
 - [REMOVE] optionally generates preview media
+
+
+## Routes
+
+  `/`   // frontend
+
+  `/video/{video_hash}` // serve video via FileResponse
+
+  `/media`              // Static files for preview media
+
+  `/api`
+`/get-video-data/{video_hash}`              // get data for video
+
+`/get-random-video`
+`/get-random-video-seeded/{seed}`
+`/get-random-spotlight-video`
+
+`/add-favourite/{video_hash}`
+`/remove-favourite/{video_hash}`
+`/is-favourite/{video_hash}`
+
+`/get-performers`
+`/get-studios`
+
+  `/api/media/`
+`/get-seek-thumbnails/{video_hash}`
+`/get-poster/{video_hash}`
+`/get-preview-thumbnails/{video_hash}`
+`/get-teaser-small/{video_hash}`
+`/get-teaser-large/{video_hash}`
+
+  `/search/`
+`/search-videos`
+`/get-similar-videos/{video_hash}/{start_from}/{limit}` // get similar videos based on tf-idf
+`/get-similar-performers/{performer}`                   // get similar performers based on profile (mean video profile) similarity
+`/get-similar-studios/{studio}`
+
