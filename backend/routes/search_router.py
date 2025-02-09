@@ -1,30 +1,31 @@
-from fastapi import APIRouter, Response
+import time
+from fastapi import APIRouter, Response, Request
 
+from ..search.search import searchVideosFunction
+from ..app_state import AppState
 
+state = AppState()
 search_router = APIRouter()
-
 
 # SEARCH VIDEOS
 @search_router.get("/search-videos")
-def search_videos():
-    return Response('Not yet implemented', 501)
-    return jsonify("Not implemented"), 404
-    print("[SEARCH] Recieved query")
+def search_videos(request: Request):
+    params = dict(request.query_params)
+    print(params)
+    # return Response('Not yet implemented', 501)
     start = time.time()
-    results = ff.searchVideosFunction(videos_dict, request.args, metadataHandler, tfidf_model, None)
-    if results == None:
-        jsonify(generateReponse()), 400
+    videos = list(state.videos_dict.values())
+    results = searchVideosFunction(videos, params, state.metadataHandler, state.tfidf_model, None)
+    if results is None:
+        return Response('Failed to get results', 404)
     results['time_taken'] = round( time.time()-start, 3 )
-    print(results['time_taken'])
-    return jsonify(generateReponse(results)), 200
+    return { 'main': results }
 
 
 # GET SIMILAR VIDEOS
 @search_router.get("/get-similar-videos/{video_hash}/{start_from}/{limit}")
 def get_similar_videos(video_hash: str, start_from: int, limit: int):
     return Response('Not yet implemented', 501)
-    return {'msg': 'Not implemented', 'status_code': 404}
-    return jsonify("Not implemented"), 404
     print("[GET SIMILAR VIDEOS] Recieved query")
     # return jsonify(generateReponse('Not implemented')), 404
     results = ff.get_similar_videos(hash, int(start_from), int(limit), videos_dict, tfidf_model)
@@ -51,10 +52,5 @@ def get_similar_studio(studio: str):
     return Response('Not yet implemented', 501)
     return jsonify("Not implemented"), 404
     print(f'Getting similar studios to: "{studio}"')
-    sims = [
-        {'name': 'Kenna James'},
-        {'name': 'AJ Applegate'},
-        {'name': 'Rebeca Linares'}
-    ]
     return jsonify(generateReponse(sims)), 200
 

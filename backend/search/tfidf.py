@@ -1,6 +1,6 @@
+""" functions for TF-IDF related stuff """
 from difflib import SequenceMatcher
 import numpy as np
-import time
 import nltk
 from nltk.stem.snowball import SnowballStemmer
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -189,53 +189,6 @@ def term_query_score(sequence_matcher, a, b):
 # 
 def token_similarity(t1, t2, sm):
     return term_query_score(sm, ' '.join(t1), ' '.join(t2))
-
-
-
-### WORD CLOUD FUNCTIONS
-
-def get_word_cloud(videos, exclude_terms=[]):
-    print('[GET_WORD_CLOUD] Calculating word cloud ... ', end='')
-    start = time.time()
-    word_cloud = {}
-    for vid in videos:
-        tokens = []
-        title = vid.get('title')
-        parts_title = []
-        if title:
-            parts_title = get_preprocessed_text(title)
-            parts_title.extend(get_bigrams(parts_title))
-        tokens.extend(parts_title)
-        tokens.extend(vid['performers'])
-        tokens.extend(vid.get('mention_performer', '').split(', '))
-        tokens.append(vid.get('studio', ''))
-        tokens.extend(vid.get('tags', ''))
-        tokens.extend(vid.get('tags_from_path', ''))
-        tokens = [
-            t.lower() for t in set(tokens)
-            if (len(t) > 1) and not t.isnumeric() and (t.lower() not in ['', 'vol', 'scene', 'part', 'mkv', 'mp4', 'com', 'xxx', 'episode']) and (t.lower() not in exclude_terms) and t not in STOPWORDS_ENG
-            and 'scene' not in t.lower() and 'part' not in t.lower()
-        ]
-        for t in tokens:
-            word_cloud[t] = word_cloud.get(t, 0) + 1
-    word_cloud = [ (k, v) for k, v in word_cloud.items() if v > 1 ]
-    word_cloud.sort(reverse=True, key=lambda x: x[1])
-    print('took {:.3f}s'.format(time.time()-start))
-    return word_cloud
-
-def get_preprocessed_text(s) -> list[str]:
-    s = s.lower()
-    s = s.lower()
-    for c in '[]()-_!,.\\&':
-        s = s.replace(c, ' ')
-    return [ p for p in s.split() if p not in [''] ]
-
-def get_bigrams(parts):
-    bigrams = []
-    for i in range(len(parts)-1):
-        bg = '{} {}'.format(parts[i], parts[i+1])
-        bigrams.append(bg)
-    return bigrams
 
 
 

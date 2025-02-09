@@ -2,20 +2,16 @@ from typing import Any
 import os
 import time
 from pathlib import Path
-import random
-from datetime import datetime
 import pickle
 import math
-
 from scipy.sparse import csr_matrix, vstack
 
 from handymatt import StringParser
 from handymatt.wsl_paths import convert_to_wsl_path
-from handymatt_media.video_analyser import video_analyser
+from handymatt_media import video_analyser
 
-import backend.util.backendFun as bf
-from backend.util.metadata import metadata_load
-from backend.util.search import *
+from ..util.metadata import metadata_load
+from ..search.tfidf import *
 
 
 VIDEO_EXTENSIONS = ['.mkv', '.mp4', '.mov', '.avi', '.flv', '.wmv', '.vid', '.flv', '.webm']
@@ -44,9 +40,9 @@ def readFoldersAndCollections(fn):
     return include_folders, ignore_folders, collections_dict
 
 
-# v 2.0
+# 
 def getVideosInFolders(folders: list[str], ignore_folders=None):
-    file_objects = []
+    file_objects: list[Path] = []
     if ignore_folders is None:
         ignore_folders = []
     ignore_folders.append('/.')
@@ -60,7 +56,7 @@ def getVideosInFolders(folders: list[str], ignore_folders=None):
     print('\rScanning files ({:_}) from folders ({}/{})'.format(len(file_objects), len(folders), len(folders)), end='')
     print(' took {:.1f} seconds'.format(time.time()-start))
     # filter files
-    file_objects = [ obj for obj in file_objects if obj.suffix not in VIDEO_EXTENSIONS ]
+    file_objects = [ obj for obj in file_objects if obj.is_file() and obj.suffix in VIDEO_EXTENSIONS ]
     for igfol in ignore_folders:
         file_objects = [ obj for obj in file_objects if igfol not in str(obj) ]
     video_paths = sorted(set([str(obj) for obj in file_objects]))
@@ -85,8 +81,8 @@ def getStudios(videos_dict):
             d[k] = d.get(k, 0) + 1
     return d
 
-#### PROCESS ####
 
+#### PROCESS ####
 
 # 
 def processVideos(video_paths: list[str], handler, collections_dict, scene_filename_formats, reparse_filenames=False, show_collisions=False):
@@ -100,6 +96,7 @@ def processVideos(video_paths: list[str], handler, collections_dict, scene_filen
     videos_dict = {}
     
     for i, path in enumerate(video_paths):
+        path = convert_to_wsl_path(path)
         path_in_db = path.lower() in path_hash_map
         print("\r  Loading ({}/{}) (hashed:{} f:{}) {:<7}  {:<50}  "
             .format(i+1, len(video_paths), len(had_to_hash), len(hashing_failed), ("HASHING" if not path_in_db else ""), f'"{remove_nonascii_chars(Path(path).stem[:46])}"' ), end='')
@@ -112,6 +109,11 @@ def processVideos(video_paths: list[str], handler, collections_dict, scene_filen
                 had_to_hash.append((path, hash))
             except Exception as e:
                 hash = -1
+                print('\nEXCEPTION')
+                print(os.path.exists(path))
+                print(os.path.isfile(path))
+                print(e)
+                exit(1)
         # Add data if hash exists
         if hash == -1:
             hashing_failed.append(path)
@@ -126,7 +128,7 @@ def processVideos(video_paths: list[str], handler, collections_dict, scene_filen
                 if os.path.exists(video_data.get('path', '')): # if video exists with same hash
                     collisions.append(hash)
                     if show_collisions:
-                        existing_hash = video_analyser.getVideoHash(video_data.get('path')) # hash existing video to print
+                        existing_hash = video_analyser.getVideoHash(video_data.get('path', '')) # hash existing video to print
                         print('\nFound entry with same has that exists')
                         print('HASH1: [{}]  HASH2: [{}]'.format(hash, existing_hash))
                         print('EXISTING PATH: "{}"'.format(video_data.get('path')))
@@ -164,63 +166,6 @@ def processVideos(video_paths: list[str], handler, collections_dict, scene_filen
             print("   {:>3} : '{}'".format(i+1, path[:100]))
     return videos_dict
 
-
-# TODO: REMOVE, DEPRICATED!
-def processVideos_Old(video_paths, handler, collections_dict, scene_filename_formats):
-
-    parser = StringParser(scene_filename_formats)
-    
-    videos_dict = {}
-    hashing_failed, had_to_hash = [], []
-    path_hash_map = { vd['path']: hash for hash, vd in handler.getItems() if 'path' in vd }
-
-    collections_dict_paths = sorted(collections_dict.keys(), reverse=True, key=lambda path: len(path))
-
-    for i, path in enumerate(video_paths):
-        print("\r  Loading ({}/{}) {:<7}  {:<80}  ".format(i+1, len(video_paths), ("HASHING" if path not in path_hash_map else ""), f'"{path[:76]}"' ), end='')
-        hash, extracted_data = None, {}
-        if path in path_hash_map: # case 2
-            path_in_db = True
-            hash = path_hash_map[path]
-        else: # case 1 or 3
-            path_in_db = False
-            had_to_hash.append(path)
-            try:
-                hash = video_analyser.getVideoHash(path)
-                extracted_data = video_analyser.getVideoData(path)
-                if hash == -1:
-                    hashing_failed.append(path)
-            except Exception as e:
-                hashing_failed.append(path)
-        
-        if hash and hash != -1 and (path_in_db or extracted_data):
-            new_entry = False
-            obj = handler.getValue(hash)
-            new_entry = obj==None
-            if new_entry:
-                obj = {}
-                obj['hash'] = hash
-            
-            if not path_in_db: # case 1 or 3
-                obj['path'] = path
-            
-            obj = add_collection_to_obj(obj, path, collections_dict, collections_dict_paths)
-            obj = add_parsed_data_to_obj(obj, path, parser)
-            if new_entry:
-                for k, v in extracted_data.items():
-                    obj[k] = v
-            
-            videos_dict[hash] = obj
-            handler.setValue(hash, obj, nosave=True)
-    handler.save()
-
-    print("Tried to hash {} videos".format(len(had_to_hash)))
-    if hashing_failed != []:
-        print("\nFailed to hash {} videos:\n".format(len(hashing_failed)))
-        for i, path in enumerate(hashing_failed):
-            print("   {:>3} : '{}'".format(i+1, path[:80]))
-        print()
-    return videos_dict
 
 
 def add_collection_to_obj(obj, path, collections_dict, collections_dict_paths):
@@ -371,128 +316,6 @@ def get_similar_performers(performer, embeddings_object):
     ]
     return results
 
-#### SEARCH ####
-
-# search, filter and sort videos
-def searchVideosFunction(videos_dict, args, metadataHandler, tfidf_model, token_hashes):
-
-    search_query, actor, studio, collection, include_terms, exclude_terms, date_added_from, date_added_to, date_released_from, date_released_to, only_favourites, sort_by = [ 
-        args.get(x) for x in ['search', 'actor', 'studio', 'collection', 'include_terms', 'exclude_terms', 'date_added_from', 'date_added_to', 'date_released_from', 'date_released_to', 'only_favourites', 'sort_by']
-    ]
-    limit =     int( args.get('limit', 12) )
-    startfrom = int( args.get('startfrom', 0) )
-    favs = only_favourites == 'true'
-    include_terms = [ x.lower().strip() for x in include_terms.split(',') ] if include_terms else []
-    exclude_terms = [ x.lower().strip() for x in exclude_terms.split(',') ] if exclude_terms else []
-
-    videos = list(videos_dict.values())
-    videos.sort(reverse=True, key=lambda video: (
-        video['date_added']
-    ))
-    
-    # search videos
-    if search_query:
-        # videos = searchVideos_tokenHashes(videos, search_query, token_hashes)
-        videos = searchVideos_TFIDF(videos, search_query, tfidf_model)
-    
-    # filter videos
-    videos = filterVideos(videos, favs, actor, studio, collection, date_added_from, date_added_to, date_released_from, date_released_to, include_terms, exclude_terms, metadataHandler)
-    if len(videos) < startfrom:
-        return None
-
-    # sort videos
-    if sort_by and not search_query:
-        videos = sortVideos(videos, sort_by)
-
-    word_cloud = generate_word_cloud(videos, studio, actor, collection, include_terms)
-
-    results_object = {
-        'videos' : videos[startfrom: startfrom+limit],
-        'amount_of_results' : len(videos),
-        'word_cloud' : word_cloud
-    }
-    return results_object
-
-
-# search videos DEPRECATED!
-def searchVideos_tokenHashes(video_objects, search_query, token_hashes):
-    print("\nFinding search results for query: '{}'".format(search_query))
-    start = time.time()
-    related_hashes, _ = get_related_hashes_from_query(token_hashes, search_query)
-    print("  Done (took {}ms)".format(int((time.time()-start)*1_000)))
-    hash_scores = { hash: score for hash, score in related_hashes }
-    video_objects = [ vid for vid in video_objects if vid['hash'] in hash_scores ]
-    video_objects.sort( reverse=True, key=lambda vid: hash_scores[vid['hash']] )
-    return video_objects
-
-
-# search videos TFIDF
-def searchVideos_TFIDF(video_objects, search_query, tfidf_model):
-    print("\n[TFIDF] Finding related videos for query: '{}'".format(search_query))
-    start = time.time()
-    # related_hashes, _ = get_related_hashes_from_query(token_hashes, search_query)
-    related_hashes = get_related_videos_from_query_TFIDF(search_query, tfidf_model)
-    print("  Done (took {}ms)".format(int((time.time()-start)*1_000)))
-    hash_scores = { hash: score for hash, score in related_hashes if score > 0 }
-    video_objects = [ vid for vid in video_objects if vid['hash'] in hash_scores ]
-    video_objects.sort( reverse=True, key=lambda vid: hash_scores[vid['hash']] )
-    return video_objects
-
-
-# filter videos
-def filterVideos(filtered, favs, actor, studio, collection, date_added_from, date_added_to, date_released_from, date_released_to, include_terms, exclude_terms, metadataHandler={}):
-    
-    if favs:            filtered = [ vid for vid in filtered if ( bf.is_favourite(vid['hash'], metadataHandler) ) ]
-    if actor:           filtered = [ vid for vid in filtered if ( actor_in_video(actor, vid) ) ]
-    if studio:          filtered = [ vid for vid in filtered if ( ( vid.get('studio') and studio.lower() in vid['studio'].lower() ) ) ]
-    if collection:      filtered = [ vid for vid in filtered if ( (vid['collection'] and collection.lower() in vid['collection'].lower()) ) ]
-
-    if date_added_from:     filtered = [ vid for vid in filtered if ( (get_video_date_released(vid) and get_video_date_released(vid) >= date_added_from) ) ]
-    if date_added_to:       filtered = [ vid for vid in filtered if ( (get_video_date_released(vid) and get_video_date_released(vid) < date_added_to) ) ]
-    if date_released_from:  filtered = [ vid for vid in filtered if ( (vid.get('date_released') and vid['date_released'] >= date_released_from) ) ]
-    if date_released_to:    filtered = [ vid for vid in filtered if ( (vid.get('date_released') and vid['date_released'] < date_released_to) ) ]
-
-    for term in include_terms:  filtered = [ vid for vid in filtered if ( term in vid['path'].lower() ) ]
-    for term in exclude_terms:  filtered = [ vid for vid in filtered if ( term not in vid['path'].lower() ) ]
-
-    return filtered
-
-
-# sort videos
-def sortVideos(videos, sort_by):
-    videos.sort(
-        reverse=False,
-        key=lambda video: ( (video.get(sort_by) is None) != False, video.get('title', '') )
-    )
-    if sort_by == 'random':
-        random.seed(str(datetime.now()))
-        random.shuffle(videos)
-    else:
-        sort_reverse = ('desc' in sort_by)
-        for x in ['-asc', '-desc']:
-            sort_by = sort_by.replace(x, '')
-        sort_by = sort_by.replace('-', '_')
-        if sort_by == 'date_released':
-            videos.sort(
-                reverse=sort_reverse,
-                key=lambda video: ( (video.get(sort_by) is None) != sort_reverse, get_video_date(video) ) # tuple where first element if boolean. 
-            )
-        else:
-            videos.sort(
-                reverse=sort_reverse,
-                key=lambda video: ( (video.get(sort_by) is None) != sort_reverse, video.get(sort_by) ) # tuple where first element if boolean. 
-            )
-    return videos
-
-
-# generate word cloud
-def generate_word_cloud(videos, studio, actor, collection, include_terms, size_limit=20_000):
-    word_cloud = []
-    if len(videos) < size_limit:
-        wc_exclude_terms = [ term.lower() for term in [studio, actor, collection] + include_terms if term != None ]
-        word_cloud = get_word_cloud(videos, exclude_terms=wc_exclude_terms)
-    return word_cloud
-
 
 ### MISC FUNCTIONS
 
@@ -522,22 +345,6 @@ def link_custom_thumbs(videos_dict, thumbs_dir):
 
 #### SMALL HELPER FUNCTIONS ####
 
-def get_video_date_released(vid):
-    if 'date_released_d18':
-        return vid['date_released_d18']
-    return vid.get('date_released')
-
-def actor_in_video(actor, vid):
-        actor = actor.lower()
-        performers_str = ''
-        if 'performers' in vid and vid['performers'] != None:
-            performers_str = ", ".join(vid['performers']).lower()
-        mention_performers = ''
-        if 'mention_performer' in vid and vid['mention_performer'] != None:
-            mention_performers = vid['mention_performer'].lower()
-        return actor in performers_str or actor in mention_performers
-
-
 def limit_collections(folders_in, dict, filter):
     terms = filter.lower().split(' ')
     folders = []
@@ -547,12 +354,6 @@ def limit_collections(folders_in, dict, filter):
                 folders.append(f)
                 break
     return folders
-
-def get_video_date(video):
-    if 'date_released_d18' in video:
-        return video['date_released_d18']
-    return video['date_released']
-
 
 ### 
 

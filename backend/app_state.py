@@ -1,11 +1,12 @@
+from typing import Any
 import os
 import time
 import threading
 
 from handymatt import JsonHandler
 
-import backend.util.flaskFun as ff
-# import backend.util.backendFun as bf
+from backend.util import flaskFun as ff
+# from backend.util import backendFun as bf
 
 
 ### 
@@ -31,11 +32,11 @@ class AppState:
             return  # Prevent re-initialization
         self._initialized = True
 
-        self.videosHandler: JsonHandler | dict = {}
-        self.metadataHandler: JsonHandler | dict = {}
-        self.settingsHandler: JsonHandler | dict = {}
+        self.videosHandler: JsonHandler | None = None
+        self.metadataHandler: JsonHandler | None = None
+        self.settingsHandler: JsonHandler | None = None
 
-        self.videos_dict = None
+        self.videos_dict: dict[str, Any] = {}
 
         self.tfidf_model = None
         self.performer_embeddings = None
@@ -53,33 +54,45 @@ class AppState:
     ):
         # if not os.path.exists(DATADIR):
         #     os.mkdir(DATADIR)
-        videosHandler =     JsonHandler( os.path.join( data_dir, 'videos.json' ), prettify=True)
-        metadataHandler =   JsonHandler( os.path.join( data_dir, 'metadata.json' ))
-        settingsHandler =   JsonHandler( os.path.join( data_dir, 'settings.json' ))
+        self.videosHandler =     JsonHandler( os.path.join( data_dir, 'videos.json' ), prettify=True)
+        self.metadataHandler =   JsonHandler( os.path.join( data_dir, 'metadata.json' ))
+        self.settingsHandler =   JsonHandler( os.path.join( data_dir, 'settings.json' ))
 
-        scene_filename_formats = settingsHandler.getValue('scene_filename_formats', [])
+        scene_filename_formats = self.settingsHandler.getValue('scene_filename_formats', [])
         
         # read collection folders and get video paths
         if quick_start:
             print('Loading existing videos from videos handler ...')
             start = time.time()
-            videos_dict = ff.getLinkedVideosFromJson(videosHandler.getItems())
-            print('Done. Loaded {} videos in {:.2f}s'.format(len(videos_dict), (time.time()-start)))
+            self.videos_dict = ff.getLinkedVideosFromJson(self.videosHandler.getItems())
+            print('Done. Loaded {} videos in {:.2f}s'.format(len(self.videos_dict), (time.time()-start)))
         else:
             include_folders, ignore_folders, collections_dict = ff.readFoldersAndCollections( os.path.join( data_dir, 'video_folders.txt' ) )
             if include_folders == None:
                 print("ERROR: No input folders found in:", 'videos.json')
                 return
-            print("Getting videos in folders ...")
-            video_paths = ff.getVideosInFolders_new(include_folders, ignore_folders)
+            video_paths = ff.getVideosInFolders(include_folders, ignore_folders)
             print("Found {} videos in {} folders from UNKNOWN collections".format(len(video_paths), len(include_folders)))
             # process videos
             print("Processing videos ...")
             start = time.time()
-            videos_dict = ff.processVideos(video_paths[:], videosHandler, collections_dict, scene_filename_formats, reparse_filenames=reparse_filenames, show_collisions=False)
-            print("Successfully loaded {} videos (took {:.2f}s)\n".format(len(videos_dict), (time.time()-start)))
+            self.videos_dict = ff.processVideos(video_paths, self.videosHandler, collections_dict, scene_filename_formats, reparse_filenames=reparse_filenames, show_collisions=False)
+            print("Successfully loaded {} videos (took {:.2f}s)\n".format(len(self.videos_dict), (time.time()-start)))
         
-        # Load/Generate TF-IDF search model
+        # self.load_tfidf(regen_tfidf_profiles, recalculate_performer_embeddings)
+
+        if purge_unloaded_video_objects:
+            print('Cleaning videos.json file ...')
+            self.videosHandler.backup()
+            self.videosHandler.jsonObject = self.videos_dict
+            self.videosHandler.save()
+
+        if backup_videos_handler:
+            self.videosHandler.backup()
+
+
+    def load_tfidf(self, regen_tfidf_profiles: bool = False, recalculate_performer_embeddings: bool = False):
+        """  """
         tfidf_model_fn = 'data/tfidf_model.pkl'
         performer_embeddings_fn = 'data/performer_embeddings.pkl'
         studio_embeddings_fn = 'data/studio_embeddings.pkl'
@@ -87,26 +100,28 @@ class AppState:
         retrain_model = (tfidf_model==None or regen_tfidf_profiles)
         if tfidf_model and not regen_tfidf_profiles:
             print('[TFIFD] Loaded TF-IDF model')
-            if ff.newHashNotInTFIDF(videos_dict.keys(), tfidf_model['hash_index_map']):
+            if ff.newHashNotInTFIDF(self.videos_dict.keys(), tfidf_model['hash_index_map']):
                 print('[TFIFD] Found novel video hashes, retraining ...')
                 retrain_model = True
         if retrain_model:
             print('[TFIFD] Generating TF-IDF model ...')
             start = time.time()
-            tfidf_model = ff.generate_tfidf_model(videos_dict.values())
+            tfidf_model = ff.generate_tfidf_model(self.videos_dict.values())
             print('[TFIFD] Done. Took {:.2f}s'.format(time.time()-start))
             print('[TFIFD] Saving TF-IDF model ...')
             ff.pickle_save(tfidf_model, tfidf_model_fn)
         performer_embeddings = ff.pickle_load(performer_embeddings_fn)
         if (not performer_embeddings or recalculate_performer_embeddings) and tfidf_model:
             print('[TFIDF] Generating performer profiles ...')
-            embeddings, name_index_map, video_count = ff.generate_performer_embeddings(videos_dict.values(), tfidf_model['matrix'], tfidf_model['hash_index_map'])
+            embeddings, name_index_map, video_count = ff.generate_performer_embeddings(self.videos_dict.values(), tfidf_model['matrix'], tfidf_model['hash_index_map'])
             performer_embeddings = { 'embeddings': embeddings, 'name_index_map': name_index_map, 'video_count': video_count }
             print('[TFIFD] Saving performer embeddings ...')
             ff.pickle_save(performer_embeddings, performer_embeddings_fn)
 
-        # handle media generation options
-        # videos_to_gen = videos_dict.values()
+    def gen_media(self, args):
+        """ handle media generation options """
+        # videos_to_gen = self.videos_dict.values()
+        # bf = ff
         # try:
         #     if args.generate_media or args.generate_teasers:
         #         print(' \nAdding teasers to all media')
@@ -123,16 +138,7 @@ class AppState:
 
         # if args.link_custom_thumbs:
         #     print('LINKING THUMBS ...')
-        #     videos_dict = ff.link_custom_thumbs(videos_dict, CUSTOM_THUMBS_DIR)
-        
-        if purge_unloaded_video_objects:
-            print('Cleaning videos.json file ...')
-            videosHandler.backup()
-            videosHandler.jsonObject = videos_dict
-            videosHandler.save()
-
-        if backup_videos_handler:
-            videosHandler.backup()
+        #     self.videos_dict = ff.link_custom_thumbs(self.videos_dict, CUSTOM_THUMBS_DIR)
 
     # endregion
     
