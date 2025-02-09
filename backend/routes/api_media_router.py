@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Response
 
 from ..util import media
-from ..app_state import AppState
+from ..objects.app_state import AppState
 from config import PREVIEW_MEDIA_DIR, CUSTOM_THUMBS_DIR
 
 # _media_dir, _custom_thumbs_dir = '', ''

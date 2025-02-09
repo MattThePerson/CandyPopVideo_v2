@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 
 from .tfidf import get_related_videos_from_query_TFIDF, STOPWORDS_ENG
-from ..util import meta as bf
+from ..util import meta
 
 
 # search, filter and sort videos
@@ -64,7 +64,7 @@ def searchVideos_TFIDF(video_objects: list[dict], search_query: str, tfidf_model
 # filter videos
 def _filterVideos(filtered, favs, actor, studio, collection, date_added_from, date_added_to, date_released_from, date_released_to, include_terms, exclude_terms, metadataHandler={}):
     
-    if favs:            filtered = [ vid for vid in filtered if ( bf.is_favourite(vid['hash'], metadataHandler) ) ]
+    if favs:            filtered = [ vid for vid in filtered if ( meta.is_favourite(vid['hash'], metadataHandler) ) ]
     if actor:           filtered = [ vid for vid in filtered if ( _actor_in_video(actor, vid) ) ]
     if studio:          filtered = [ vid for vid in filtered if ( ( vid.get('studio') and studio.lower() in vid['studio'].lower() ) ) ]
     if collection:      filtered = [ vid for vid in filtered if ( (vid['collection'] and collection.lower() in vid['collection'].lower()) ) ]

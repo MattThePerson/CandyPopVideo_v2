@@ -1,4 +1,4 @@
-""" ... this lib to handymatt """
+""" TEMP LIB: Will outsource to handymatt """
 from pathlib import Path
 import os
 import json

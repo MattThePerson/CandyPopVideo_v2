@@ -10,7 +10,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from handymatt.wsl_paths import convert_to_wsl_path
 
 from backend.routes import api_router, api_media_router, search_router
-from backend.app_state import AppState
+from backend.objects.app_state import AppState
 from config import PREVIEW_MEDIA_DIR
 
 _project_dir = os.path.dirname(__file__)
@@ -48,6 +48,7 @@ app.include_router(api_router, prefix="/api")
 app.include_router(api_media_router, prefix="/api/media")
 app.include_router(search_router, prefix="/search")
 
+# videos route
 @app.get('/video/{video_hash}')
 def xyz(video_hash: str):
     data = state.videos_dict.get(video_hash)
@@ -60,8 +61,10 @@ def xyz(video_hash: str):
         return Response(f'Video path doesnt exist "{video_path}"', 404)
     return FileResponse(video_path, media_type='video/mp4')
 
+# static (preview) media
 app.mount("/media", StaticFiles(directory=PREVIEW_MEDIA_DIR), name="media")
 
+# frontend
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
 
 

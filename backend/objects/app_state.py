@@ -10,8 +10,6 @@ from config import VIDEO_EXTENSIONS
 from ..util import process, general
 from ..search import tfidf, similarity
 
-from ..util import flaskFun as ff # TODO: remove dep
-
 ### 
 
 class AppState:
@@ -125,7 +123,7 @@ class AppState:
             print('[TFIFD] Saving performer embeddings ...')
             general.pickle_save(performer_embeddings, performer_embeddings_fn)
 
-    def gen_media(self, args):
+    def gen_media(self, args: None):
         """ handle media generation options """
         # videos_to_gen = self.videos_dict.values()
         # bf = ff
@@ -145,7 +143,7 @@ class AppState:
 
         # if args.link_custom_thumbs:
         #     print('LINKING THUMBS ...')
-        #     self.videos_dict = ff.link_custom_thumbs(self.videos_dict, CUSTOM_THUMBS_DIR)
+        #     self.videos_dict = media.link_custom_thumbs(self.videos_dict, CUSTOM_THUMBS_DIR)
 
     # endregion
     

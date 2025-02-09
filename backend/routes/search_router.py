@@ -3,7 +3,7 @@ import time
 from fastapi import APIRouter, Response, Request
 
 from ..search.search import searchVideosFunction
-from ..app_state import AppState
+from ..objects.app_state import AppState
 
 state = AppState()
 search_router = APIRouter()

@@ -3,25 +3,23 @@
 ## Desired Changes
 
 Backend:
-- singleton app state
-- preview media saved elsewhere
 - media gen worker process (w/ Muiltiprocessing queue for jobs)
-- folder change listener process
-- gunicorn support
 - logging for various things
     - worker process
     - file listener
     - hash collisions
+<!-- - dataclass for video objects -->
+<!-- - preview media saved elsewhere -->
 
 Frontend:
 - written in Svelte (MPA)
 - served by backend (static MPA site)
-- typescript
+- written in typescript
 - Dashboard page for
-    * adding
-    * tracking preview media generation status
-    * initializing media generation
-    * initializing rescan of directories
+    * app status
+    * scanning / rescanning
+    * start media generation
+    * media generation status
     * adding site-wide content filters (eg. Studio, Category, Performer)
 - 
 
@@ -76,22 +74,21 @@ main() stages:
 ### PYTHON SCRIPTS
 
 |-- backend/
-|   |-- routes/                 
+|   |-- routes/                 `// api routes`
 |   |   |-- __init__.py
 |   |   |-- api_media_router.py     `// `
 |   |   |-- api_router.py           `// `
 |   |   |-- search_router.py        `// `
-|   |-- search/                 
-|   |   |--__init__.py              `// `
+|   |-- search/                 `// search & similarity`
+|   |   |--__init__.py
 |   |   |-- search.py               `// `
 |   |   |-- similarity.py           `// `
 |   |   |-- tfidf.py                `// `
-|   |-- util/                   
+|   |-- util/                   `// `
 |   |   |--__init__.py
 |   |   |-- media.py                `// `
 |   |   |-- meta.py                 `// `
 |   |   |-- process.py              `// `
-|   |-- __init__.py
-|   |-- app_state.py                `// holding app state (to replace with db stuff)`
-|-- config.py                       `// global config variables`
-|-- main.py                         `// app starting point`
+|   |-- app_state.py            `// holding app state (to replace with db stuff)`
+|-- config.py               `// global config variables`
+|-- main.py                 `// app starting point`

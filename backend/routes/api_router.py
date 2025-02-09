@@ -5,7 +5,7 @@ from fastapi import APIRouter, Response, Depends, HTTPException
 from handymatt.wsl_paths import convert_to_wsl_path, convert_to_windows_path
 
 from ..util import media
-from ..app_state import AppState
+from ..objects.app_state import AppState
 
 _media_dir = convert_to_wsl_path(r'A:\WhisperaHQ\MyPrograms\MyApplications\CandyPopApp\Frontend\media\videos')
 

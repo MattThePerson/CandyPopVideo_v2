@@ -1,5 +1,4 @@
 """ Functions for meta things, such as: favourites, likes, interactions, adding tags """
-
 # TODO:
 # - remove dependency on JsonHandler for metadata
 
