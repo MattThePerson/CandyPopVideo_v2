@@ -13,3 +13,6 @@ SCENE_FILENAME_FORMATS = [
     '{sort_performers} - {scene_title}',
     '{scene_title}',
 ]
+
+# extensions to include as videos
+VIDEO_EXTENSIONS = ['.mkv', '.mp4', '.mov', '.avi', '.flv', '.wmv', '.vid', '.flv', '.webm']

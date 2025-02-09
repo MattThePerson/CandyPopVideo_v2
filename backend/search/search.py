@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 
 from .tfidf import get_related_videos_from_query_TFIDF, STOPWORDS_ENG
-from ..util import backendFun as bf
+from ..util import meta as bf
 
 
 # search, filter and sort videos

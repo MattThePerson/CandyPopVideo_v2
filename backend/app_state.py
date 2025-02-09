@@ -5,14 +5,17 @@ import threading
 
 from handymatt import JsonHandler
 
-from .util import flaskFun as ff
-# from .util import backendFun as bf
+from config import VIDEO_EXTENSIONS
+from .util import process
+from .search import tfidf
+
+from .util import flaskFun as ff # TODO: remove dep
 
 
 ### 
 
 class AppState:
-    """Thread-safe singleton class to manage app state."""
+    """ Thread-safe singleton class to manage app state. """
 
     MEDIADIR = "frontend/media/videos" # TODO: REMOVE AFTER REFACTOR
     CUSTOM_THUMBS_DIR = "frontend/media/custom_thumbs" # TODO: REMOVE AFTER REFACTOR
@@ -64,19 +67,20 @@ class AppState:
         if quick_start:
             print('Loading existing videos from videos handler ...')
             start = time.time()
-            self.videos_dict = ff.getLinkedVideosFromJson(self.videosHandler.getItems())
+            existing_videos_dict = self.videosHandler.jsonObject
+            self.videos_dict = ff.getLinkedVideosFromJson(existing_videos_dict)
             print('Done. Loaded {} videos in {:.2f}s'.format(len(self.videos_dict), (time.time()-start)))
         else:
-            include_folders, ignore_folders, collections_dict = ff.readFoldersAndCollections( os.path.join( data_dir, 'video_folders.txt' ) )
+            include_folders, ignore_folders, collections_dict = process.readFoldersAndCollections( os.path.join( data_dir, 'video_folders.txt' ) )
             if include_folders == None:
                 print("ERROR: No input folders found in:", 'videos.json')
                 return
-            video_paths = ff.getVideosInFolders(include_folders, ignore_folders)
+            video_paths = process.getVideosInFolders(include_folders, ignore_folders, include_extensions=VIDEO_EXTENSIONS)
             print("Found {} videos in {} folders from UNKNOWN collections".format(len(video_paths), len(include_folders)))
             # process videos
             print("Processing videos ...")
             start = time.time()
-            self.videos_dict = ff.processVideos(video_paths, self.videosHandler, collections_dict, scene_filename_formats, reparse_filenames=reparse_filenames, show_collisions=False)
+            self.videos_dict = process.processVideos(video_paths, self.videosHandler, collections_dict, scene_filename_formats, reparse_filenames=reparse_filenames, show_collisions=False)
             print("Successfully loaded {} videos (took {:.2f}s)\n".format(len(self.videos_dict), (time.time()-start)))
         
         # self.load_tfidf(regen_tfidf_profiles, recalculate_performer_embeddings)
@@ -106,7 +110,7 @@ class AppState:
         if retrain_model:
             print('[TFIFD] Generating TF-IDF model ...')
             start = time.time()
-            tfidf_model = ff.generate_tfidf_model(self.videos_dict.values())
+            tfidf_model = tfidf.generate_tfidf_model(self.videos_dict.values())
             print('[TFIFD] Done. Took {:.2f}s'.format(time.time()-start))
             print('[TFIFD] Saving TF-IDF model ...')
             ff.pickle_save(tfidf_model, tfidf_model_fn)

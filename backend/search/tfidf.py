@@ -10,7 +10,12 @@ with open('data/stopwords_eng.txt', 'r') as f:
     STOPWORDS_ENG = [ line.strip() for line in f ]
 
 
-#### TFIDF MODEL
+def generate_tfidf_model(videos):
+    tfidf, tfidf_matrix, hash_index_map = generate_tfidf_model_for_videos(videos)
+    tfidf_model = {
+        'model': tfidf, 'matrix': tfidf_matrix, 'hash_index_map': hash_index_map,
+    }
+    return tfidf_model
 
 def generate_tfidf_model_for_videos(videos):
     # stopwords_eng = stopwords.words('english')
@@ -76,6 +81,7 @@ def get_similar_items_TFIDF_dot(target_vect, matrix, id_index_map):
 def dot_similarity(target_vect, matrix):
     dot_sims = matrix.dot(target_vect.T).toarray().ravel()
     return dot_sims
+
 
 #### TOKEN-MAP MODEL
 

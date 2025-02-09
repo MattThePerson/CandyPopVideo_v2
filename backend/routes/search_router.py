@@ -1,3 +1,4 @@
+""" Routes for searching videos """
 import time
 from fastapi import APIRouter, Response, Request
 
@@ -11,7 +12,7 @@ search_router = APIRouter()
 @search_router.get("/search-videos")
 def search_videos(request: Request):
     params = dict(request.query_params)
-    print(params)
+    # print(params)
     # return Response('Not yet implemented', 501)
     start = time.time()
     videos = list(state.videos_dict.values())

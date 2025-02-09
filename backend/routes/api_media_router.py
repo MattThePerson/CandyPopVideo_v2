@@ -1,3 +1,4 @@
+""" Routes for api/media/ (eg. get-poster/) which handle checking that media exists and their creation """
 from fastapi import APIRouter, Response
 
 from ..util import media
@@ -15,19 +16,20 @@ api_media_router = APIRouter()
 def confirm_poster(video_hash: str):
     # return Response('Not yet implemented', 501)
     video_object = state.videos_dict.get(video_hash)
-    if not video_object:
+    if video_object is None:
         print("Could not find video with hash:", video_hash)
         return Response("No video with that hash", 404)
-    poster = media.hasPreviewThumbs(video_hash, PREVIEW_MEDIA_DIR, small=False)
+    # poster = media.hasPreviewThumbs(video_hash, PREVIEW_MEDIA_DIR, small=False)
+    poster = None
     if poster is None:
-        poster = media.hasPoster(video_hash, PREVIEW_MEDIA_DIR)
+        poster = media.hasPoster(video_hash, PREVIEW_MEDIA_DIR) # use simpler poster
         if poster is None:
-            print("Generating early poster for:", video_object['filename'])
+            print("Generating placeholder poster for:", video_object['filename'])
             poster = media.generatePosterSimple(video_object['path'], video_hash, PREVIEW_MEDIA_DIR, video_object['duration_seconds'])
             if poster is None:
                 return Response("Failed to generate poster", 500)
     custom_thumb = media.hasCustomThumb(video_hash, CUSTOM_THUMBS_DIR)
-    return_obj = {'poster': poster, 'custom_thumb': custom_thumb}
+    return_obj = { 'poster_rel_path': poster, 'custom_thumb': custom_thumb }
     return { 'main': return_obj }
 
 

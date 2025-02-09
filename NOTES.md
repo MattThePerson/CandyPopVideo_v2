@@ -71,3 +71,27 @@ main() stages:
 `/get-similar-performers/{performer}`                   // get similar performers based on profile (mean video profile) similarity
 `/get-similar-studios/{studio}`
 
+
+
+### PYTHON SCRIPTS
+
+|-- backend/
+|   |-- routes/                 
+|   |   |-- __init__.py
+|   |   |-- api_media_router.py     `// `
+|   |   |-- api_router.py           `// `
+|   |   |-- search_router.py        `// `
+|   |-- search/                 
+|   |   |--__init__.py              `// `
+|   |   |-- search.py               `// `
+|   |   |-- similarity.py           `// `
+|   |   |-- tfidf.py                `// `
+|   |-- util/                   
+|   |   |--__init__.py
+|   |   |-- media.py                `// `
+|   |   |-- meta.py                 `// `
+|   |   |-- process.py              `// `
+|   |-- __init__.py
+|   |-- app_state.py                `// holding app state (to replace with db stuff)`
+|-- config.py                       `// global config variables`
+|-- main.py                         `// app starting point`

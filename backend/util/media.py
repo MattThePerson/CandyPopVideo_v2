@@ -9,6 +9,7 @@ Contents of videos mediadir:
     teaser_large.mp4
 """
 import os
+from pathlib import Path
 import subprocess
 import shlex
 from datetime import datetime
@@ -16,28 +17,33 @@ from datetime import datetime
 from handymatt_media import media_generator
 
 
-def hasPoster(video_hash: str, mediadir: str):
-    poster_fn = 'poster.png'
-    # poster_path = f'{mediadir}/{hash}/{poster_fn}'
-    poster_path = os.path.join( get_video_media_dir(mediadir, video_hash), poster_fn )
-    if os.path.exists(poster_path):
-        return poster_fn
-    return None
+def hasPoster(video_hash: str, mediadir: str) -> str|None:
+    """ For given hash, returns poster relative path if exists """
+    poster_path = os.path.join( get_video_media_dir(mediadir, video_hash), 'poster.png' )
+    if not os.path.exists(poster_path):
+        return None
+    return path_relative_to(poster_path, mediadir)
 
 
-def generatePosterSimple(path: str, video_hash: str, mediadir: str, duration_sec: float):
-    if not os.path.exists(path):
-        return False
-    vidmediadir = get_video_media_dir(mediadir, video_hash)
-    if not os.path.exists( vidmediadir ):
-        os.makedirs(vidmediadir)
-    poster_fn = 'poster.png'
-    poster_path = os.path.join(vidmediadir, poster_fn)
-    command = f'ffmpeg -ss {duration_sec*0.1} -i "{path}" -frames:v 1 "{poster_path}" -loglevel quiet'
-    subprocess.run(shlex.split(command))
-    if os.path.exists( poster_path ):
-        return poster_fn
-    return None
+def generatePosterSimple(video_path: str, video_hash: str, mediadir: str, duration_sec: float) -> str|None:
+    """ For given video path and hash, generates simple poster into mediadir and returns poster relative path """
+    if not os.path.exists(video_path):
+        raise FileNotFoundError("Video path doesn't exist")
+    poster_path = os.path.join( get_video_media_dir(mediadir, video_hash), 'poster.png' )
+    os.makedirs( os.path.dirname(poster_path), exist_ok=True )
+    command = [
+        'ffmpeg', 
+        '-ss', f'{duration_sec*0.1}',
+        '-i', video_path,
+        '-frames:v', "1",
+        poster_path,
+        '-loglevel', 'quiet',
+    ]
+    subprocess.run(command)
+    if not os.path.exists(poster_path):
+        raise FileExistsError("Poster doesn't exist after creation attempt")
+    return path_relative_to(poster_path, mediadir)
+
 
 
 def hasSeekThumbs(video_hash: str, mediadir: str, duration_sec: float):
@@ -174,4 +180,14 @@ def generatePreviewThumbnailsForVideos(videos, mediadir, redo=False, n_frames=30
 
 
 def get_video_media_dir(mediadir: str, video_hash: str) -> str:
-    return os.path.join( mediadir, '0x' + video_hash )
+    """ gets path to videos media directory [{mediadir}/videos/0x{videohash}] """
+    return os.path.join( mediadir, 'videos/0x' + video_hash )
+
+def path_relative_to(path: str, dirpath: str) -> str:
+    return str(Path(path).relative_to(Path(dirpath)))
+
+def confirm_file_parent_exists(path: str):
+    if os.path.isfile(path):
+        path = os.path.dirname(path)
+    os.makedirs(path, exist_ok=True)
+
