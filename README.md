@@ -1,15 +1,20 @@
-# CandyPop Video
+# CandyPop Video v2
 
 ## About
 
-My personal lightweight video viewer!
+My personal lightweight video viewer App! Built with Python + Svelte ❤️
+
+Improvements from v1:
+- switched from Flask --> FastApi + Uvicorn for the backend
+- went from plain JS --> Svelte for the frontend
+- better shell scripts for installing/running
 
 ## System Dependencies
 
-- Python >= 3.8
+- python >= 3.8
 - npm
 - ffmpeg
-- tmux
+- tmux (optional)
 
 ## Installing
 
