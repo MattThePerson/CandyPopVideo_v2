@@ -1,3 +1,4 @@
+""" Class for managing app state (TO BE REPLACED WITH DB IMPLEMENTATION) """
 from typing import Any
 import os
 import time
@@ -6,11 +7,10 @@ import threading
 from handymatt import JsonHandler
 
 from config import VIDEO_EXTENSIONS
-from .util import process
-from .search import tfidf
+from ..util import process, general
+from ..search import tfidf
 
-from .util import flaskFun as ff # TODO: remove dep
-
+from ..util import flaskFun as ff # TODO: remove dep
 
 ### 
 
@@ -68,7 +68,7 @@ class AppState:
             print('Loading existing videos from videos handler ...')
             start = time.time()
             existing_videos_dict = self.videosHandler.jsonObject
-            self.videos_dict = ff.getLinkedVideosFromJson(existing_videos_dict)
+            self.videos_dict = process.getLinkedVideosFromJson(existing_videos_dict)
             print('Done. Loaded {} videos in {:.2f}s'.format(len(self.videos_dict), (time.time()-start)))
         else:
             include_folders, ignore_folders, collections_dict = process.readFoldersAndCollections( os.path.join( data_dir, 'video_folders.txt' ) )
@@ -83,7 +83,7 @@ class AppState:
             self.videos_dict = process.processVideos(video_paths, self.videosHandler, collections_dict, scene_filename_formats, reparse_filenames=reparse_filenames, show_collisions=False)
             print("Successfully loaded {} videos (took {:.2f}s)\n".format(len(self.videos_dict), (time.time()-start)))
         
-        # self.load_tfidf(regen_tfidf_profiles, recalculate_performer_embeddings)
+        self.load_tfidf(regen_tfidf_profiles, recalculate_performer_embeddings)
 
         if purge_unloaded_video_objects:
             print('Cleaning videos.json file ...')
@@ -100,27 +100,30 @@ class AppState:
         tfidf_model_fn = 'data/tfidf_model.pkl'
         performer_embeddings_fn = 'data/performer_embeddings.pkl'
         studio_embeddings_fn = 'data/studio_embeddings.pkl'
-        tfidf_model = ff.pickle_load(tfidf_model_fn)
+        tfidf_model = general.pickle_load(tfidf_model_fn)
         retrain_model = (tfidf_model==None or regen_tfidf_profiles)
         if tfidf_model and not regen_tfidf_profiles:
             print('[TFIFD] Loaded TF-IDF model')
-            if ff.newHashNotInTFIDF(self.videos_dict.keys(), tfidf_model['hash_index_map']):
+            video_hashes = list(self.videos_dict.keys())
+            if ff.newHashNotInTFIDF(video_hashes, tfidf_model['hash_index_map']):
                 print('[TFIFD] Found novel video hashes, retraining ...')
                 retrain_model = True
         if retrain_model:
             print('[TFIFD] Generating TF-IDF model ...')
             start = time.time()
-            tfidf_model = tfidf.generate_tfidf_model(self.videos_dict.values())
+            video_objects = list(self.videos_dict.values())
+            tfidf_model = tfidf.generate_tfidf_model(video_objects)
             print('[TFIFD] Done. Took {:.2f}s'.format(time.time()-start))
             print('[TFIFD] Saving TF-IDF model ...')
-            ff.pickle_save(tfidf_model, tfidf_model_fn)
-        performer_embeddings = ff.pickle_load(performer_embeddings_fn)
+            general.pickle_save(tfidf_model, tfidf_model_fn)
+        performer_embeddings = general.pickle_load(performer_embeddings_fn)
         if (not performer_embeddings or recalculate_performer_embeddings) and tfidf_model:
             print('[TFIDF] Generating performer profiles ...')
-            embeddings, name_index_map, video_count = ff.generate_performer_embeddings(self.videos_dict.values(), tfidf_model['matrix'], tfidf_model['hash_index_map'])
+            video_objects = list(self.videos_dict.values())
+            embeddings, name_index_map, video_count = ff.generate_performer_embeddings(video_objects, tfidf_model['matrix'], tfidf_model['hash_index_map'])
             performer_embeddings = { 'embeddings': embeddings, 'name_index_map': name_index_map, 'video_count': video_count }
             print('[TFIFD] Saving performer embeddings ...')
-            ff.pickle_save(performer_embeddings, performer_embeddings_fn)
+            general.pickle_save(performer_embeddings, performer_embeddings_fn)
 
     def gen_media(self, args):
         """ handle media generation options """
