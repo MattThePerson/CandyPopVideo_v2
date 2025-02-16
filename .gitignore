@@ -8,6 +8,7 @@
 .venv
 venv
 __pycache__
+.recyclebin
 
 # custom
 tests/
@@ -19,11 +20,11 @@ BAK
 /data/*
 !/data/templates/
 !/data/stopwords_eng.txt
-.discard
 TODO.md
 
-video_folders.yaml
 
 # TEMP
 frontend/*
 !frontend/README.md
+video_folders.yaml
+video_folders_formatted.yaml
