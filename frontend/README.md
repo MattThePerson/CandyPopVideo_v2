@@ -1,6 +1,6 @@
 # SSG Svelte frontend
 
-## Filestructure
+## Minimal filestructure
 
 |-- src/                    <!-- Source code directory -->
 |   |-- lib/                <!-- Library utilities and shared code -->
@@ -17,5 +17,4 @@
 |-- package.json            <!-- Project metadata and dependencies -->
 |-- tsconfig.json           <!-- TypeScript configuration -->
 |-- vite.config.ts          <!-- Vite build tool configuration -->
-
 

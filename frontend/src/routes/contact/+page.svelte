@@ -1,2 +1,5 @@
-<h1>Contact Us</h1>
-<p>This is the contact page.</p>
+<script>
+    import Contact from "./Contact.svelte";
+</script>
+
+<Contact />

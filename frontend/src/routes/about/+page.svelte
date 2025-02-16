@@ -1,2 +1,5 @@
-<h1>About Us</h1>
-<p>This is the about page.</p>
+<script>
+    import About from "./About.svelte";
+</script>
+
+<About />
