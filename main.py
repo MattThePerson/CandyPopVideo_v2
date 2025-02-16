@@ -72,7 +72,8 @@ def xyz(video_hash: str):
 app.mount("/media", StaticFiles(directory=PREVIEW_MEDIA_DIR), name="media")
 
 # frontend
-app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
+app.mount("/", StaticFiles(directory="frontend/build", html=True), name="frontend")
+# app.mount("/", StaticFiles(directory="frontend_old", html=True), name="frontend")
 
 
 #region START

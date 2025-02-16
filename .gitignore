@@ -24,9 +24,6 @@ TODO.md
 
 
 # TEMP
-frontend/*
-!frontend/README.md
 video_folders.yaml
 video_folders_formatted.yaml
-
-frontend_hold
+frontend_old
