@@ -12,7 +12,7 @@ with open('data/stopwords_eng.txt', 'r') as f:
     STOPWORDS_ENG = [ line.strip() for line in f ]
 
 
-def generate_tfidf_model(video_objects: list[dict]) -> dict[str, Any]:
+def generate_tfidf_model(video_objects: list[dict[str, Any]]) -> dict[str, Any]:
     """ Generates tfidf model object, tfidf matrix and hash-index map for TF-IDF model of video objects and returns as dict """
     tfidf, tfidf_matrix, hash_index_map = _generate_tfidf_model_for_videos(video_objects)
     tfidf_model = {
@@ -25,9 +25,9 @@ def _generate_tfidf_model_for_videos(video_objects: list[dict]) -> tuple[TfidfVe
     stemmer = SnowballStemmer('english')
     hash_index_map = { v['hash']: i for i, v in enumerate(video_objects) }
     documents = []
-    for i, v in enumerate(video_objects):
+    for i, obj in enumerate(video_objects):
         print('\rextracting tokens ({:_}/{:_}) ({:.1f}%)'.format(i+1, len(video_objects), (((i+1)/len(video_objects)*100))), end='')
-        tokens = _extract_tokens_from_video_object(v, stemmer=stemmer)
+        tokens = _extract_tokens_from_video_object(obj, stemmer=stemmer)
         doc = ' '.join([ ''.join(t) for t in tokens ])
         documents.append(doc)
     print()

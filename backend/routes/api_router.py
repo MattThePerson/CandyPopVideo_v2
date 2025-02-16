@@ -31,29 +31,30 @@ def read_root():
 @api_router.get("/get-video-data/{video_hash}")
 def get_video(video_hash: str):
     print("Request recieved: 'get-video', hash: ", video_hash)
-    res = state.videos_dict.get(video_hash)
-    if not res:
+    video_data = state.videos_dict.get(video_hash)
+    if not video_data:
         print("Could not find video with hash:", video_hash)
         return Response(status_code=404, content=f"No video with hash: {video_hash}")
-    print("Found video:", res['path'])
+    print("Found video:", video_data.path)
     if not media.hasPoster(video_hash, _media_dir):
-        print("Generating early poster for:", res['filename'])
-        media.generatePosterSimple(res['path'], video_hash, _media_dir, res['duration_seconds'])
+        print("Generating early poster for:", video_data.filename)
+        media.generatePosterSimple(video_data.path, video_hash, _media_dir, video_data.duration_seconds)
     # r['is_favourite'] = bf.is_favourite(video_hash, state.metadataHandler)
     poster = media.hasPreviewThumbs(video_hash, _media_dir, small=True)
     if poster == None:
         poster = media.hasPoster(video_hash, _media_dir)
-    res['poster'] = poster
+    response = video_data.to_dict()
+    response['poster'] = poster
     # update views
     if state.videosHandler:
         videodata = state.videosHandler.getValue(video_hash)
         videodata['views'] = videodata.get('views', 0) + 1
-        state.videosHandler.setValue(video_hash, res)
+        state.videosHandler.setValue(video_hash, response)
     # Add viewing to metadata
     view_item = {'ts': time.time(), 'hash': video_hash}
     if state.metadataHandler:
         state.metadataHandler.appendValue('view_history', view_item)
-    return generateReponse(res)
+    return generateReponse(response)
 
 
 # GET RANDOM VIDEO

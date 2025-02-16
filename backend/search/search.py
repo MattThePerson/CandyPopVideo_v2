@@ -6,6 +6,7 @@ from datetime import datetime
 from .tfidf import get_related_videos_from_query_TFIDF, STOPWORDS_ENG
 from ..util import meta
 
+# TODO: convert videos to list[VideoData]
 
 # search, filter and sort videos
 def searchVideosFunction(videos: list[dict], search_params: dict, metadataHandler, tfidf_model, token_hashes) -> dict | None:

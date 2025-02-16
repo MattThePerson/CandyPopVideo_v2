@@ -24,8 +24,8 @@ def confirm_poster(video_hash: str):
     if poster is None:
         poster = media.hasPoster(video_hash, PREVIEW_MEDIA_DIR) # use simpler poster
         if poster is None:
-            print("Generating placeholder poster for:", video_object['filename'])
-            poster = media.generatePosterSimple(video_object['path'], video_hash, PREVIEW_MEDIA_DIR, video_object['duration_seconds'])
+            print("Generating placeholder poster for:", video_object.filename)
+            poster = media.generatePosterSimple(video_object.path, video_hash, PREVIEW_MEDIA_DIR, video_object.duration_seconds)
             if poster is None:
                 return Response("Failed to generate poster", 500)
     custom_thumb = media.hasCustomThumb(video_hash, CUSTOM_THUMBS_DIR)

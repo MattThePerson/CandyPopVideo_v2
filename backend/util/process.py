@@ -3,6 +3,7 @@ import os
 import time
 from pathlib import Path
 from dataclasses import fields
+
 from handymatt import StringParser
 from handymatt_media import video_analyser
 
@@ -27,8 +28,8 @@ def process_videos(
     """
     
     videos_dict: dict[str, VideoData] = {}
-    # hash_path_map: dict[str, str] = _get_video_hashes(video_paths, existing_videos, rehash_videos=rehash_videos)
-    hash_path_map: dict[str, str] = _get_video_hashes_multi(video_paths, existing_videos, rehash_videos=rehash_videos)
+    hash_path_map: dict[str, str] = _get_video_hashes(video_paths, existing_videos, rehash_videos=rehash_videos)
+    # hash_path_map: dict[str, str] = _get_video_hashes_multi(video_paths, existing_videos, rehash_videos=rehash_videos)
 
     # process videos
     parser = StringParser(scene_filename_formats)
@@ -73,7 +74,7 @@ def _get_video_hashes(
         if video_hash is None or rehash_videos:
             try:
                 had_to_hash.append(video_path)
-                video_hash = video_analyser.getVideoHash(video_path)
+                video_hash = video_analyser.getVideoHash_ffmpeg(video_path)
             except Exception as e:
                 ...
         if video_hash is None:

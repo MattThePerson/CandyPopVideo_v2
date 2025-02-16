@@ -1,6 +1,6 @@
 """ Contains dataclass for containing video data """
 from typing import Optional
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 
 
 @dataclass
@@ -45,3 +45,15 @@ class VideoData:
     tags_from_json:     list[str] = field(default_factory=list)
     metadata:           dict = field(default_factory=dict)
 
+
+    def to_dict(self):
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data, strict=True):
+        if strict:
+            return cls(**data)  # Will fail if extra attributes exist
+        else:
+            valid_keys = {field.name for field in cls.__dataclass_fields__.values()}
+            filtered_data = {k: v for k, v in data.items() if k in valid_keys}
+            return cls(**filtered_data)

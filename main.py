@@ -13,8 +13,14 @@ from backend.routes import api_router, api_media_router, search_router
 from backend.objects.app_state import AppState
 from config import PREVIEW_MEDIA_DIR
 
+
+# region global variables
+
 _project_dir = os.path.dirname(__file__)
 _data_dir = os.path.join( _project_dir, 'data' )
+
+_collections_file = os.path.join( _project_dir, 'video_folders.yaml' )
+
 
 class NoCacheMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
@@ -25,12 +31,12 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
             response.headers["Expires"] = "0"
         return response
 
-# State
+#region State
 
 state = AppState()
 try:
     state.load(
-        _project_dir,
+        _collections_file,
         _data_dir,
         quick_start = False,
     )
@@ -39,7 +45,7 @@ except KeyboardInterrupt:
     sys.exit(0)
 
 
-# FastAPI
+#region FastAPI
 
 app = FastAPI()
 app.add_middleware(NoCacheMiddleware) # TODO: test removing
@@ -55,7 +61,7 @@ def xyz(video_hash: str):
     data = state.videos_dict.get(video_hash)
     if data is None:
         return Response(f'Data not found for hash {video_hash}', 404)
-    video_path = convert_to_wsl_path(data['path'])
+    video_path = convert_to_wsl_path(data.path)
     print('video_hash:', video_hash)
     print('video_path', video_path)
     if not os.path.exists(video_path):
@@ -69,7 +75,7 @@ app.mount("/media", StaticFiles(directory=PREVIEW_MEDIA_DIR), name="media")
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
 
 
-# START
+#region START
 if __name__ == '__main__':
     import uvicorn
     print('Starting uvicorn')

@@ -15,7 +15,8 @@ def search_videos(request: Request):
     # print(params)
     # return Response('Not yet implemented', 501)
     start = time.time()
-    videos = list(state.videos_dict.values())
+    # videos = list(state.videos_dict.values())
+    videos = [ vid.to_dict() for vid in state.videos_dict.values() ]
     results = searchVideosFunction(videos, params, state.metadataHandler, state.tfidf_model, None)
     if results is None:
         return Response('Failed to get results', 404)

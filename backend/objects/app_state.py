@@ -46,7 +46,7 @@ class AppState:
     # region LOAD
     
     def load(self,
-            project_dir: str,
+            collections_file: str,
             data_dir: str,
             reparse_filenames: bool = False,
             quick_start: bool = False,
@@ -66,7 +66,7 @@ class AppState:
             self.videos_dict = load.getLinkedVideosFromJson(existing_videos_dict)
             print('Done. Loaded {} videos in {:.2f}s'.format(len(self.videos_dict), (time.time()-start)))
         else:
-            include_folders, ignore_folders, collections_dict = load.readFoldersAndCollections_YAML( os.path.join( project_dir, 'video_folders.yaml' ) )
+            include_folders, ignore_folders, collections_dict = load.readFoldersAndCollections_YAML( collections_file )
             if include_folders == None:
                 print("ERROR: No input folders found in:", 'videos.json')
                 return
@@ -98,7 +98,8 @@ class AppState:
         if retrain_model:
             print('[TFIFD] Generating TF-IDF model ...')
             start = time.time()
-            video_objects = list(self.videos_dict.values())
+            # video_objects = list(self.videos_dict.values())
+            video_objects = [ vd.to_dict() for vd in self.videos_dict.values() ]
             tfidf_model = tfidf.generate_tfidf_model(video_objects)
             print('[TFIFD] Done. Took {:.2f}s'.format(time.time()-start))
             print('[TFIFD] Saving TF-IDF model ...')
