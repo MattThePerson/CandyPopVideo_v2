@@ -11,7 +11,7 @@ from handymatt.wsl_paths import convert_to_wsl_path
 
 from backend.routes import api_router, api_media_router, search_router
 from backend.objects.app_state import AppState
-from config import APP_DATA_DIR
+from config import PREVIEW_MEDIA_DIR
 
 
 
@@ -19,8 +19,6 @@ from config import APP_DATA_DIR
 
 _project_dir = os.path.dirname(__file__)
 _data_dir = os.path.join( _project_dir, 'data' )
-
-_collections_file = os.path.join( _project_dir, 'video_folders.yaml' )
 
 
 class NoCacheMiddleware(BaseHTTPMiddleware):
@@ -37,7 +35,7 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
 state = AppState()
 try:
     state.load(
-        _collections_file,
+        'config.yaml',
         _data_dir,
         quick_start = False,
     )
@@ -70,8 +68,7 @@ def xyz(video_hash: str):
     return FileResponse(video_path, media_type='video/mp4')
 
 # static (preview) media
-preview_media_dir = f'{APP_DATA_DIR}/preview_media'
-app.mount("/media", StaticFiles(directory=preview_media_dir), name="media")
+app.mount("/media", StaticFiles(directory=PREVIEW_MEDIA_DIR), name="media")
 
 # frontend
 app.mount("/", StaticFiles(directory="frontend/build", html=True), name="frontend")

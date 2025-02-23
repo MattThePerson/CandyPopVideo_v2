@@ -16,9 +16,6 @@ from ..search import tfidf, similarity
 class AppState:
     """ Thread-safe singleton class to manage app state. """
 
-    MEDIADIR = "frontend/media/videos" # TODO: REMOVE AFTER REFACTOR
-    CUSTOM_THUMBS_DIR = "frontend/media/custom_thumbs" # TODO: REMOVE AFTER REFACTOR
-
     _instance = None
     _lock = threading.Lock()
 

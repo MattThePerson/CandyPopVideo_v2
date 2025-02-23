@@ -5,39 +5,12 @@ from pathlib import Path
 import time
 import yaml
 
-from handymatt import StringParser
 from handymatt.wsl_paths import convert_to_wsl_path
-from handymatt_media import video_analyser
-
-# from ..search import tfidf
 
 from .metadata import metadata_load # TODO: outsource to handymatt dep
 
-__all__ = [
-    'readFoldersAndCollections',
-    'getVideosInFolders',
-    'getPerformers',
-    'getStudios',
-]
 
 # region #### PUBLIC #### 
-
-# TODO: Remove with DB migration
-def getLinkedVideosFromJson(existing_videos_dict: dict) -> dict[str, dict]:
-    """ From the existing `videos.json` file, return those video objects that are linked (path exists) """
-    videos_dict = {}
-    unlinked = []
-    for i, (hash, obj) in enumerate(existing_videos_dict.items()):
-        print('\r[LOAD] getting linked videos ({:_}/{:_}) ({:.1f}%) ({:_} unlinked)'
-                .format(i+1, len(existing_videos_dict), (i+1)/len(existing_videos_dict)*100, len(unlinked)), end='')
-        if os.path.exists(obj['path']):
-            videos_dict[hash] = obj
-        else:
-            unlinked.append(obj)
-    print()
-    return videos_dict
-    # videos_dict = { hash: obj for hash, obj in videosHandler.getItems() if os.path.exists(obj['path']) }
-
 
 
 def readFoldersAndCollections_YAML(filepath: str) -> tuple[list[str], list[str], dict]:
@@ -62,59 +35,6 @@ def readFoldersAndCollections_YAML(filepath: str) -> tuple[list[str], list[str],
                 folder_collection[f] = name
 
     return include_folders, ignore_folders, folder_collection
-
-
-
-# DEPRECATED!
-def readFoldersAndCollections(include_folders_file_path: str) -> tuple[list[str], list[str], dict]:
-    """ DEPRECATED!!! Reads the list of colders and the collections they belong to from `video_folders.yaml` """
-    if not os.path.exists(include_folders_file_path):
-        raise FileNotFoundError("File doesnt exist")
-    with open(include_folders_file_path, 'r') as file:
-        lines = [ line.strip() for line in file if (line != '\n' and not line.startswith('#')) ]
-    include_folders: list[str] = []
-    ignore_folders: list[str] = []
-    collections_dict: dict = {}
-    current_collection = 'No Collection'
-    for line in lines:
-        if line == 'END':
-            break
-        elif line.startswith('!'):
-            ignore_folders.append(line[1:])
-        elif ":" in line:
-            include_folders.append(line)
-            dirpath = convert_to_wsl_path(line)
-            collections_dict[dirpath] = current_collection
-        else:
-            current_collection = line
-    return include_folders, ignore_folders, collections_dict
-
-
-# DEPRECATED!
-def readFoldersAndCollections_YAML_TEXT(include_folders_file_path: str) -> tuple[list[str], list[str], dict]:
-    """ Reads the list of colders and the collections they belong to from `video_folders.yaml` """
-    if not os.path.exists(include_folders_file_path):
-        raise FileNotFoundError("File doesnt exist")
-    with open(include_folders_file_path, 'r') as file:
-        lines = [ line.strip() for line in file if (line != '\n' and not line.strip().startswith('#')) ]
-    include_folders: list[str] = []
-    ignore_folders: list[str] = []
-    collections_dict: dict = {}
-    current_collection = 'No Collection'
-    for line in lines:
-        if line == 'END: HERE':
-            break
-        if line.endswith(':'):
-            current_collection = line
-        else:
-            folder_path = line
-            folder_path = convert_to_wsl_path(folder_path)
-            if line.startswith('!'):
-                ignore_folders.append(folder_path)
-            else:
-                include_folders.append(folder_path)
-                collections_dict[folder_path] = current_collection
-    return include_folders, ignore_folders, collections_dict
 
 
 def getVideosInFolders(folders: list[str], ignore_folders: list[str] = [], include_extensions: list[str] = []) -> list[str]:
@@ -155,4 +75,26 @@ def getStudios(videos_dict):
         if k:
             d[k] = d.get(k, 0) + 1
     return d
+
+
+
+#region DEPRECATED
+
+# DEPRECATED
+def getLinkedVideosFromJson(existing_videos_dict: dict) -> dict[str, dict]:
+    """ From the existing `videos.json` file, return those video objects that are linked (path exists) """
+    videos_dict = {}
+    unlinked = []
+    for i, (hash, obj) in enumerate(existing_videos_dict.items()):
+        print('\r[LOAD] getting linked videos ({:_}/{:_}) ({:.1f}%) ({:_} unlinked)'
+                .format(i+1, len(existing_videos_dict), (i+1)/len(existing_videos_dict)*100, len(unlinked)), end='')
+        if os.path.exists(obj['path']):
+            videos_dict[hash] = obj
+        else:
+            unlinked.append(obj)
+    print()
+    return videos_dict
+    # videos_dict = { hash: obj for hash, obj in videosHandler.getItems() if os.path.exists(obj['path']) }
+
+
 

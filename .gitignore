@@ -3,11 +3,10 @@
 !*/media/default*
 
 # genercal
-.vscode
-.idea
-.venv
+.*
 venv
 __pycache__
+*.svg
 
 # custom
 .recyclebin
