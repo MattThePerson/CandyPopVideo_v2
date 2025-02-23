@@ -6,6 +6,7 @@ from dataclasses import fields
 
 from handymatt import StringParser
 from handymatt_media import video_analyser
+from handymatt_media.metadata import video_metadata
 
 from ..objects.video_data import VideoData
 
@@ -71,14 +72,17 @@ def _get_video_hashes(
     for idx, video_path in enumerate(video_paths):
         print('\rgetting video hash ({:_}/{:_})'.format(idx+1, len(video_paths)), end='')
         video_hash: str|None = path_hash_map.get(video_path)
+        if video_hash is None: # get hash from metadata
+            video_hash = _get_hash_from_video_metadata(video_path)
         if video_hash is None or rehash_videos:
+            had_to_hash.append(video_path)
             try:
-                had_to_hash.append(video_path)
                 video_hash = video_analyser.getVideoHash_ffmpeg(video_path)
             except Exception as e:
-                ...
-        if video_hash is None:
-            hashing_failed.append(video_path)
+                hashing_failed.append(video_path)
+            if video_hash: # add hash to metadata
+                _add_hash_to_video_metadata(video_path, video_hash)
+        # if video_hash is None:
         else:
             if video_hash in hash_path_map:
                 collisions.append(video_hash)
@@ -205,3 +209,18 @@ def _get_ordered_set(arr):
             newarr.append(item)
             seen.add(item)
     return newarr
+
+
+_CPOP_HASH_KEY = 'candypop_hash'
+
+def _get_hash_from_video_metadata(video_path: str) -> str|None:
+    if Path(video_path).suffix == '.mkv':
+        tags = video_metadata.getMetadataTags_MKV(video_path)
+        return tags.get(_CPOP_HASH_KEY)
+    return None
+
+def _add_hash_to_video_metadata(video_path: str, video_hash: str):
+    if Path(video_path).suffix == '.mkv':
+        tags = { _CPOP_HASH_KEY: video_hash }
+        video_metadata.addMetadataTags_MKV(video_path, tags)
+
