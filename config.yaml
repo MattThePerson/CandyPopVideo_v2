@@ -1,0 +1,30 @@
+# GIT:
+# To stop tracking config.yaml:
+#   git update-index --assume-unchanged config.yaml
+# To start tracking again:
+#   git update-index --no-assume-unchanged config.yaml
+
+
+# folder to save app data (db, preview media, custom thumbs, ...)
+app_data_dir: /path/to/app/data/directory/here
+
+# golder to save generated gifs
+gifs_dir: null
+
+video_extensions: [ .mkv, .mp4, .mov, .avi, .flv, .wmv, .vid, .flv, .webm ]
+
+# formats used to extract video/scene data from filename
+scene_filename_formats: [
+  '{sort_performers} - {studio:S} - [{year:d}];opt [{date_released:%Y-%m-%d}];opt [{line:S}];opt {scene_title} [{mention_performers}];opt {{{source_id:S}}};opt [id=={source_id:S}];opt',
+  '[{studio:S}] [{year:d}];opt [{date_released:%Y-%m-%d}];opt [{line:S}];opt {scene_title} [{mention_performers}];opt',
+  '{sort_performers} - {scene_title}',
+  '{scene_title}',
+]
+
+
+# COLLECTIONS
+# Put ! before path to ignore folder contents altogether
+collections:
+
+  CollectionName:
+    - /abs/path/here
