@@ -52,15 +52,14 @@ def readFoldersAndCollections_YAML(filepath: str) -> tuple[list[str], list[str],
     with open(filepath, 'r') as f:
         data = yaml.safe_load(f)
     
-    for col in data['collections']:
-        folders = col.get('folders')
+    for name, folders in data['collections'].items():
         if folders:
             ig_fol = [ convert_to_wsl_path(x) for x in folders if x.startswith('!') ]
             ignore_folders.extend(ig_fol)
             inc_fol = [ convert_to_wsl_path(x) for x in folders if x not in ig_fol ]
             include_folders.extend(inc_fol)
             for f in inc_fol:
-                folder_collection[f] = col['name']
+                folder_collection[f] = name
 
     return include_folders, ignore_folders, folder_collection
 

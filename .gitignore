@@ -8,9 +8,10 @@
 .venv
 venv
 __pycache__
-.recyclebin
 
 # custom
+.recyclebin
+config.yaml
 tests/
 testing*
 .logs
@@ -24,5 +25,4 @@ TODO.md
 
 
 # TEMP
-video_folders_hold.yaml
 frontend_old

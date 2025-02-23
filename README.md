@@ -2,7 +2,7 @@
 
 ## About
 
-My personal lightweight video viewer App! Built with Python + Svelte ❤️
+My personal lightweight video viewer App! Built with FastAPI + Svelte ❤️
 
 Improvements from v1:
 - switched from Flask --> FastApi + Uvicorn for the backend
@@ -21,6 +21,10 @@ Improvements from v1:
 
 - install system dependencies & clone repo
 - run `tools/install.sh`
+
+## Configure
+- rename `video_folders_template.yaml` to `video_folders.yaml` and configure
+- 
 
 ## Running (Linux)
 
