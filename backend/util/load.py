@@ -3,6 +3,7 @@ from typing import Any
 import os
 from pathlib import Path
 import time
+import yaml
 
 from handymatt import StringParser
 from handymatt.wsl_paths import convert_to_wsl_path
@@ -38,6 +39,33 @@ def getLinkedVideosFromJson(existing_videos_dict: dict) -> dict[str, dict]:
     # videos_dict = { hash: obj for hash, obj in videosHandler.getItems() if os.path.exists(obj['path']) }
 
 
+
+def readFoldersAndCollections_YAML(filepath: str) -> tuple[list[str], list[str], dict]:
+    """ Reads the list of colders and the collections they belong to from `video_folders.yaml """
+    if not os.path.exists(filepath):
+        raise FileNotFoundError("Collections file doesn't exist:", filepath)
+    
+    include_folders: list[str] = []
+    ignore_folders: list[str] = []
+    folder_collection: dict = {}
+
+    with open(filepath, 'r') as f:
+        data = yaml.safe_load(f)
+    
+    for col in data['collections']:
+        folders = col.get('folders')
+        if folders:
+            ig_fol = [ convert_to_wsl_path(x) for x in folders if x.startswith('!') ]
+            ignore_folders.extend(ig_fol)
+            inc_fol = [ convert_to_wsl_path(x) for x in folders if x not in ig_fol ]
+            include_folders.extend(inc_fol)
+            for f in inc_fol:
+                folder_collection[f] = col['name']
+
+    return include_folders, ignore_folders, folder_collection
+
+
+
 # DEPRECATED!
 def readFoldersAndCollections(include_folders_file_path: str) -> tuple[list[str], list[str], dict]:
     """ DEPRECATED!!! Reads the list of colders and the collections they belong to from `video_folders.yaml` """
@@ -63,7 +91,8 @@ def readFoldersAndCollections(include_folders_file_path: str) -> tuple[list[str]
     return include_folders, ignore_folders, collections_dict
 
 
-def readFoldersAndCollections_YAML(include_folders_file_path: str) -> tuple[list[str], list[str], dict]:
+# DEPRECATED!
+def readFoldersAndCollections_YAML_TEXT(include_folders_file_path: str) -> tuple[list[str], list[str], dict]:
     """ Reads the list of colders and the collections they belong to from `video_folders.yaml` """
     if not os.path.exists(include_folders_file_path):
         raise FileNotFoundError("File doesnt exist")
