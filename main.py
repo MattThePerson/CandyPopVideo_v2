@@ -9,8 +9,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from handymatt.wsl_paths import convert_to_wsl_path
 
-from backend.routes import api_router, api_media_router, search_router
-from backend.objects.app_state import AppState
+from backend.routes import api_router, api_media_router, search_router, dashboard_router
 from config import PREVIEW_MEDIA_DIR
 
 
@@ -32,13 +31,9 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
 
 #region State
 
-state = AppState()
 try:
-    state.load(
-        'config.yaml',
-        _data_dir,
-        quick_start = False,
-    )
+    # get videos from
+    ...
 except KeyboardInterrupt:
     print('\n\n... caught Keyboard Interrupt during state load')
     sys.exit(0)
@@ -53,11 +48,14 @@ app.add_middleware(NoCacheMiddleware) # TODO: test removing
 app.include_router(api_router, prefix="/api")
 app.include_router(api_media_router, prefix="/api/media")
 app.include_router(search_router, prefix="/search")
+app.include_router(dashboard_router, prefix="/dashboard")
 
+# TODO: Move to base_router.py
 # videos route
 @app.get('/video/{video_hash}')
 def xyz(video_hash: str):
-    data = state.videos_dict.get(video_hash)
+    # data = state.videos_dict.get(video_hash)
+    data = None
     if data is None:
         return Response(f'Data not found for hash {video_hash}', 404)
     video_path = convert_to_wsl_path(data.path)

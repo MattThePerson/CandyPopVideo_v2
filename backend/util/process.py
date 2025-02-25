@@ -1,4 +1,4 @@
-""" Functions for the processing if videos """
+""" Process videos (hashing, filename parsing, metadata getting, ...) """
 import os
 import time
 from pathlib import Path
@@ -8,9 +8,7 @@ from handymatt import StringParser
 from handymatt_media import video_analyser
 from handymatt_media.metadata import video_metadata
 
-from ..objects.video_data import VideoData
-
-from .hold import _get_video_hashes_multi
+from ..data.video_data import VideoData
 
 #region ### PUBLIC ###
 

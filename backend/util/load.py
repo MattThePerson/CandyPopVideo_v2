@@ -7,13 +7,33 @@ import yaml
 
 from handymatt.wsl_paths import convert_to_wsl_path
 
+from config import SCENE_FILENAME_FORMATS, VIDEO_EXTENSIONS
 from .metadata import metadata_load # TODO: outsource to handymatt dep
-
+from .process import process_videos
 
 # region #### PUBLIC #### 
 
 
-def readFoldersAndCollections_YAML(filepath: str) -> tuple[list[str], list[str], dict]:
+def scanVideos() -> None:
+    """ Scan videos in directories and process. Steps: read videos from db, scan videos, process videos, save to db """
+    include_folders, ignore_folders, collections_dict = _readFoldersAndCollections_YAML('config.yaml')
+    if include_folders == None:
+        print("WARNING: No video folders read from config.yaml")
+        return
+    video_paths = _getVideoPathsFromFolders(include_folders, ignore_folders, include_extensions=VIDEO_EXTENSIONS)
+    print("Found {} videos in {} folders from UNKNOWN collections".format(len(video_paths), len(include_folders)))
+    
+    print("Processing videos ...")
+    start = time.time()
+    existing_videos = {} # TODO: load from db
+    videos_dict = process_videos(video_paths, existing_videos, collections_dict, SCENE_FILENAME_FORMATS)
+    print("Successfully loaded {} videos (took {:.2f}s)\n".format(len(videos_dict), (time.time()-start)))
+
+
+
+
+
+def _readFoldersAndCollections_YAML(filepath: str) -> tuple[list[str], list[str], dict]:
     """ Reads the list of colders and the collections they belong to from `video_folders.yaml """
     if not os.path.exists(filepath):
         raise FileNotFoundError("Collections file doesn't exist:", filepath)
@@ -37,7 +57,8 @@ def readFoldersAndCollections_YAML(filepath: str) -> tuple[list[str], list[str],
     return include_folders, ignore_folders, folder_collection
 
 
-def getVideosInFolders(folders: list[str], ignore_folders: list[str] = [], include_extensions: list[str] = []) -> list[str]:
+
+def _getVideoPathsFromFolders(folders: list[str], ignore_folders: list[str] = [], include_extensions: list[str] = []) -> list[str]:
     """ Given a list of folder and exclude folders (abspath or folder name) returns """
     file_objects: list[Path] = []
     ignore_folders.append('/.') # exclude all hidden folders
@@ -56,45 +77,5 @@ def getVideosInFolders(folders: list[str], ignore_folders: list[str] = [], inclu
         file_objects = [ obj for obj in file_objects if igfol not in str(obj) ]
     video_paths = sorted(set([str(obj) for obj in file_objects]))
     return video_paths
-
-
-def getPerformers(videos_dict):
-    d = {}
-    for vid in videos_dict.values():
-        for p in vid.get('performers', []):
-            d[p] = d.get(p, 0) + 1
-    if '' in d:
-        del d['']
-    return d
-
-
-def getStudios(videos_dict):
-    d = {}
-    for vid in videos_dict.values():
-        k = vid.get('studio')
-        if k:
-            d[k] = d.get(k, 0) + 1
-    return d
-
-
-
-#region DEPRECATED
-
-# DEPRECATED
-def getLinkedVideosFromJson(existing_videos_dict: dict) -> dict[str, dict]:
-    """ From the existing `videos.json` file, return those video objects that are linked (path exists) """
-    videos_dict = {}
-    unlinked = []
-    for i, (hash, obj) in enumerate(existing_videos_dict.items()):
-        print('\r[LOAD] getting linked videos ({:_}/{:_}) ({:.1f}%) ({:_} unlinked)'
-                .format(i+1, len(existing_videos_dict), (i+1)/len(existing_videos_dict)*100, len(unlinked)), end='')
-        if os.path.exists(obj['path']):
-            videos_dict[hash] = obj
-        else:
-            unlinked.append(obj)
-    print()
-    return videos_dict
-    # videos_dict = { hash: obj for hash, obj in videosHandler.getItems() if os.path.exists(obj['path']) }
-
 
 

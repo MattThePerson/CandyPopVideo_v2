@@ -2,19 +2,16 @@
 from fastapi import APIRouter, Response
 
 from ..util import media
-from ..objects.app_state import AppState
 from config import PREVIEW_MEDIA_DIR, CUSTOM_THUMBS_DIR
 
-# _media_dir, _custom_thumbs_dir = '', ''
 
-state = AppState()
 api_media_router = APIRouter()
 
 
 # CONFIRM SEEK THUMBNAIL
 @api_media_router.get("/get-poster/{video_hash}")
 def confirm_poster(video_hash: str):
-    # return Response('Not yet implemented', 501)
+    return Response('Not yet fixed', 501)
     video_object = state.videos_dict.get(video_hash)
     if video_object is None:
         print("Could not find video with hash:", video_hash)

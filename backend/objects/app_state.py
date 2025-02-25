@@ -1,4 +1,5 @@
 """ Class for managing app state (TO BE REPLACED WITH DB IMPLEMENTATION) """
+# TODO: Remove this sunabish
 from typing import Any
 import os
 import time
@@ -7,7 +8,7 @@ import threading
 from handymatt import JsonHandler
 
 from config import VIDEO_EXTENSIONS, SCENE_FILENAME_FORMATS
-from .video_data import VideoData
+from ..data.video_data import VideoData
 from ..util import load, process, general
 from ..search import tfidf, similarity
 

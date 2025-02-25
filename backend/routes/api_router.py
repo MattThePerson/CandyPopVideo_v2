@@ -5,9 +5,8 @@ from fastapi import APIRouter, Response, Depends, HTTPException
 from handymatt.wsl_paths import convert_to_wsl_path, convert_to_windows_path
 
 from ..util import media
-from ..objects.app_state import AppState
 
-_media_dir = convert_to_wsl_path(r'A:\WhisperaHQ\MyPrograms\MyApplications\CandyPopApp\Frontend\media\videos')
+_media_dir = convert_to_wsl_path(r'A:\WhisperaHQ\MyPrograms\MyApplications\CandyPopApp\Frontend\media\videos') # TODO: Remove
 
 
 def generateReponse(main=None, time_taken=None):
@@ -18,7 +17,6 @@ def generateReponse(main=None, time_taken=None):
     return r
 
 
-state = AppState()
 api_router = APIRouter()
 
 # test
@@ -30,6 +28,7 @@ def read_root():
 # GET VIDEO
 @api_router.get("/get-video-data/{video_hash}")
 def get_video(video_hash: str):
+    return Response('Not yet fixed', 501)
     print("Request recieved: 'get-video', hash: ", video_hash)
     video_data = state.videos_dict.get(video_hash)
     if not video_data:
@@ -60,6 +59,7 @@ def get_video(video_hash: str):
 # GET RANDOM VIDEO
 @api_router.get("/get-random-video")
 def get_random_video():
+    return Response('Not yet fixed', 501)
     print("Request recieved: 'get-random-video'")
     #r = random.choice([1234, 2134, 3322, 4321, "fe21acc7"])
     

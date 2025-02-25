@@ -3,14 +3,13 @@ import time
 from fastapi import APIRouter, Response, Request
 
 from ..search.search import searchVideosFunction
-from ..objects.app_state import AppState
 
-state = AppState()
 search_router = APIRouter()
 
 # SEARCH VIDEOS
 @search_router.get("/search-videos")
 def search_videos(request: Request):
+    return Response('Not yet fixed', 501)
     params = dict(request.query_params)
     # print(params)
     # return Response('Not yet implemented', 501)
