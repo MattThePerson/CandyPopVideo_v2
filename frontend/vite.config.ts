@@ -5,7 +5,7 @@ export default defineConfig({
 	plugins: [sveltekit()],
 	server: {
 		proxy: {
-			'^/(.*)': { // proxy all requests
+			'^/(api|media|video|search|dashboard)(/.*)?$': { // proxy all requests
 				target: 'http://localhost:8000', // Backend server
 				changeOrigin: true,
 				rewrite: (path) => path, // Forward the full path
