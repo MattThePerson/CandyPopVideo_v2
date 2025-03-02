@@ -6,6 +6,8 @@
     import ReloadIcon from "$lib/icons/ReloadIcon.svelte";
     import SearchIcon from "$lib/icons/SearchIcon.svelte";
     import Logo from "./Logo.svelte";
+    import Button from "./ui/button/button.svelte";
+    import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
 </script>
 
 
@@ -16,6 +18,23 @@
         <a id='logo' href="/"         class:active={$page.url.pathname === "/"}>
             <Logo />
         </a>
+
+        <Button>shad!!</Button>
+
+        <DropdownMenu.Root>
+            <DropdownMenu.Trigger>Open</DropdownMenu.Trigger>
+            <DropdownMenu.Content>
+                <DropdownMenu.Group>
+                    <DropdownMenu.GroupHeading>My Account</DropdownMenu.GroupHeading>
+                    <DropdownMenu.Separator />
+                    <DropdownMenu.Item>Profile</DropdownMenu.Item>
+                    <DropdownMenu.Item>Billing</DropdownMenu.Item>
+                    <DropdownMenu.Item>Team</DropdownMenu.Item>
+                    <DropdownMenu.Item>Subscription</DropdownMenu.Item>
+                </DropdownMenu.Group>
+            </DropdownMenu.Content>
+        </DropdownMenu.Root>
+        
     </span>
     
     <span>
