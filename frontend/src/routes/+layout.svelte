@@ -1,7 +1,8 @@
 <script>
+    import "../app.css";
+    import '../fonts.css';
     import Header from "$lib/components/Header.svelte";
     import Footer from "$lib/components/Footer.svelte";
-    import '../fonts.css';
 </script>
 
 <Header />

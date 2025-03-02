@@ -16,4 +16,7 @@
     });
     </script>
 
-<h1>Welcome to the Home Page CHANGES</h1>
+<h1 class="text-3xl font-bold underline">
+    Welcome to the Home Page with Tailwind!
+</h1>
+
