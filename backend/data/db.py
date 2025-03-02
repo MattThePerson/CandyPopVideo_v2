@@ -1,7 +1,7 @@
 """ Functions for getting/changing data in db """
 import os
 
-from handymatt.sql_api import MySQLiteApi
+from handymatt.sqlite_api import MySQLiteApi
 
 from config import APP_DATA_DIR
 

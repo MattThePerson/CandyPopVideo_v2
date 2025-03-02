@@ -32,7 +32,7 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
 #region State
 
 try:
-    # get videos from
+    # scanVideos()
     ...
 except KeyboardInterrupt:
     print('\n\n... caught Keyboard Interrupt during state load')

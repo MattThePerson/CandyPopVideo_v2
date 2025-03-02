@@ -14,23 +14,32 @@
 
 
 ## VIDEO PAGE
-- interact buttons:
-	- favourite
-	- like
-	- i came
-	- save moment
-- meta buttons:
-	- open data18 page
-	- open link (eg. ph links)
-	- copy file location
-- filters (custom filters to chose from)
-- switch back to preview mode
 
-Data:
-- Date added
-- filename
-- Location parent on disk
+to solve (design wise):
+- comments section (include add comment)
+- tags section (include add tags)
+- where to put info
+- where to put description
+- 
+
+buttons:
+- rate
+- like
+- i came
+- run to random time
+- save timestamp
+- make gif
+- add filter (custom filters to chose from)
+- chapter nav
+
+info:
+- date added
 - show description button
+- filename (copy button)
+- Location parent on disk (copy button)
+- (optional) data18 page (open in new tab button)
+- (optional) link (eg. ph links) (open in new tab button)
+
 
 
 
@@ -58,10 +67,9 @@ Data:
 ## DASHBOARD
 
 functions:
-- scan collections
-- see amount of media generated
-- generate media (by type, with filter and limits)
-- 
+- rescan folders
+- generate preview media (by type, with filter and limits)
+- generate profile pics for performers
 
 
 preview media generation:
@@ -81,6 +89,54 @@ media gen functions:
 - apply filter for generation
 - apply limit for generation
 
+
+
+
+## SEARCH PANEL
+
+filter (text):
+- *query (effects sort-by)
+
+- *actor
+- *studio
+- *collection
+- *tags (?)
+- *include terms
+- *exclude terms
+- FAVOURITE
+- Grade (S+ ... C+)
+- 
+
+filter (attr):
+- date released (date nav)
+- date added (date nav)
+- 
+
+filter (builder)
+- *duration
+- *resolution
+- *bitrate (?)
+- *fps
+- *filesize
+- 
+
+*sortby:
+- date added
+- date released
+- bitrate
+- filename
+- title
+- studio
+- engagement (likes, views, ...)
+- favourite added (when filter by favourite)
+- random
+
+*view:
+- different options
+- card size
+
+buttons:
+- open random button (with random time toggle)
 
 
 
