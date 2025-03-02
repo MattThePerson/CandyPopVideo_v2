@@ -1,7 +1,10 @@
 <script>
+    import { onMount } from "svelte";
+
     console.log("Hey monkeyboy");
 
-    fetch('/api/hello')
+    onMount(() => {
+        fetch('/api/hello')
         .then(res => {
             console.log(res);
             return res.json()
@@ -10,6 +13,7 @@
         }).catch(err => {
             console.error(err);
         })
-</script>
+    });
+    </script>
 
 <h1>Welcome to the Home Page CHANGES</h1>
