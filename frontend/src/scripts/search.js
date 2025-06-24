@@ -185,6 +185,8 @@ function make_search_result_item(res, videoResultTemplate) {
 
 function generate_results(search_results, args, use_custom_thumbs) {
 
+    console.log('generate results', search_results);
+    
     const words = search_results['word_cloud'];
     render_wordcloud(words);
 
@@ -202,9 +204,9 @@ function generate_results(search_results, args, use_custom_thumbs) {
         makeApiRequestGET('confirm-poster', [res['hash']], poster_obj => {
             // console.log(poster_obj)
             if (use_custom_thumbs && poster_obj.custom_thumb) {
-                document.querySelector('#item-' + res['hash'] + ' .thumbnail').src = `media/custom_thumbs/${poster_obj.custom_thumb}`;
+                document.querySelector('#item-' + res.hash + ' .thumbnail').src = `../../../media/custom_thumbs/${poster_obj.custom_thumb}`;
             } else {
-                document.querySelector('#item-' + res['hash'] + ' .thumbnail').src = `media/videos/0x${res['hash']}/${poster_obj.poster}`;
+                document.querySelector('#item-' + res.hash + ' .thumbnail').src = `../../../media/static/0x${res.hash}/${poster_obj.poster}`;
             }
             posters_confirmed++;
 
@@ -212,7 +214,7 @@ function generate_results(search_results, args, use_custom_thumbs) {
             if (posters_confirmed >= r.length) {
                 r.forEach( (res, i) => {
                     makeApiRequestGET('confirm-teaser-small', [res['hash']], arg => {
-                        document.querySelector('#item-' + res['hash'] + ' video').src = `media/videos/0x${res['hash']}/teaser_small.mp4`
+                        document.querySelector('#item-' + res['hash'] + ' video').src = `media/videos/0x${res.hash}/teaser_small.mp4`
                     });
                 });
             }

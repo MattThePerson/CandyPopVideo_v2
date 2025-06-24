@@ -7,4 +7,4 @@ nltk>=3.9.1
 imagehash>=4.3.1
 pyyaml>=6.0.2
 handymatt>=1.1.0
-handymatt-media
+handymatt-media>=0.2.0

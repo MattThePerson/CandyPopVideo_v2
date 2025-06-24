@@ -41,53 +41,70 @@ window.addEventListener('load', function() {
 
 /* API FUNCTIONS */
 
-const flask_api_url = "http://127.0.0.1:5011/";
 
+/* simple url args */
+/* assumes request is being made by .html page in `src/pages/PAGE_NAME/index.html` */
 function makeApiRequestGET(request, args, callback) {
+
     let api_call = request;
     for (let arg of args) {
-        api_call = api_call + "/" + arg;
+        api_call = api_call + '/' + arg;
     }
-    fetch(flask_api_url + api_call)
+
+    fetch('../../../' + api_call)
         .then(response => {
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                throw new Error(`(${request}) Network response: ${response.status}`);
             }
             return response.json();
         })
         .then(data => {
-            /* console.log(data); */
-            //media_path = 'file:\\\\\\' + data.media_path;
-            //favourites_ids = data.favourites_ids;
-            //collections = data.collections;
-            callback(data.main)
+            try {
+                callback(data)
+            } catch (error) {
+                throw new Error(`Exception during callback for '${request}'`)
+            }
         })
         .catch(error => {
-            console.error('Fetch error:', error);
+            // console.error(error);
     });
+    
 }
 
 
-function makeApiRequestGET_JSON(request, data, callback) {
-    const url = new URL(flask_api_url + request);
-    Object.keys(data).forEach(key => url.searchParams.append(key, String(data[key])));
-    fetch(url)
+/* post json object */
+/* assumes request is being made by .html page in `src/pages/PAGE_NAME/index.html` */
+function makeApiRequestPOST(request, data, callback) {
+    
+    const options = {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data),
+    }
+    
+    fetch('../../../' + request, options)
         .then(response => {
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                throw new Error(`(${request}) Network response: ${response.status}`);
             }
+            // console.log(response);
             return response.json();
         })
         .then(data => {
-            /* console.log(data); */
-            media_path = 'file:\\\\\\' + data.media_path;
-            favourites_ids = data.favourites_ids;
-            callback(data.main)
+            try {
+                callback(data)
+            } catch (error) {
+                console.error(`Callback error (${request}):`, error);
+            }
         })
         .catch(error => {
-            console.error('Fetch error:', error);
+            console.error(error);
     });
+
 }
+
 
 
 /* GLOBAL FUNCTIONS */

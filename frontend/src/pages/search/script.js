@@ -161,13 +161,22 @@ if (urlParams.get('only-favs')) {
     onlyFavsCheckbox.checked = true;
 }
 
-console.log('Query: ', query);
+// console.log('Query: ', query);
+
+query = {
+    search_query: null,
+    include_tags: [],
+    exclude_tags: [],
+    sortby: null,
+}
 
 let use_custom_thumbnails = window.location.pathname.includes('listPage.html');
 
 if (urlParams.size > 0) {
     
-    makeApiRequestGET_JSON('search-videos', query, search_results => {
+    makeApiRequestPOST('api/query/search-videos', query, search_results => {
+        console.log(search_results);
+        return;
         generate_results(search_results, {generate_nav : true}, use_custom_thumbnails);
         
         if (query.actor) {
@@ -189,25 +198,6 @@ if (urlParams.size > 0) {
                 }
             });
         }
-        // if (query.studio) {
-        //     console.log('Making performer panel');
-        //     makeApiRequestGET('get-similar-performers', [query.actor], performers => {
-        //         if (performers) {
-        //             console.log('performers:', performers);
-        //             const modelStudioPanel = document.getElementById('model-studio-panel');
-        //             modelStudioPanel.style.display = 'flex';
-        //             modelStudioPanel.querySelector('.focus-performer').innerText = query.actor;
-        //             for (let i = 1; i < 9; i++) {
-        //             // for (let perf_data of performers) {
-        //                 const perf_data = performers[i];
-        //                 const newEl = document.createElement('a');
-        //                 newEl.href = 'searchPage.html?' + (new URLSearchParams({'performer': perf_data.name})).toString();
-        //                 newEl.innerText = perf_data.name;
-        //                 modelStudioPanel.querySelector('.similar-container').appendChild(newEl);
-        //             }
-        //         }
-        //     });
-        // }
     });
 }
 

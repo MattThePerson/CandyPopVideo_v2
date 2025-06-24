@@ -112,7 +112,7 @@ window.onresize = updateContentSectionHeight;
 const catalogue_type = urlParams.get('type');
 document.querySelector('.page-title').innerText = catalogue_type + ' Catalogue';
 document.title = catalogue_type + ' Catalogue Page';
-let api_call = 'get-' + catalogue_type + 's';
+let api_call = 'api/get/all-' + catalogue_type + 's';
 
 makeApiRequestGET(api_call, [], results => {
     console.log('Got ' + results.length + ' catalogue results for type: ' + catalogue_type);

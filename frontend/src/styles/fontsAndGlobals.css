@@ -28,23 +28,23 @@
 
 @font-face {
     font-family: "Alba";
-    src: url('../fonts/Alba/ALBAM___.TTF');
+    src: url('../../static/fonts/Alba/ALBAM___.TTF');
 }
 
 @font-face {
     font-family: "Roboto Condensed";
-    src: url('../fonts/Roboto_Condensed/RobotoCondensed-VariableFont_wght.ttf');
+    src: url('../../static/fonts/Roboto_Condensed/RobotoCondensed-VariableFont_wght.ttf');
 }
 
 @font-face {
     font-family: "Merriweather";
-    src: url('../fonts/Merriweather/Merriweather-Regular.ttf');
+    src: url('../../static/fonts/Merriweather/Merriweather-Regular.ttf');
     font-weight: 400;
 }
 
 @font-face {
     font-family: "Exo 2";
-    src: url('../fonts/Exo2/Exo2-VariableFont_wght.ttf');
+    src: url('../../static/fonts/Exo2/Exo2-VariableFont_wght.ttf');
 }
 
 /* ALL & BODY */

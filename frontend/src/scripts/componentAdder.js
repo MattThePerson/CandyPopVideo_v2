@@ -25,21 +25,21 @@ componentMethods = {
 /* COMPONENT METHODS */
 
 function HeaderTemplate() {
-    return `
+    return /* html */`
 <header>
     <div class="logo-parent">
         <a href="index.html" class="logo">CandyPop</a>
     </div>
     <nav class="top-nav">
-        <a href="index.html" class="top-nav-item">HOME</a>
-        <a href="searchPage.html" class="top-nav-item">SEARCH PAGE</a>
-        <a href="listPage.html?sort-by=date-released-desc" class="top-nav-item">LIST PAGE</a>
-        <a href="cataloguePage.html?type=performer" class="top-nav-item">PERFORMERS</a>
-        <a href="cataloguePage.html?type=studio" class="top-nav-item">STUDIOS</a>
-        <a href="videoPage.html" class="top-nav-item">RANDOM VIDEO</a>
-        <a href="spreadsheetPage.html" class="top-nav-item">SPREADSHEET</a>
-        <a href="gifsPage.html" class="top-nav-item">GIFS</a>
-        <a href="curatedCollections.html" class="top-nav-item">CURATED</a>
+        <a href="../home/index.html" class="top-nav-item">HOME</a>
+        <a href="../search/index.html" class="top-nav-item">SEARCH PAGE</a>
+        <!-- <a href="../list/index.html?sort-by=date-released-desc" class="top-nav-item">LIST PAGE</a> -->
+        <a href="../catalogue/index.html?type=performer" class="top-nav-item">PERFORMERS</a>
+        <a href="../catalogue/index.html?type=studio" class="top-nav-item">STUDIOS</a>
+        <a href="../video/index.html" class="top-nav-item">RANDOM VIDEO</a>
+        <!-- <a href="../spreadsheet/index.html" class="top-nav-item">SPREADSHEET</a> -->
+        <!-- <a href="../gifs/index.html" class="top-nav-item">GIFS</a> -->
+        <!-- <a href="../curatedCollections/index.html" class="top-nav-item">CURATED</a> -->
         <form class="search-bar-form" onSubmit="return false;">
             <input id="nav-bar-search-input" class="top-nav-item" type="search" placeholder="Search.." autocomplete="off">
             <button id="nav-bar-search-button" type="submit">
@@ -54,16 +54,136 @@ function HeaderTemplate() {
         </a>
     </nav>
 </header>
+
+<style>
+    header {
+        background: var(--nav-dark);
+        height: 60px;
+        width: 100%;
+        border-bottom: 1px solid var(--off-white);
+        box-sizing: border-box;
+        padding: 0 calc(2%);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        overflow: hidden;
+    }
+
+    .logo-parent {
+        /* background: pink; */
+        display: flex;
+        flex-grow: 5;
+    }
+
+    .top-nav {
+        /* background: green; */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-grow: 0.25;
+    }
+
+    .logo {
+        font-family: "Alba";
+        font-size: 30px;
+        letter-spacing: 1.5px;
+        margin-right: 0.5em;
+    }
+
+    .top-nav-item {
+        /* background: blue; */
+        padding: 7px 7px;
+        margin: 0 0.25em;
+        font-family: "Exo 2";
+        font-weight: 600;
+        font-size: 18px;
+        white-space: nowrap;
+    }
+
+    .search-bar-form {
+        width: 225px;
+        height: 30px;
+        background: green;
+        background: #fafafa;
+        box-sizing: border-box;
+        padding: 0 0.1em;
+        border-radius: 12px;
+        display: flex;
+    }
+    .search-bar-form input:focus {
+        outline: None;
+    }
+
+    #nav-bar-search-input {
+        width: 100%;
+        background: None;
+        color: #333;
+        font-size: 16px;
+        font-weight: 400;
+        border: None;
+        font-family: "Roboto Condensed";
+    }
+    #nav-bar-search-button {
+        height: 100%;
+        min-width: 20px;
+        border: None;
+        background: None;
+        transform: translateX(-3px);
+    }
+    #nav-bar-search-button:hover {
+        cursor: pointer;
+    }
+    #nav-bar-search-button:active {
+        background: #0001;
+    }
+
+    /* HEADER LINK STYLING */
+
+    header a {
+        text-decoration: None;
+        
+    }
+    header a:hover {
+        color: var(--actor-rose);
+    }
+    header a:active {
+        color: var(--active-rose);
+    }
+
+    .icon-construction {
+        min-width: 28px;
+    }
+    .icon-construction path {
+        fill: var(--off-white);
+    }
+    .icon-nav-parent:hover path {
+        fill: var(--actor-rose);
+    }
+    .icon-nav-parent:active path {
+        fill: var(--active-rose);
+    }
+</style>
+
     `
 }
 
 function FooterTemplate() {
-    return `
+    return /* html */`
 <footer>
     <div>CopyLeft © 2069 CandyPop</div>
     <div>All rights are mine and yours</div>
 </footer>
-    `
-}
+<style>
+    footer {
+        text-align: center;
+        min-height: 30px;
+        width: 100%;
+        background: var(--nav-dark);
+        box-sizing: border-box;
+        padding: 2em;
+        /* margin-top: 15em; */
+    }
+</style>
+`}
 
 addHtmlComponents();

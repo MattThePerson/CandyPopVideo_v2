@@ -1,17 +1,22 @@
 """ Routes for api/media/ (eg. get-poster/) which handle checking that media exists and their creation """
 from fastapi import APIRouter, Response
+import os
 
-from ..util import media
+from handymatt_media import media_generator
+
 from config import PREVIEW_MEDIA_DIR, CUSTOM_THUMBS_DIR
+from ..util import media
+from ..schemas import VideoData
+from .. import db
 
 
-api_media_router = APIRouter()
+ensure_media_router = APIRouter()
 
 
 # CONFIRM SEEK THUMBNAIL
-@api_media_router.get("/get-poster/{video_hash}")
+@ensure_media_router.get("/ensure-media/poster/{video_hash}")
 def confirm_poster(video_hash: str):
-    return Response('Not yet fixed', 501)
+    return Response('Not implemented', 501)
     video_object = state.videos_dict.get(video_hash)
     if video_object is None:
         print("Could not find video with hash:", video_hash)
@@ -31,34 +36,39 @@ def confirm_poster(video_hash: str):
 
 
 # CONFIRM SEEK THUMBNAIL
-@api_media_router.get("/get-seek-thumbnails/{video_hash}")
+@ensure_media_router.get("/ensure-media/seek-thumbnails/{video_hash}")
 def confirm_seek_thumbnails(video_hash: str):
-    return Response('Not yet implemented', 501)
-    return {'msg': 'Not implemented', 'status_code': 404}
-    return jsonify("Not implemented"), 404
-    global generate_thumbnails_thread
-    r = videos_dict.get(hash)
-    if not r:
-        print("Could not find video with hash:", hash)
-        return jsonify(), 404
-    if not bf.media_hasSeekThumbs(hash, MEDIADIR, r['duration_seconds']):
-        print("WANNA MAKE SEEK THUMBS FOR: ", r['filename'])
-        if generate_thumbnails_thread and generate_thumbnails_thread.is_alive():
-            return jsonify("Thread busy"), 400
-        print("[THREAD] Starting generate thumbnails thread ...")
-        generate_thumbnails_thread = threading.Thread(target=bf.media_generateSeekThumbs, args=(r['path'], hash, MEDIADIR, r['duration_seconds']))
-        generate_thumbnails_thread.start()
-        generate_thumbnails_thread.join()
-        print("[GENERATE] Seek thumbnails generated!")
-        return jsonify("Seek thumbnails generated!"), 200
-    return jsonify("Seek thumbnails already exist!"), 200
+    return Response('Temporarily disabled', 503)
+
+    # check they exist
+    vid_media_dir = media._getMediaDirByHash(video_hash, PREVIEW_MEDIA_DIR)
+    if os.path.exists( vid_media_dir + '/seekthumbs.jpg') and os.path.exists( vid_media_dir + '/seekthumbs.vtt' ):
+        return Response('Video has seek thumbnails', 200)
+    
+    # get video data
+    video_data = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') )
+    if video_data is None:
+        return Response('No video with that hash', 404)
+
+    # 
+    print(f'Generating seek thumbnails for : "{video_data.path}"')
+    try:
+        _ = media_generator.generateSeekThumbnails(video_data.path, vid_media_dir)
+    except Exception as e:
+        print('ERROR: Unable to generate seek thumbnails')
+        print(e)
+        return Response('Unable to generate seek thumbs for video', 500)
+    
+    if os.path.exists( vid_media_dir + '/seekthumbs.jpg') and os.path.exists( vid_media_dir + '/seekthumbs.vtt' ):
+        return Response(f'Video has seekthumbs', 200)
+
+    return Response('Unable to generate seek thumbs for video', 500)
 
 
 # CONFIRM PREVIEW THUMBNAILS
-@api_media_router.get("/get-preview-thumbnails/{video_hash}")
+@ensure_media_router.get("/ensure-media/preview-thumbnails/{video_hash}")
 def confirm_preview_thumbnails(video_hash: str):
-    return Response('Not yet implemented', 501)
-    return jsonify("Not implemented"), 404
+    return Response('Not implemented', 501)
     return jsonify(generateReponse("Not implemented")), 404
     r = videos_dict.get(hash)
     if not r:
@@ -73,10 +83,9 @@ def confirm_preview_thumbnails(video_hash: str):
 
 
 # CONFIRM SEEK THUMBNAIL
-@api_media_router.get("/get-teaser-small/{video_hash}")
+@ensure_media_router.get("/ensure-media/teaser-small/{video_hash}")
 def confirm_teaser_small(video_hash: str):
-    return Response('Not yet implemented', 501)
-    return jsonify("Not implemented"), 404
+    return Response('Not implemented', 501)
     print("[TEASER] Confirming small teaser for hash: ", hash)
     r = videos_dict.get(hash)
     if r == None:
@@ -93,10 +102,9 @@ def confirm_teaser_small(video_hash: str):
 
 
 # CONFIRM SEEK THUMBNAIL
-@api_media_router.get("/get-teaser-large/{video_hash}")
+@ensure_media_router.get("/ensure-media/teaser-large/{video_hash}")
 def confirm_teaser_large(video_hash: str):
-    return Response('Not yet implemented', 501)
-    return jsonify("Not implemented"), 404
+    return Response('Not implemented', 501)
     print("[TEASER] Confirming large teaser for hash: ", hash)
     r = videos_dict.get(hash)
     if r == None:

@@ -1,10 +1,12 @@
 import random
 import time
-from fastapi import APIRouter, Response, Depends, HTTPException
+from fastapi import APIRouter, Response, Depends
 
 from handymatt.wsl_paths import convert_to_wsl_path, convert_to_windows_path
 
+from ..schemas import VideoData
 from ..util import media
+from .. import db
 
 _media_dir = convert_to_wsl_path(r'A:\WhisperaHQ\MyPrograms\MyApplications\CandyPopApp\Frontend\media\videos') # TODO: Remove
 
@@ -19,18 +21,14 @@ def generateReponse(main=None, time_taken=None):
 
 api_router = APIRouter()
 
-# test
-@api_router.get("/hello")
-def read_root():
-    return {"message": "Hello there!"}
-
 
 # GET VIDEO
-@api_router.get("/get-video-data/{video_hash}")
+@api_router.get("/get/video-data/{video_hash}")
 def get_video(video_hash: str):
-    return Response('Not yet fixed', 501)
     print("Request recieved: 'get-video', hash: ", video_hash)
-    video_data = state.videos_dict.get(video_hash)
+    # video_data = state.videos_dict.get(video_hash)
+    video_dict = db.read_object_from_db(video_hash, 'videos')
+    video_data = VideoData.from_dict(video_dict)
     if not video_data:
         print("Could not find video with hash:", video_hash)
         return Response(status_code=404, content=f"No video with hash: {video_hash}")
@@ -44,39 +42,36 @@ def get_video(video_hash: str):
         poster = media.hasPoster(video_hash, _media_dir)
     response = video_data.to_dict()
     response['poster'] = poster
+    return response
     # update views
-    if state.videosHandler:
-        videodata = state.videosHandler.getValue(video_hash)
-        videodata['views'] = videodata.get('views', 0) + 1
-        state.videosHandler.setValue(video_hash, response)
+    # if state.videosHandler:
+    #     videodata = state.videosHandler.getValue(video_hash)
+    #     videodata['views'] = videodata.get('views', 0) + 1
+    #     state.videosHandler.setValue(video_hash, response)
     # Add viewing to metadata
     view_item = {'ts': time.time(), 'hash': video_hash}
-    if state.metadataHandler:
-        state.metadataHandler.appendValue('view_history', view_item)
+    # if state.metadataHandler:
+    #     state.metadataHandler.appendValue('view_history', view_item)
     return generateReponse(response)
 
+# get("/get/video-metadata/{video_hash}")
 
 # GET RANDOM VIDEO
-@api_router.get("/get-random-video")
+@api_router.get("/get/random-video-hash")
 def get_random_video():
-    return Response('Not yet fixed', 501)
-    print("Request recieved: 'get-random-video'")
-    #r = random.choice([1234, 2134, 3322, 4321, "fe21acc7"])
-    
-    hashes = list(state.videos_dict.keys())
+    video_dicts = db.read_table_as_dict('videos')
+    hashes = list(video_dicts.keys())
+    if hashes == []:
+        return Response("No hashes to pick from", 404)
     r = random.choice(hashes)
-    print('random:', r)
-    response = {'hash' : r}
-    if not response:
-        return generateReponse('Nothing!')
-    return {'main': response}
+    print('random hash:', r)
+    return {'hash' : r}
 
 
 # GET RANDOM VIDEO
-@api_router.get("/get-random-video-seeded/{seed}")
+@api_router.get("/get/random-video-seeded/{seed}")
 def get_random_video_seeded(seed):
-    return Response('Not yet implemented', 501)
-    return jsonify("Not implemented"), 404
+    return Response('Not implemented', 501)
     print("Request recieved: 'get-random-video'")
     print("SEED:", seed)
     rng = random.Random(seed)
@@ -88,11 +83,9 @@ def get_random_video_seeded(seed):
 
 
 # GET RANDOM SPOTLIGHT VIDEO
-@api_router.get("/get-random-spotlight-video")
+@api_router.get("/get/random-spotlight-video")
 def get_random_spotlight_video():
-    return Response('Not yet implemented', 501)
-    return {'msg': 'Not implemented', 'status_code': 404}
-    return jsonify("Not implemented"), 404
+    return Response('Not implemented', 501)
     print("Request recieved: 'get-random-video'")
     seed = (datetime.now() - datetime.strptime('1900 06:00:00', '%Y %H:%M:%S')).days
     print("SEED:", seed)
@@ -104,43 +97,10 @@ def get_random_spotlight_video():
     return jsonify(generateReponse(response)), 200
 
 
-# ADD FAVOURITE
-@api_router.get("/add-favourite/{video_hash}")
-def add_favourite(video_hash: str):
-    return Response('Not yet implemented', 501)
-    return jsonify("Not implemented"), 404
-    if bf.is_favourite(hash, metadataHandler):
-        return jsonify('favourite already exists'), 200
-    bf.add_favourite(hash, metadataHandler)
-    return jsonify('added favourite'), 200
-
-
-# REMOVE FAVOURITE
-@api_router.get("/remove-favourite/{video_hash}")
-def remove_favourite(video_hash: str):
-    return Response('Not yet implemented', 501)
-    return jsonify("Not implemented"), 404
-    if not bf.is_favourite(hash, metadataHandler):
-        return jsonify('video already not favourites'), 200
-    bf.remove_favourite(hash, metadataHandler)
-    return jsonify('removed favourite'), 200
-
-
-# IS FAVOURITE
-@api_router.get("/is-favourite/{video_hash}")
-def is_favourite(video_hash: str):
-    return Response('Not yet implemented', 501)
-    return jsonify("Not implemented"), 404
-    if bf.is_favourite(hash, metadataHandler):
-        return jsonify(generateReponse({'is_favourite': True})), 200
-    return jsonify(generateReponse({'is_favourite': False})), 200
-
-
 # GET ALL PERFORMERS
-@api_router.get("/get-performers")
+@api_router.get("/get/all-performers")
 def get_performers():
-    return Response('Not yet implemented', 501)
-    # return jsonify("Not implemented"), 404
+    return Response('Not implemented', 501)
     print(len(state.videos_dict))
     items = ff.getPerformers(state.videos_dict)
     print('Len of items:', len(items))
@@ -150,13 +110,50 @@ def get_performers():
 
 
 # GET ALL STUDIOS
-@api_router.get("/get-studios")
+@api_router.get("/get/all-studios")
 def get_studios():
-    return Response('Not yet implemented', 501)
+    return Response('Not implemented', 501)
     items = ff.getStudios(videos_dict)
     print('Len of items:', len(items))
     if items:
         return jsonify(generateReponse(items)), 200
     return jsonify(), 500
 
-# endregion
+
+# ADD FAVOURITE
+@api_router.post("/favourites/add/{video_hash}")
+def add_favourite(video_hash: str):
+    return Response('Not implemented', 501)
+    if bf.is_favourite(hash, metadataHandler):
+        return jsonify('favourite already exists'), 200
+    bf.add_favourite(hash, metadataHandler)
+    return jsonify('added favourite'), 200
+
+
+# REMOVE FAVOURITE
+@api_router.post("/favourites/remove/{video_hash}")
+def remove_favourite(video_hash: str):
+    return Response('Not implemented', 501)
+    if not bf.is_favourite(hash, metadataHandler):
+        return jsonify('video already not favourites'), 200
+    bf.remove_favourite(hash, metadataHandler)
+    return jsonify('removed favourite'), 200
+
+
+# IS FAVOURITE
+@api_router.get("/favourites/check/{video_hash}")
+def is_favourite(video_hash: str):
+    return Response('Not implemented', 501)
+    if bf.is_favourite(hash, metadataHandler):
+        return jsonify(generateReponse({'is_favourite': True})), 200
+    return jsonify(generateReponse({'is_favourite': False})), 200
+
+
+# post("/views/add/{video_hash}")
+# get("/views/get/{video_hash}")
+
+# post("/likes/{video_hash}/add")
+# get("/likes/{video_hash}/get")
+
+# get("/rating/{video_hash}/add")
+# get("/rating/{video_hash}/get")

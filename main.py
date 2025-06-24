@@ -9,7 +9,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from contextlib import asynccontextmanager
 from handymatt.wsl_paths import convert_to_wsl_path
 
-from backend.routes import api_router, api_media_router, search_router, dashboard_router
+from backend.routers import api_router, ensure_media_router, search_router, dashboard_router
 from backend.util.load import scanVideos
 from config import PREVIEW_MEDIA_DIR, COLLECTIONS
 
@@ -26,9 +26,10 @@ _data_dir = os.path.join( _project_dir, 'data' )
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     
-    print('Scanning media libraries ...')
     try:
-        scanVideos(COLLECTIONS)
+        # print('Scanning media libraries ...')
+        # scanVideos(COLLECTIONS)
+        ...
     except KeyboardInterrupt:
         print('\n... keyboard interrupt. stopping scan.')
     
@@ -53,14 +54,20 @@ app.add_middleware(NoCacheMiddleware) # TODO: test removing
 
 # add routers
 app.include_router(api_router, prefix="/api")
-app.include_router(api_media_router, prefix="/api/media")
-app.include_router(search_router, prefix="/search")
-app.include_router(dashboard_router, prefix="/dashboard")
+app.include_router(ensure_media_router, prefix="/api")
+app.include_router(search_router, prefix="/api")
+app.include_router(dashboard_router, prefix="/api")
+
+
+# test
+@api_router.get("/api/hello")
+def read_root():
+    return Response('I hearr ya', 200)
 
 
 # TODO: Move to base_router.py
 # videos route
-@app.get('/video/{video_hash}')
+@app.get('/media/video/{video_hash}')
 def xyz(video_hash: str):
     # data = state.videos_dict.get(video_hash)
     print('finding video with hash:', video_hash)
@@ -82,7 +89,7 @@ def xyz(video_hash: str):
 
 
 # static (preview) media
-app.mount("/media", StaticFiles(directory=PREVIEW_MEDIA_DIR), name="media")
+app.mount("/media/static", StaticFiles(directory=PREVIEW_MEDIA_DIR), name="media")
 
 
 # frontend

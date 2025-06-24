@@ -29,12 +29,11 @@ def hasPoster(video_hash: str, mediadir: str) -> str|None:
     return _path_relative_to(poster_path, mediadir)
 
 
-def hasSeekThumbs(video_hash: str, mediadir: str, duration_sec: float):
-    dir = os.path.join(_get_video_media_dir(mediadir, video_hash), 'seekthumbs')
-    if not os.path.exists(dir):
-        return False
-    interval_sec = max( int((5/1920) * duration_sec), 1)
-    return len(os.listdir(dir)) >= int(duration_sec / interval_sec)
+# DEPRECATED
+def hasSeekThumbs(video_hash: str, mediadir: str):
+    """ checks if seekthumbs.jpg and seekthumbs.vtt exist in video preview media dir """
+    videomediadir = _getMediaDirByHash(video_hash, mediadir)
+    return os.path.exists( videomediadir + '/seekthumbs.jpg') and os.path.exists( videomediadir + '/seekthumbs.vtt' )
 
 
 def hasTeaserSmall(video_hash: str, mediadir: str) -> bool:
@@ -54,7 +53,7 @@ def hasPreviewThumbs(hash, mediadir, small=True):
     if not os.path.exists(vid_folder):
         return None
     res = '360' if small else '1080'
-    thumb_paths = [ os.path.join('previewthumbs', f) for f in os.listdir(vid_folder) if res in f ]
+    thumb_paths = [ os.path.join('previewthumbs', f) for f in os.listdir(vid_folder) if res in f ] # http://localhost:8000/media/videos/0x0064e4c01f13/poster.png
     if thumb_paths == []:
         return None
     delta = (datetime.now() - datetime.strptime('1900', '%Y'))
@@ -68,6 +67,9 @@ def hasCustomThumb(hash, dir):
     if os.path.exists(os.path.join(dir, fn)):
         return fn
     return False
+
+def _getMediaDirByHash(video_hash: str, mediadir: str):
+    return f'{mediadir}/videos/0x{video_hash}'
 
 
 
@@ -94,7 +96,10 @@ def generatePosterSimple(video_path: str, video_hash: str, mediadir: str, durati
     return _path_relative_to(poster_path, mediadir)
 
 
-def generateSeekThumbs(videopath: str, video_hash: str, mediadir: str, duration_sec: float, height=180):
+
+# DEPRECATED!
+def generateSeekThumbs_ffmpeg(videopath: str, video_hash: str, mediadir: str, duration_sec: float, height=180):
+    """ Uses ffmpeg to generate seek thumbnails (HUOM: Doesn't generate spritesheet) """
     if not os.path.exists(videopath):
         print("Video doesn't exits:", videopath)
         return False

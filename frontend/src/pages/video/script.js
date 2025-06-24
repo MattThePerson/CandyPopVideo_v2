@@ -3,11 +3,10 @@
 
 if (urlParams.get('random') || !urlParams.get('hash')) {
     console.log("Getting random video hash ...");
-    makeApiRequestGET('get-random-video', [], (arg) => {
-        const urlParams = new URLSearchParams({'hash' : arg.hash});
-        url = "videoPage.html?" + urlParams.toString();
-        console.log("Redirecting to: " + url);
-        window.location.href = url;
+    makeApiRequestGET('api/get/random-video-hash', [], (arg) => {
+        const params = new URLSearchParams(location.search);
+        params.set('hash', arg.hash);
+        location.replace(location.pathname + '?' + params.toString())
     });
 }
 
@@ -150,11 +149,6 @@ progressionBarCanvas.style.bottom = '0';
 progressionBarCanvas.height = progressionBarCanvas_thickness;
 progressionBarCanvas.width = window.screen.width;
 
-
-let videodata_global;
-const videoHash = urlParams.get('hash');
-console.log("Video hash: " + videoHash);
-
 let video_metadata_loaded = false;
 let related_videos_load_amount = 8;
 let related_videos_loaded = 0;
@@ -210,100 +204,108 @@ document.addEventListener('keydown', (event) => {
 
 /* API REQUEST */
 
+let videodata_global;
+const videoHash = urlParams.get('hash');
+console.log("Video hash: " + videoHash);
+
 // GET VIDEO DATA
-makeApiRequestGET('get-video', [videoHash], videodata => {
-    videodata_global = videodata;
-    console.log(videodata);
-    
-    // let pathComponents = videodata.path.split("\\");
-    // let filename = pathComponents.pop();
-    // let encodedFilename = encodeURIComponent(filename);
-    // let encodedPath = pathComponents.join("/") + "/" + encodedFilename;
-    
-    // Create player
-    player = new Playerjs({
-        id: "player",
-        title: videodata.filename,
-        file: 'video/' + videoHash,
-        poster: `media/videos/0x${videoHash}/${videodata['poster'].replace('\\', '/')}`,
-        //autoplay: true,          // Autoplay the video (if allowed by the browser)
-        preload: 'auto',          // Preload the video to reduce buffering (try "metadata" or "none" if performance is still an issue)
-        seek: 5,                  // Seeks the video to the nearest 5 seconds
-        mute: false 
-    });
+if (videoHash != null) {
 
-    let playerStartTime = urlParams.get('time');
+    makeApiRequestGET('api/get/video-data', [videoHash], videodata => {
+        videodata_global = videodata;
+        console.log('videodata:', videodata);
+        // return;
+        
+        // let pathComponents = videodata.path.split("\\");
+        // let filename = pathComponents.pop();
+        // let encodedFilename = encodeURIComponent(filename);
+        // let encodedPath = pathComponents.join("/") + "/" + encodedFilename;
+        
+        // Create player
+        player = new Playerjs({
+            id: "player",
+            title: videodata.filename,
+            file: 'media/video/' + videoHash,
+            poster: `../../../media/${videodata.poster.replace('\\', '/')}`,
+            //autoplay: true,          // Autoplay the video (if allowed by the browser)
+            preload: 'auto',          // Preload the video to reduce buffering (try "metadata" or "none" if performance is still an issue)
+            seek: 5,                  // Seeks the video to the nearest 5 seconds
+            mute: false 
+        });
     
-    function setPlayerTime() {
-        console.log('in setPlayerTime()');
-        let currentTime = player.api('time');
-        if (currentTime !== false) {
-            if (playerStartTime) {
-                console.log('setting time to: ' + playerStartTime);
-                player.api('seek', playerStartTime);
+        let playerStartTime = urlParams.get('time');
+        
+        function setPlayerTime() {
+            console.log('in setPlayerTime()');
+            let currentTime = player.api('time');
+            if (currentTime !== false) {
+                if (playerStartTime) {
+                    console.log('setting time to: ' + playerStartTime);
+                    player.api('seek', playerStartTime);
+                }
+                if (urlParams.get('autoplay')) {
+                    // player.api('play');
+                }
+            } else {
+                setTimeout(setPlayerTime, 100);
             }
-            if (urlParams.get('autoplay')) {
-                // player.api('play');
-            }
-        } else {
-            setTimeout(setPlayerTime, 100);
         }
-    }
-    setPlayerTime();
-
-    // add scene data to page
-    document.title = videodata.actor + ' - ' + videodata.title;
-    const header = document.querySelector(".video-header");
-    header.querySelector('.title').innerText = videodata.title;
-    header.querySelector('.actor').innerText = videodata.actor;
-    header.querySelector('.studio').innerText = videodata.studio;
-    header.querySelector('.collection').innerText = videodata.collection;
-    header.querySelector('.year').innerText = videodata.date || null;
-    header.querySelector('.duration').innerText = videodata.duration;
-    header.querySelector('.resolution').innerText = videodata.resolution + 'p';
-    header.querySelector('.bitrate').innerText = Math.round(videodata.bitrate/100)/10 + 'mb';
-    header.querySelector('.fps').innerText = videodata.FPS + 'fps';
-
-    // configure favourites button
-    favouritesButton.addEventListener('click', (args) => {
+        setPlayerTime();
+    
+        // add scene data to page
+        document.title = videodata.actor + ' - ' + videodata.title;
+        const header = document.querySelector(".video-header");
+        header.querySelector('.title').innerText = videodata.title;
+        header.querySelector('.actor').innerText = videodata.actor;
+        header.querySelector('.studio').innerText = videodata.studio;
+        header.querySelector('.collection').innerText = videodata.collection;
+        header.querySelector('.year').innerText = videodata.date || null;
+        header.querySelector('.duration').innerText = videodata.duration;
+        header.querySelector('.resolution').innerText = videodata.resolution + 'p';
+        header.querySelector('.bitrate').innerText = Math.round(videodata.bitrate/100)/10 + 'mb';
+        header.querySelector('.fps').innerText = videodata.FPS + 'fps';
+    
+        // configure favourites button
+        favouritesButton.addEventListener('click', (args) => {
+            if (videodata['is_favourite']) {
+                console.log("removing favourite: ", videoHash);
+                makeApiRequestGET('remove-favourite', [videoHash], () => {
+                    toggle_favourites_button_OFF(favouritesButton);
+                    videodata['is_favourite'] = false;
+                });
+            } else {
+                console.log("adding favourite: ", videoHash);
+                makeApiRequestGET('add-favourite', [videoHash], () => {
+                    toggle_favourites_button_ON(favouritesButton);
+                    videodata['is_favourite'] = true;
+                });
+            }
+        });
+        toggle_favourites_button_OFF(favouritesButton);
         if (videodata['is_favourite']) {
-            console.log("removing favourite: ", videoHash);
-            makeApiRequestGET('remove-favourite', [videoHash], () => {
-                toggle_favourites_button_OFF(favouritesButton);
-                videodata['is_favourite'] = false;
-            });
-        } else {
-            console.log("adding favourite: ", videoHash);
-            makeApiRequestGET('add-favourite', [videoHash], () => {
-                toggle_favourites_button_ON(favouritesButton);
-                videodata['is_favourite'] = true;
-            });
+            toggle_favourites_button_ON(favouritesButton);
         }
-    });
-    toggle_favourites_button_OFF(favouritesButton);
-    if (videodata['is_favourite']) {
-        toggle_favourites_button_ON(favouritesButton);
-    }
-
-    // load related videos
-
-    makeApiRequestGET('get-similar-videos', [videodata.hash, 1, related_videos_load_amount], search_results => {
-        generate_results(search_results);
-    });
-    related_videos_loaded += related_videos_load_amount;
-
-    // expand related results button
-    document.getElementById('expand-results-button').addEventListener('click', arg => {
-        console.log('Loading more related videos. Getting from index: ' + related_videos_loaded);
-        makeApiRequestGET('get-similar-videos', [videodata.hash, related_videos_loaded+1, related_videos_load_amount], search_results => {
+    
+        // load related videos
+    
+        makeApiRequestGET('api/query/get-similar-videos', [videodata.hash, 1, related_videos_load_amount], search_results => {
             generate_results(search_results);
         });
         related_videos_loaded += related_videos_load_amount;
+    
+        // expand related results button
+        document.getElementById('expand-results-button').addEventListener('click', arg => {
+            console.log('Loading more related videos. Getting from index: ' + related_videos_loaded);
+            makeApiRequestGET('api/query/get-similar-videos', [videodata.hash, related_videos_loaded+1, related_videos_load_amount], search_results => {
+                generate_results(search_results);
+            });
+            related_videos_loaded += related_videos_load_amount;
+        });
+    
+        // request seek thumbnails
+        makeApiRequestGET('api/ensure-media/seek-thumbnails', [videoHash], loadThumbnails);
     });
-
-    // request seek thumbnails
-    makeApiRequestGET('confirm-seek-thumbnails', [videoHash], loadThumbnails);
-});
+}
 
 
 
