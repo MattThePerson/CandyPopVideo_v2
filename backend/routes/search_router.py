@@ -1,8 +1,17 @@
 """ Routes for searching videos """
 import time
 from fastapi import APIRouter, Response, Request
+from pydantic import BaseModel
 
 from ..search.search import searchVideosFunction
+
+class Query(BaseModel):
+    search_query: str|None
+    include_tags: list[str]
+    exclude_tags: list[str]
+    sortby: str|None
+    # datetime_earliest: str
+    # datetime_latest: str
 
 search_router = APIRouter()
 

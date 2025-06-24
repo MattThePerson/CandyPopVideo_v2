@@ -8,7 +8,7 @@ from handymatt import StringParser
 from handymatt_media import video_analyser
 from handymatt_media.metadata import video_metadata
 
-from ..data.video_data import VideoData
+from ..schemas.video_data import VideoData
 
 #region ### PUBLIC ###
 
@@ -28,7 +28,7 @@ def process_videos(
     
     videos_dict: dict[str, VideoData] = {}
     hash_path_map: dict[str, str] = _get_video_hashes(video_paths, existing_videos, rehash_videos=rehash_videos)
-    # hash_path_map: dict[str, str] = _get_video_hashes_multi(video_paths, existing_videos, rehash_videos=rehash_videos)
+    # hash_path_map: dict[str, str] = _get_video_hashes_multi(video_paths, existing_videos, rehash_videos=rehash_videos) # multithreaded
 
     # process videos
     parser = StringParser(scene_filename_formats)
@@ -50,6 +50,8 @@ def process_videos(
         
         # organize tags
         ...
+        
+        videos_dict[video_hash] = video_data
     print()
 
     return videos_dict
@@ -60,34 +62,42 @@ def process_videos(
 def _get_video_hashes(
     video_paths: list[str],
     existing_videos: dict[str, VideoData],
-    rehash_videos = False
+    rehash_videos: bool=False,
 ) -> dict[str, str]:
-    """ Gets video hashes for a list of video paths and a dict of existing video data objects """
+    """ For a list of video paths, try to find their hash from exisiting videos, or else rehash. Return map[hash -> path] """
 
     hash_path_map: dict[str, str] = {}
-    hashing_failed, had_to_hash, collisions = [], [], []
+    hashed, hashing_failed, collisions = [], [], []
     path_hash_map = { video_data.path: hash for hash, video_data in existing_videos.items() }
     for idx, video_path in enumerate(video_paths):
-        print('\rgetting video hash ({:_}/{:_})'.format(idx+1, len(video_paths)), end='')
+        print('\rFinding hashes for video paths ({:_}/{:_})'.format(idx+1, len(video_paths)), end='')
         video_hash: str|None = path_hash_map.get(video_path)
-        if video_hash is None: # get hash from metadata
-            video_hash = _get_hash_from_video_metadata(video_path)
+        # if video_hash is None: # get hash from metadata
+        #     video_hash = _get_hash_from_video_metadata(video_path)
         if video_hash is None or rehash_videos:
-            had_to_hash.append(video_path)
             try:
                 video_hash = video_analyser.getVideoHash_ffmpeg(video_path)
+                if video_hash is None:
+                    hashing_failed.append(video_path)
+                hashed.append((video_hash, video_path))
             except Exception as e:
                 hashing_failed.append(video_path)
-            if video_hash: # add hash to metadata
-                _add_hash_to_video_metadata(video_path, video_hash)
-        # if video_hash is None:
-        else:
+            # if video_hash: # add hash to metadata
+            #     _add_hash_to_video_metadata(video_path, video_hash)
+        if video_hash:
             if video_hash in hash_path_map:
                 collisions.append(video_hash)
             else:
                 hash_path_map[video_hash] = video_path
-    print()
     # print hashing report
+    print('\nDone. |  hashed: {:_}/{:_} videos  |  fails: {:_}  |  collisions: {:_}  |'.format(len(hashed), len(video_paths), len(hashing_failed), len(collisions)))
+    if hashed != []:
+        print('\n   VIDEOS HASHED:')
+        for idx, (hsh, pth) in enumerate(hashed):
+            if idx > 5:
+                print('...')
+                break
+            print('{:_} : [{}] "{}/{}"'.format(idx+1, hsh, Path(pth).parent.name, Path(pth).name))
     return hash_path_map
 
 

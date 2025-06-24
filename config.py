@@ -1,17 +1,21 @@
 import os
 import yaml
+
 from handymatt.wsl_paths import convert_to_wsl_path
 
 
-# 
 with open('config.yaml', 'r') as f:
     CONFIG = yaml.safe_load(f)
 
-# app data and subdirs
-APP_DATA_DIR = convert_to_wsl_path(CONFIG['app_data_dir'])
-PREVIEW_MEDIA_DIR = APP_DATA_DIR #os.path.join( APP_DATA_DIR, 'preview_media' )
-CUSTOM_THUMBS_DIR = os.path.join( PREVIEW_MEDIA_DIR, 'custom_thumbs' )
 
+# APP DATA
+APP_DATA_DIR = convert_to_wsl_path(CONFIG.get('app_data_dir'))
+DB_PATH = APP_DATA_DIR + '/app.db'
+PREVIEW_MEDIA_DIR = APP_DATA_DIR + '/media'
+CUSTOM_THUMBS_DIR = PREVIEW_MEDIA_DIR + '/custom_thumbs'
+os.makedirs(APP_DATA_DIR, exist_ok=True)
+
+# GIFS
 GIFS_DIR = CONFIG.get('gifs_dir')
 if GIFS_DIR:
     GIFS_DIR = convert_to_wsl_path(GIFS_DIR)
@@ -19,3 +23,5 @@ if GIFS_DIR:
 VIDEO_EXTENSIONS = CONFIG.get('video_extensions')
 
 SCENE_FILENAME_FORMATS = CONFIG.get('scene_filename_formats')
+
+COLLECTIONS = CONFIG.get('collections')

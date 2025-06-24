@@ -215,16 +215,16 @@ makeApiRequestGET('get-video', [videoHash], videodata => {
     videodata_global = videodata;
     console.log(videodata);
     
-    let pathComponents = videodata.path.split("\\");
-    let filename = pathComponents.pop();
-    let encodedFilename = encodeURIComponent(filename);
-    let encodedPath = pathComponents.join("/") + "/" + encodedFilename;
+    // let pathComponents = videodata.path.split("\\");
+    // let filename = pathComponents.pop();
+    // let encodedFilename = encodeURIComponent(filename);
+    // let encodedPath = pathComponents.join("/") + "/" + encodedFilename;
     
     // Create player
     player = new Playerjs({
         id: "player",
         title: videodata.filename,
-        file: encodedPath,
+        file: 'video/' + videoHash,
         poster: `media/videos/0x${videoHash}/${videodata['poster'].replace('\\', '/')}`,
         //autoplay: true,          // Autoplay the video (if allowed by the browser)
         preload: 'auto',          // Preload the video to reduce buffering (try "metadata" or "none" if performance is still an issue)

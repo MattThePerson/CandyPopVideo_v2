@@ -16,10 +16,10 @@ if [[ "$1" == "reload" ]]; then
 fi
 
 # BUILD FRONTEND
-cd frontend
-echo "[NPM] Building frontend"
-npm run build
-cd ..
+# cd frontend
+# echo "[NPM] Building frontend"
+# npm run build
+# cd ..
 
 # CHECK VENV
 if [ ! -d ".venv" ]; then
@@ -28,7 +28,7 @@ if [ ! -d ".venv" ]; then
 fi
 
 # START
-print "[START] Starting uvicorn on port $BACKEND_PORT and extra args: '$EXTRA_ARGS'"
+echo "[START] Starting uvicorn on port $BACKEND_PORT and extra args: '$EXTRA_ARGS'"
 ./.venv/bin/uvicorn main:app --host 0.0.0.0 --workers 1 --port $BACKEND_PORT $EXTRA_ARGS
 
 # ./.venv/bin/python main.py "$@"

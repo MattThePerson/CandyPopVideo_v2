@@ -10,42 +10,57 @@ from handymatt.wsl_paths import convert_to_wsl_path
 from config import SCENE_FILENAME_FORMATS, VIDEO_EXTENSIONS
 from .metadata import metadata_load # TODO: outsource to handymatt dep
 from .process import process_videos
+from ..schemas import VideoData
+from .. import db
 
-# region #### PUBLIC #### 
 
-
-def scanVideos() -> None:
+def scanVideos(collections: dict[str, list]) -> None:
     """ Scan videos in directories and process. Steps: read videos from db, scan videos, process videos, save to db """
-    include_folders, ignore_folders, collections_dict = _readFoldersAndCollections_YAML('config.yaml')
-    if include_folders == None:
+    # include_folders, ignore_folders, collections_dict = _readFoldersAndCollections_YAML('config.yaml')
+    include_folders, ignore_folders, collections_dict = _process_collection_dirs(collections)
+    if include_folders is None:
         print("WARNING: No video folders read from config.yaml")
         return
+    print('[SCAN] Scanning video paths from {} folders'.format(len(include_folders)))
     video_paths = _getVideoPathsFromFolders(include_folders, ignore_folders, include_extensions=VIDEO_EXTENSIONS)
-    print("Found {} videos in {} folders from UNKNOWN collections".format(len(video_paths), len(include_folders)))
+    print("Found {} videos in {} folders and {} collections".format(len(video_paths), len(include_folders), len(collections_dict)))
     
-    print("Processing videos ...")
+    # Load videos from db
+    existing_dicts = db.read_table_as_dict('videos')
+    existing_video_objects = { hsh: VideoData.from_dict(dct) for hsh, dct in existing_dicts.items() }
+    print('Exising objects:', len(existing_video_objects))
+
+    # 
+    print("[PROCESS] Loading/Generating video objects")
     start = time.time()
-    existing_videos = {} # TODO: load from db
-    videos_dict = process_videos(video_paths, existing_videos, collections_dict, SCENE_FILENAME_FORMATS)
-    print("Successfully loaded {} videos (took {:.2f}s)\n".format(len(videos_dict), (time.time()-start)))
+    video_objects: dict[str, VideoData] = process_videos(video_paths, existing_video_objects, collections_dict, SCENE_FILENAME_FORMATS)
+    if len(video_objects) > 0:
+        print("Successfully loaded {} videos in {:.1f}s ({:.2f} ms/vid)\n".format( len(video_objects), (time.time()-start), (time.time()-start)*1000/len(video_objects) ))
+    
+    # Write to db
+    video_dicts = { hsh: vd.to_dict() for hsh, vd in video_objects.items() }
+    db.write_dict_of_objects_to_db(video_dicts, 'videos')
 
 
 
-
-
+# TODO: Remove
 def _readFoldersAndCollections_YAML(filepath: str) -> tuple[list[str], list[str], dict]:
     """ Reads the list of colders and the collections they belong to from `video_folders.yaml """
     if not os.path.exists(filepath):
         raise FileNotFoundError("Collections file doesn't exist:", filepath)
     
+    with open(filepath, 'r') as f:
+        data = yaml.safe_load(f)
+    
+    return _process_collection_dirs(data.get('collections'))
+    
+    
+def _process_collection_dirs(collections: dict[str, list]):
     include_folders: list[str] = []
     ignore_folders: list[str] = []
     folder_collection: dict = {}
 
-    with open(filepath, 'r') as f:
-        data = yaml.safe_load(f)
-    
-    for name, folders in data['collections'].items():
+    for name, folders in collections.items():
         if folders:
             ig_fol = [ convert_to_wsl_path(x) for x in folders if x.startswith('!') ]
             ignore_folders.extend(ig_fol)
