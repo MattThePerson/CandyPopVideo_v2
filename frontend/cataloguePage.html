@@ -1,0 +1,58 @@
+<!-- window width on phone: 378 -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catalogue Page</title>
+    <link rel="icon" type="image/x-icon" href="icons/tabIcons/candy3.ico">
+    <Link rel="stylesheet" href="styles/_fontsAndGlobals.css">
+    <Link rel="stylesheet" href="styles/_headerAndFooter.css">
+    <Link rel="stylesheet" href="styles/cataloguePage.css">
+    <script defer src="scripts/htmlComponentAdder.js" type="text/javascript"></script>
+    <script defer src="scripts/globalScripts.js" type="text/javascript"></script>
+    <script defer src="scripts/cataloguePage.js" type="text/javascript"></script>
+    
+</head>
+<body>
+    <div class="html-component-injector" html-component="header"></div>
+    
+    <div class="page-title-container">
+        <div class="page-title">CATALOGUE</div>
+    </div>
+
+    <div class="dashboard">
+        <div class="slider-container">
+            <span>gallery threshold</span>
+            <div class="slider-box">
+                <div class="slider">
+                    <input id="thresh-slider" type="range" step="1" min="0" max="100" value="0">
+                </div>
+                <div class="value">0</div>
+            </div>
+        </div>
+        <div class="letter-nav-container">
+            <div class="letter-nav"></div>
+        </div>
+    </div>
+    
+    <div class="content-container">
+        <ul id="content">
+        </ul>
+        <template id="item-starting-letter-template">
+            <li class="letter-section" id="letter-section-#">
+                <h2 class="letter"></h2>
+            </li>
+        </template>
+        <template id="item-row-template">
+            <a class="row">
+                <div class="item-name-div item-name"></div>
+                <div class="line"></div>
+                <div class="gallery-amount"></div>
+            </a>
+        </template>
+    </div>
+    
+    <div class="html-component-injector" html-component="footer"></div>
+</body>
+</html>
