@@ -1,6 +1,6 @@
 """ Functions for computing video, performer and studio similarity """
 import math
-from ..search import tfidf  # Weird import
+from ..recommender import tfidf  # Weird import
 from scipy.sparse import csr_matrix, vstack
 
 

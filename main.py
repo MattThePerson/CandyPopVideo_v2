@@ -9,7 +9,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from contextlib import asynccontextmanager
 from handymatt.wsl_paths import convert_to_wsl_path
 
-from backend.routers import api_router, ensure_media_router, search_router, dashboard_router
+from backend.routers import api_router, ensure_media_router, query_router, dashboard_router
 from backend.util.load import scanVideos
 from config import PREVIEW_MEDIA_DIR, COLLECTIONS
 
@@ -55,7 +55,7 @@ app.add_middleware(NoCacheMiddleware) # TODO: test removing
 # add routers
 app.include_router(api_router, prefix="/api")
 app.include_router(ensure_media_router, prefix="/api")
-app.include_router(search_router, prefix="/api")
+app.include_router(query_router, prefix="/api")
 app.include_router(dashboard_router, prefix="/api")
 
 

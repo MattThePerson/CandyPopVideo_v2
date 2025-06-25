@@ -19,8 +19,8 @@ def remove_favourite(video_hash: str, metadataHandler):
         favourites.remove(hash)
     metadataHandler.setValue('favourites', favourites)
 
-def is_favourite(video_hash: str, metadataHandler):
-    favourites = metadataHandler.getValue('favourites')
+def is_favourite(video_hash: str, metadata: dict):
+    favourites = metadata.get('favourites')
     if favourites == None:
         return False
     return hash in favourites

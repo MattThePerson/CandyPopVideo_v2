@@ -11,17 +11,31 @@ function initiate_search(searchPanel) {
     if (urlParams.get('sort-by')) {
         params.set('sort-by', urlParams.get('sort-by'));
     }
-    for (let pkey of ['query', 'performer', 'studio', 'collection', 'date-added-from', 'date-added-to', 'date-released-from', 'date-released-to', 'include-terms']) {
-        let selector = `.${pkey}-input input`;
-        try {
-            let value = searchPanel.querySelector(selector).value;
-            value = value.trim().replace(/\s+/g, ' ');
-            if (value != '') {
-                params.set(pkey, value);
-                console.log(selector);
+    // for (let pkey of ['search-string', 'performer', 'studio', 'collection', 'date-added-from', 'date-added-to', 'date-released-from', 'date-released-to', 'include-terms']) {
+    //     let selector = `.${pkey}-input input`;
+    //     try {
+    //         let value = searchPanel.querySelector(selector).value;
+    //         value = value.trim().replace(/\s+/g, ' ');
+    //         if (value != '') {
+    //             params.set(pkey, value);
+    //             // console.log(selector);
+    //         }
+    //     } catch {}
+    // }
+
+    /* get query data from query elements inputs */
+    searchPanel.querySelectorAll('.search-element').forEach(el => {
+        const a = Array.from(el.classList).find(cls => cls !== 'search-element') || null;
+        if (a === null) {
+            console.error('.search-element has no additional class');
+        } else {
+            const key = a.replace('-input', '');
+            const value = el.querySelector('input').value;
+            if (value !== '') {
+                params.set(key, value);
             }
-        } catch {}
-    }
+        }
+    });
     if (onlyFavsCheckbox.checked) {
         params.set('only-favs', true);
     }
@@ -120,83 +134,101 @@ for (let button_group of searchPanel.querySelectorAll('.sort-panel .button-group
 }
 
 
-/* API CALLS */
+/* OLD QUERY */
 
-document.title = get_search_page_title(urlParams);
+// let query_old = { limit: search_results_amount, startfrom: search_results_start_index };
 
-const pageNumber = parseInt(urlParams.get('page')) || 1;
-document.querySelector('#search-page-info .page-number').innerText = 'Page ' + (pageNumber);
-
-const search_results_amount = urlParams.get('results-amount') || 24;
-const search_results_start_index = search_results_amount * (pageNumber-1);
-
-
-/* 
-search_string: str
-    actor: str
-    studio: str
-    collection: str
-    include_terms: list[str]
-    exclude_terms: list[str]
-    date_added_from: str
-    date_added_to: str
-    date_released_from: str
-    date_released_to: str
-    only_favourites: bool
-    sortby: str|None
-    limit: int
-    startfrom: int
- */
+// for (let key of ['search-string', 'performer', 'studio', 'collection', 'date-added-from', 'date-added-to', 'date-released-from', 'date-released-to', 'include-terms', 'exclude-terms']) {
+//     if (urlParams.get(key)) {
+//         try {
+//             searchPanel.querySelector(`.${key}-input input`).value = urlParams.get(key);
+//         } catch {
+//             console.log('No such element: ', `.${key}-input input`);
+//         }
+//         let query_key = key.replace(/-/g, '_');
+//         if (key == 'performer') {
+//             query_key = 'actor'
+//         } else if (key == 'query') {
+//             query_key = 'search';
+//         }
+//         query_old[query_key] = urlParams.get(key);
+//     }
+// }
 
 
-let query = { limit: search_results_amount, startfrom: search_results_start_index };
+/* HANDLE URL SEARCH PARAMS */
 
-for (let key of ['query', 'performer', 'studio', 'collection', 'date-added-from', 'date-added-to', 'date-released-from', 'date-released-to', 'include-terms', 'exclude-terms']) {
-    if (urlParams.get(key)) {
-        try {
-            searchPanel.querySelector(`.${key}-input input`).value = urlParams.get(key);
-        } catch {
-            console.log('No such element: ', `.${key}-input input`);
-        }
-        let query_key = key.replace(/-/g, '_');
-        if (key == 'performer') {
-            query_key = 'actor'
-        } else if (key == 'query') {
-            query_key = 'search';
-        }
-        query[query_key] = urlParams.get(key);
+const params = new URLSearchParams(window.location.search);
+
+/* make page changes */
+
+document.title = get_search_page_title(params);
+
+params.forEach((value, key) => {
+    try {
+        searchPanel.querySelector(`.${key}-input input`).value = params.get(key);
+    } catch {
+        console.log('No such element: ', `.${key}-input input`);
     }
-}
+});
 
-if (urlParams.get('sort-by')) {
-    query['sort_by'] = urlParams.get('sort-by');
-    highlight_sort_button(urlParams.get('sort-by'));
+if (params.get('sort-by')) {
+    query['sort_by'] = params.get('sort-by');
+    highlight_sort_button(params.get('sort-by'));
 } else {
     highlight_sort_button('date-added-desc');
 }
 
-if (urlParams.get('only-favs')) {
+if (params.get('only-favs')) {
     query.only_favourites = true;
     onlyFavsCheckbox.checked = true;
 }
 
-// console.log('Query: ', query)
+const pageNumber = parseInt(params.get('page')) || 1;
+document.querySelector('#search-page-info .page-number').innerText = 'Page ' + (pageNumber);
 
 
-query = {
-    search_query: null,
-    include_tags: [],
-    exclude_tags: [],
-    sortby: null,
+/* construct query */
+
+const query = {
+    search_string: null,    // str,
+    actor: null,            // str,
+    studio: null,           // str,
+    collection: null,       // str,
+    include_terms: [],    // list[str],
+    exclude_terms: [],    // list[str],
+    date_added_from: null,      // str,
+    date_added_to: null,        // str,
+    date_released_from: null,   // str,
+    date_released_to: null,     // str,
+    only_favourites: false,      // bool,
+    sortby: null,                // str|None,
+    limit: -1,                 // int,
+    startfrom: -1,        // int,
 }
 
-let use_custom_thumbnails = window.location.pathname.includes('listPage.html');
+params.forEach((value, key) => {
+    if (key in query) {
+        query[key] = value;
+    }
+});
+
+query.limit =       params.get('results-amount') || 24;
+query.startfrom =   query.limit * (pageNumber-1);
+
+if (typeof query.include_terms === 'string') query.include_terms = query.include_terms.split(',').map(w => w.trim());
+if (typeof query.exclude_terms === 'string') query.exclude_terms = query.exclude_terms.split(',').map(w => w.trim());
+
+console.log('Query: ', query)
+
+
+/* BACKEND SEARCH REQUEST */
 
 if (urlParams.size > 0) {
-    
     makeApiRequestPOST('api/query/search-videos', query, search_results => {
-        console.log(search_results);
+        console.log('search_results:', search_results);
         return;
+        const use_custom_thumbnails = window.location.pathname.includes('listPage.html');
         generate_results(search_results, {generate_nav : true}, use_custom_thumbnails);
         
         if (query.actor) {

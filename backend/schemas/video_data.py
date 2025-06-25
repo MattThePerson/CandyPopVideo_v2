@@ -51,8 +51,6 @@ class VideoData:
 
     @classmethod
     def from_dict(cls, data, strict=True):
-        if data is None:
-            return None
         if strict:
             return cls(**data)  # Will fail if extra attributes exist
         else:

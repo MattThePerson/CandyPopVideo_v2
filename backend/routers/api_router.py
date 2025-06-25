@@ -27,11 +27,10 @@ api_router = APIRouter()
 def get_video(video_hash: str):
     print("Request recieved: 'get-video', hash: ", video_hash)
     # video_data = state.videos_dict.get(video_hash)
-    video_dict = db.read_object_from_db(video_hash, 'videos')
-    video_data = VideoData.from_dict(video_dict)
+    video_data = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') )
     if not video_data:
         print("Could not find video with hash:", video_hash)
-        return Response(status_code=404, content=f"No video with hash: {video_hash}")
+        return Response(f"No video with that hash", 404)
     print("Found video:", video_data.path)
     if not media.hasPoster(video_hash, _media_dir):
         print("Generating early poster for:", video_data.filename)
