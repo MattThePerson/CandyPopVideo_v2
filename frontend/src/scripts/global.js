@@ -41,6 +41,7 @@ window.addEventListener('load', function() {
 
 /* API FUNCTIONS */
 
+const fetch_request_prefix = '../' // base is /src/
 
 /* simple url args */
 /* assumes request is being made by .html page in `src/pages/PAGE_NAME/index.html` */
@@ -51,7 +52,7 @@ function makeApiRequestGET(request, args, callback) {
         api_call = api_call + '/' + arg;
     }
 
-    fetch('../../../' + api_call)
+    fetch(fetch_request_prefix + api_call)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`(${request}) Network response: ${response.status}`);
@@ -84,7 +85,7 @@ function makeApiRequestPOST(request, data, callback) {
         body: JSON.stringify(data),
     }
     
-    fetch('../../../' + request, options)
+    fetch(fetch_request_prefix + request, options)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`(${request}) Network response: ${response.status}`);

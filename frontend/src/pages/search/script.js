@@ -130,6 +130,25 @@ document.querySelector('#search-page-info .page-number').innerText = 'Page ' + (
 const search_results_amount = urlParams.get('results-amount') || 24;
 const search_results_start_index = search_results_amount * (pageNumber-1);
 
+
+/* 
+search_string: str
+    actor: str
+    studio: str
+    collection: str
+    include_terms: list[str]
+    exclude_terms: list[str]
+    date_added_from: str
+    date_added_to: str
+    date_released_from: str
+    date_released_to: str
+    only_favourites: bool
+    sortby: str|None
+    limit: int
+    startfrom: int
+ */
+
+
 let query = { limit: search_results_amount, startfrom: search_results_start_index };
 
 for (let key of ['query', 'performer', 'studio', 'collection', 'date-added-from', 'date-added-to', 'date-released-from', 'date-released-to', 'include-terms', 'exclude-terms']) {
@@ -161,7 +180,8 @@ if (urlParams.get('only-favs')) {
     onlyFavsCheckbox.checked = true;
 }
 
-// console.log('Query: ', query);
+// console.log('Query: ', query)
+
 
 query = {
     search_query: null,

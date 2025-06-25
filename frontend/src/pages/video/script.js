@@ -214,7 +214,6 @@ if (videoHash != null) {
     makeApiRequestGET('api/get/video-data', [videoHash], videodata => {
         videodata_global = videodata;
         console.log('videodata:', videodata);
-        // return;
         
         // let pathComponents = videodata.path.split("\\");
         // let filename = pathComponents.pop();

@@ -31,12 +31,12 @@ function HeaderTemplate() {
         <a href="index.html" class="logo">CandyPop</a>
     </div>
     <nav class="top-nav">
-        <a href="../home/index.html" class="top-nav-item">HOME</a>
-        <a href="../search/index.html" class="top-nav-item">SEARCH PAGE</a>
+        <a href="pages/home/index.html" class="top-nav-item">HOME</a>
+        <a href="pages/search/index.html" class="top-nav-item">SEARCH PAGE</a>
         <!-- <a href="../list/index.html?sort-by=date-released-desc" class="top-nav-item">LIST PAGE</a> -->
-        <a href="../catalogue/index.html?type=performer" class="top-nav-item">PERFORMERS</a>
-        <a href="../catalogue/index.html?type=studio" class="top-nav-item">STUDIOS</a>
-        <a href="../video/index.html" class="top-nav-item">RANDOM VIDEO</a>
+        <a href="pages/catalogue/index.html?type=performer" class="top-nav-item">PERFORMERS</a>
+        <a href="pages/catalogue/index.html?type=studio" class="top-nav-item">STUDIOS</a>
+        <a href="pages/video/index.html" class="top-nav-item">RANDOM VIDEO</a>
         <!-- <a href="../spreadsheet/index.html" class="top-nav-item">SPREADSHEET</a> -->
         <!-- <a href="../gifs/index.html" class="top-nav-item">GIFS</a> -->
         <!-- <a href="../curatedCollections/index.html" class="top-nav-item">CURATED</a> -->
