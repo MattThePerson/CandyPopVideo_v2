@@ -197,13 +197,37 @@ function setElementSrcWithRetries(element, src, retries=5, delay=500) {
     tryLoad();
 }
 
+
+
+// recursively loads an array of videos sequentially
+function _ensure_search_results_small_teasers(search_results, idx=0) {
+
+    if (idx == search_results.length) {
+        return;
+    }
+    
+    let current = search_results[idx];
+    // console.log('idx:', idx, search_results.length);
+
+    makeApiRequestGET('media/ensure/teaser-small', [current.hash], () => {
+        const video_el = document.querySelector('#item-' + current.hash + ' video');
+        video_el.preload = 'auto';
+        video_el.src = `../static/preview-media/0x${current.hash}/teaser_small.mp4`;
+        video_el.addEventListener('canplay', () => {
+            _ensure_search_results_small_teasers(search_results, idx+1);
+        });
+    });
+
+}
+
+
 function generate_results(results, args, use_custom_thumbs) {
 
     render_wordcloud(results.word_cloud);
 
     videoResultsContainer = document.getElementById('video-results-container');
     videoResultTemplate = document.getElementById('video-result-template');
-    let posters_confirmed = 0;
+    let posters_loaded = 0;
 
     /* ensure posters and teasers for search results */
     results.search_results.forEach( (result, idx) => {
@@ -212,14 +236,13 @@ function generate_results(results, args, use_custom_thumbs) {
         
         const img_el = document.querySelector(`#item-${result.hash} .thumbnail`);
         img_el.src = '../media/get/poster/' + result.hash;
-        
-        /* get video teaser */
-        setTimeout(() => {
-            makeApiRequestGET('media/ensure/teaser-small', [result.hash], (response) => {
-                const video_el = document.querySelector('#item-' + result.hash + ' video');
-                video_el.src = `../static/preview-media/0x${result.hash}/teaser_small.mp4`;
-            });
-        }, (Math.random()*400) + 100);
+        img_el.onload = () => {
+            posters_loaded++;
+            if (posters_loaded === results.search_results.length) {
+                console.log('Loading small teasers');
+                _ensure_search_results_small_teasers(results.search_results);
+            }
+        }
     });
     
     // Add event listener to search results to play teasers
