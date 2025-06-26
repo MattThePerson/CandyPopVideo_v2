@@ -1,5 +1,6 @@
 """ Process videos (hashing, filename parsing, metadata getting, ...) """
 import os
+import re
 import time
 from pathlib import Path
 from dataclasses import fields
@@ -9,8 +10,10 @@ from handymatt_media import video_analyser
 from handymatt_media.metadata import video_metadata
 
 from ..schemas.video_data import VideoData
+from ..loggers import LOGGER_HASHING_FAILED, LOGGER_COLLISIONS
 
-#region ### PUBLIC ###
+
+#region - PUBLIC -------------------------------------------------------------------------------------------------------
 
 def process_videos(
     video_paths: list[str],
@@ -57,7 +60,7 @@ def process_videos(
     return videos_dict
 
 
-#region ### PRIVATE ###
+#region - PRIVATE ------------------------------------------------------------------------------------------------------
 
 def _get_video_hashes(
     video_paths: list[str],
@@ -67,33 +70,44 @@ def _get_video_hashes(
     """ For a list of video paths, try to find their hash from exisiting videos, or else rehash. Return map[hash -> path] """
 
     hash_path_map: dict[str, str] = {}
-    hashed, hashing_failed, collisions = [], [], []
+    videos_hashed, hashing_failed, collisions = [], [], []
     path_hash_map = { video_data.path: hash for hash, video_data in existing_videos.items() }
     for idx, video_path in enumerate(video_paths):
         print('\rFinding hashes for video paths ({:_}/{:_})'.format(idx+1, len(video_paths)), end='')
         video_hash: str|None = path_hash_map.get(video_path)
         # if video_hash is None: # get hash from metadata
         #     video_hash = _get_hash_from_video_metadata(video_path)
+        if video_hash is None: # get filename embedded hash
+            video_hash = _extract_filename_embedded_hash(video_path)
         if video_hash is None or rehash_videos:
             try:
-                video_hash = video_analyser.getVideoHash_ffmpeg(video_path)
+                video_hash = video_analyser.getVideoHash_openCV(video_path)
                 if video_hash is None:
                     hashing_failed.append(video_path)
-                hashed.append((video_hash, video_path))
+                videos_hashed.append((video_hash, video_path))
             except Exception as e:
+                LOGGER_HASHING_FAILED.error(e)
                 hashing_failed.append(video_path)
             # if video_hash: # add hash to metadata
             #     _add_hash_to_video_metadata(video_path, video_hash)
+            if video_hash: # update filename embedded hash
+                try:
+                    # _remove_filename_embedded_hash(video_path)
+                    video_path = _update_filename_embedded_hash(video_path, video_hash)
+                except (FileExistsError, PermissionError, OSError) as e:
+                    hashing_failed.append(video_path)
+                    LOGGER_HASHING_FAILED.error('Error when updating filename embedded hash for: "{}"\n error: {}'.format(video_path, e))
         if video_hash:
             if video_hash in hash_path_map:
+                LOGGER_COLLISIONS.debug(f'hash [{video_hash}] shared by two videos:\n  1: {video_path}\n  2:{hash_path_map[video_hash]}')
                 collisions.append(video_hash)
             else:
                 hash_path_map[video_hash] = video_path
     # print hashing report
-    print('\nDone. |  hashed: {:_}/{:_} videos  |  fails: {:_}  |  collisions: {:_}  |'.format(len(hashed), len(video_paths), len(hashing_failed), len(collisions)))
-    if hashed != []:
+    print('\nDone. |  hashed: {:_}/{:_} videos  |  fails: {:_}  |  collisions: {:_}  |'.format(len(videos_hashed), len(video_paths), len(hashing_failed), len(collisions)))
+    if videos_hashed != []:
         print('\n   VIDEOS HASHED:')
-        for idx, (hsh, pth) in enumerate(hashed):
+        for idx, (hsh, pth) in enumerate(videos_hashed):
             if idx > 5:
                 print('...')
                 break
@@ -198,7 +212,7 @@ def _parse_filename(filename: str, parser: StringParser):
     return info
 
 
-#region ### HELPERS ###
+#region - HELPERS ------------------------------------------------------------------------------------------------------
 
 def _update_dataclass_from_dict(instance, update_dict: dict):
     for key, value in update_dict.items():
@@ -231,4 +245,57 @@ def _add_hash_to_video_metadata(video_path: str, video_hash: str):
     if Path(video_path).suffix == '.mkv':
         tags = { _CPOP_HASH_KEY: video_hash }
         video_metadata.addMetadataTags_MKV(video_path, tags)
+
+
+# VIDEO HASH FILENAME EMBEDDING
+
+EMBEDDED_CPOPHASH_FORMAT =  r' #cpvhsh-{}'
+EMBEDDED_CPOPHASH_PATTERN_EXTRACT = r' #cpvhsh-([0-9a-fA-F]+)[. ]'
+EMBEDDED_CPOPHASH_PATTERN_REMOVE = r' #cpvhsh-([0-9a-fA-F]+)(?=[. ])' # wont consume the [. ] at the end
+# ([0-9a-fA-F]+) - Captures 1+ hex digits (0-9, a-f, case insensitive) (+ means one or more of the preceding elements)
+# [. ] - Matches either a period or space (end of tag)
+
+
+
+def _extract_filename_embedded_hash(filepath: str) -> str|None:
+    """ Extracts video hash embedded in filename """
+    filename = os.path.basename(filepath)
+    match = re.search(EMBEDDED_CPOPHASH_PATTERN_EXTRACT, filename)
+    return match.group(1) if match else None
+
+
+def _update_filename_embedded_hash(filepath: str, video_hash: str) -> str:
+    """ Updates embeds hash into a files filename """
+    filename = os.path.basename(filepath)
+    filename_nohash = _remove_hash_from_filename(filename)
+    new_filename = _add_hash_to_filename(filename_nohash, video_hash)
+    if new_filename != filename:
+        return rename_file(filepath, new_filename)
+    return filepath
+
+
+def _remove_filename_embedded_hash(filepath: str) -> str:
+    """  """
+    filename = os.path.basename(filepath)
+    new_filename = _remove_hash_from_filename(filename)
+    return rename_file(filepath, new_filename)
+
+
+def _remove_hash_from_filename(filename: str):
+    """ Removes hash embedded in video filename """
+    return re.sub(EMBEDDED_CPOPHASH_PATTERN_REMOVE, '', filename).strip()
+
+
+def _add_hash_to_filename(filename: str, video_hash: str) -> str:
+    """ Adds hash to filename end. """
+    base, ext = os.path.splitext(filename)
+    hash_tag = EMBEDDED_CPOPHASH_FORMAT.format(video_hash)
+    return f'{base}{hash_tag}{ext}'
+
+
+def rename_file(old_path: str, new_name: str) -> str:
+    dir_path = os.path.dirname(old_path)
+    new_path = os.path.join(dir_path, new_name)
+    os.rename(old_path, new_path)
+    return new_path
 

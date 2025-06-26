@@ -14,7 +14,7 @@ from ..schemas import VideoData
 from .. import db
 
 
-def scanVideos(collections: dict[str, list]) -> None:
+def scanVideos(collections: dict[str, list], rehash_videos: bool=False) -> None:
     """ Scan videos in directories and process. Steps: read videos from db, scan videos, process videos, save to db """
     # include_folders, ignore_folders, collections_dict = _readFoldersAndCollections_YAML('config.yaml')
     include_folders, ignore_folders, collections_dict = _process_collection_dirs(collections)
@@ -33,7 +33,7 @@ def scanVideos(collections: dict[str, list]) -> None:
     # 
     print("[PROCESS] Loading/Generating video objects")
     start = time.time()
-    video_objects: dict[str, VideoData] = process_videos(video_paths, existing_video_objects, collections_dict, SCENE_FILENAME_FORMATS)
+    video_objects: dict[str, VideoData] = process_videos(video_paths, existing_video_objects, collections_dict, SCENE_FILENAME_FORMATS, rehash_videos=rehash_videos)
     if len(video_objects) > 0:
         print("Successfully loaded {} videos in {:.1f}s ({:.2f} ms/vid)\n".format( len(video_objects), (time.time()-start), (time.time()-start)*1000/len(video_objects) ))
     
