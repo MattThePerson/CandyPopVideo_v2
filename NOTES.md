@@ -1,5 +1,32 @@
 # NOTES
 
+## Running via PM2 (Node.js)
+
+Install and check:
+`npm install -g pm2`
+`pm2 -v`
+
+Start and manage:
+`pm2 start script.bat --name NAME`
+`pm2 stop NAME`
+`pm2 restart NAME`
+`pm2 delete NAME`
+
+Start powershell script:
+`pm2 start powershell.exe --name NAME -- -ExecutionPolicy Bypass -File "script.ps1"`
+pm2 start powershell.exe --name candypop-video -- -ExecutionPolicy Bypass -File tools\run.ps1
+
+View status and logs:
+`pm2 [list|ls|status]`
+`pm2 logs NAME`
+`pm2 logs --lines 200 NAME`
+
+Persist processes on reboot:
+`pm2 startup`
+`pm2 save`
+
+
+
 ## Desired Changes
 
 Backend:

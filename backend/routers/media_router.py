@@ -53,6 +53,58 @@ def confirm_poster(video_hash: str):
     return FileResponse(thumbnail_path)
 
 
+# ENSURE PREVIEW THUMBNAILS
+@media_router.get("/ensure/preview-thumbnails/{video_hash}")
+def confirm_preview_thumbnails(video_hash: str):
+    raise HTTPException(status_code=501, detail='Not implemented')
+    return jsonify(generateReponse("Not implemented")), 404
+    r = videos_dict.get(hash)
+    if not r:
+        print("Could not find video with hash:", hash)
+        return jsonify("No video with that hash"), 404
+    if not bf.media_hasPoster(hash, MEDIADIR):
+        print("Generating early poster for:", r['filename'])
+        ret = bf.media_generatePosterSimple(r['path'], hash, MEDIADIR, r['duration_seconds'])
+        if not ret:
+            return jsonify(generateReponse("Failed to generate poster")), 400
+    return jsonify(generateReponse()), 200
+
+
+# ENSURE SEEK THUMBNAIL
+@media_router.get("/ensure/teaser-small/{video_hash}")
+def confirm_teaser_small(video_hash: str):
+    # return Response('Temporarily disabled', 503)
+    print("[TEASER] Confirming small teaser for hash: ", hash)
+    video_data = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') );
+    if video_data is None:
+        raise HTTPException(404, f'Could not find video with hash: {video_hash}')
+    if not media.hasTeaserSmall(video_hash, PREVIEW_MEDIA_DIR):
+        teaser = media.generateTeaserSmall(video_data.path, video_hash, PREVIEW_MEDIA_DIR, video_data.duration_seconds)
+        if teaser is None or not os.path.exists(teaser):
+            raise HTTPException(500, 'Small teaser generation failed')
+    # print('returning good!')
+    return {'msg': 'good!'}
+
+
+# ENSURE SEEK THUMBNAIL
+@media_router.get("/ensure/teaser-large/{video_hash}")
+def confirm_teaser_large(video_hash: str):
+    raise HTTPException(status_code=501, detail='Not implemented')
+    print("[TEASER] Confirming large teaser for hash: ", hash)
+    r = videos_dict.get(hash)
+    if r == None:
+        print("Could not find video with hash:", hash)
+        return jsonify(), 404
+    if not bf.media_hasTeaserLarge(hash, MEDIADIR):
+        print("[TEASER] Generating large teaser")
+        teaser_path = bf.media_generateTeaserLarge(r['path'], hash, MEDIADIR, r['duration_seconds'])
+        if not os.path.exists(teaser_path):
+            print("[TEASER] ERROR: Generating teaser FAILED!")
+            return jsonify(), 400
+        return jsonify(generateReponse('Large teaser generated!')), 200
+    return jsonify(generateReponse('Large teaser already exists')), 200
+
+
 # ENSURE SEEK THUMBNAIL
 @media_router.get("/ensure/seek-thumbnails/{video_hash}")
 def confirm_seek_thumbnails(video_hash: str):
@@ -83,53 +135,3 @@ def confirm_seek_thumbnails(video_hash: str):
     return Response('Unable to generate seek thumbs for video', 500)
 
 
-# ENSURE PREVIEW THUMBNAILS
-@media_router.get("/ensure/preview-thumbnails/{video_hash}")
-def confirm_preview_thumbnails(video_hash: str):
-    raise HTTPException(status_code=501, detail='Not implemented')
-    return jsonify(generateReponse("Not implemented")), 404
-    r = videos_dict.get(hash)
-    if not r:
-        print("Could not find video with hash:", hash)
-        return jsonify("No video with that hash"), 404
-    if not bf.media_hasPoster(hash, MEDIADIR):
-        print("Generating early poster for:", r['filename'])
-        ret = bf.media_generatePosterSimple(r['path'], hash, MEDIADIR, r['duration_seconds'])
-        if not ret:
-            return jsonify(generateReponse("Failed to generate poster")), 400
-    return jsonify(generateReponse()), 200
-
-
-# ENSURE SEEK THUMBNAIL
-@media_router.get("/ensure/teaser-small/{video_hash}")
-def confirm_teaser_small(video_hash: str):
-    # raise HTTPException(status_code=501, detail='Not implemented')
-    print("[TEASER] Confirming small teaser for hash: ", hash)
-    video_data = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') );
-    if video_data is None:
-        raise HTTPException(404, f'Could not find video with hash: {video_hash}')
-    if not media.hasTeaserSmall(video_hash, PREVIEW_MEDIA_DIR):
-        teaser = media.generateTeaserSmall(video_data.path, video_hash, PREVIEW_MEDIA_DIR, video_data.duration_seconds)
-        if teaser is None or not os.path.exists(teaser):
-            raise HTTPException(500, 'Small teaser generation failed')
-    print('returning good!')
-    return {'msg': 'good!'}
-
-
-# ENSURE SEEK THUMBNAIL
-@media_router.get("/ensure/teaser-large/{video_hash}")
-def confirm_teaser_large(video_hash: str):
-    raise HTTPException(status_code=501, detail='Not implemented')
-    print("[TEASER] Confirming large teaser for hash: ", hash)
-    r = videos_dict.get(hash)
-    if r == None:
-        print("Could not find video with hash:", hash)
-        return jsonify(), 404
-    if not bf.media_hasTeaserLarge(hash, MEDIADIR):
-        print("[TEASER] Generating large teaser")
-        teaser_path = bf.media_generateTeaserLarge(r['path'], hash, MEDIADIR, r['duration_seconds'])
-        if not os.path.exists(teaser_path):
-            print("[TEASER] ERROR: Generating teaser FAILED!")
-            return jsonify(), 400
-        return jsonify(generateReponse('Large teaser generated!')), 200
-    return jsonify(generateReponse('Large teaser already exists')), 200

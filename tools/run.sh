@@ -8,13 +8,6 @@ BACKEND_PORT=8000
 TOOLS_DIR="$(dirname "$(readlink -f "$0")")"
 cd "$TOOLS_DIR/.."
 
-# ARGS
-EXTRA_ARGS=""
-if [[ "$1" == "reload" ]]; then
-    EXTRA_ARGS="--reload"
-    shift
-fi
-
 # BUILD FRONTEND
 # cd frontend
 # echo "[NPM] Building frontend"
@@ -28,7 +21,7 @@ if [ ! -d ".venv" ]; then
 fi
 
 # START
-echo "[START] Starting uvicorn on port $BACKEND_PORT and extra args: '$EXTRA_ARGS'"
-./.venv/bin/uvicorn main:app --host 0.0.0.0 --workers 1 --port $BACKEND_PORT $EXTRA_ARGS
+echo "[START] Starting uvicorn on port $BACKEND_PORT and extra args: '$@'"
+./.venv/bin/uvicorn main:app --host 0.0.0.0 --workers 1 --port $BACKEND_PORT "$@" # Unsure about using "" around the $@
 
 # ./.venv/bin/python main.py "$@"

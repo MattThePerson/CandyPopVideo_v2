@@ -1,7 +1,5 @@
-# command line: uvicorn main:app --workers 1
+# command line: uvicorn main:app --workers 1 --port 8000
 # production: gunicorn -w 4 -k uvicorn.workers.UvicornWorker app:app
-import os
-import sys
 from fastapi import FastAPI, Response, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -9,17 +7,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from contextlib import asynccontextmanager
 
 from backend.routers import api_router, media_router, query_router, dashboard_router
-from backend.schemas import VideoData
-from backend import db
 from config import PREVIEW_MEDIA_DIR, COLLECTIONS
 
-# from backend.schemas.video_data import VideoData
-
-
-# global variables
-
-_project_dir = os.path.dirname(__file__)
-_data_dir = os.path.join( _project_dir, 'data' )
 
 
 # Startup/Shutdown logic
@@ -66,8 +55,15 @@ def read_root():
 # static folder: preview media
 app.mount("/static/preview-media", StaticFiles(directory=PREVIEW_MEDIA_DIR), name="preview-media")
 
-# frontend
-app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")
+
+# [DEV] Determine which frontend to serve
+import os
+if os.getenv("USE_OLD_FRONTEND") == "1":
+    print('[PYTHON] Mounting "frontend"')
+    app.mount("/", StaticFiles(directory="frontend", html=True), name="old")
+else:
+    print('[PYTHON] Mounting "frontend_svelte/build"')
+    app.mount("/", StaticFiles(directory="frontend_svelte/build", html=True), name="new")
 
 
 

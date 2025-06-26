@@ -11,22 +11,21 @@ Built with **FastAPI** + **Svelte** ❤️
 
 - python >= 3.8
 - npm
+- Node.js (18.13 or higher for Svelte)
 - ffmpeg
-- MKVToolNix (optional, improves re-hashing speed for mkv videos)
-- tmux (optional)
 
 
-## Installing (Linux)
+## Installing
 
-- install system dependencies & clone repo
-- run `tools/install.sh`
+- clone repo & install system dependencies
+- run `tools/install.sh` (Linux) or `tools\install.bat` (Windows)
 - configure `config.yaml` (add app_data_dir and collections)
 
 
-## Running (Linux)
+## Running
 
-- **option 1:** run `tools/run.sh`
-- **option 2:** run `tools/run_tmux.sh` for tmux session
+- **Linux:**   `./tools/run.sh`
+- **Windows:** `.\tools\run.ps1`
 
 
 ## Improvements from v1:

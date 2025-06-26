@@ -76,7 +76,7 @@ def hasCustomThumb(hash, dir):
 def generatePosterSimple(video_path: str, video_hash: str, mediadir: str, duration_sec: float) -> str|None:
     """ For given video path and hash, generates simple poster into mediadir and returns poster relative path """
     if not os.path.exists(video_path):
-        raise FileNotFoundError("Video path doesn't exist")
+        raise FileNotFoundError("Video path doesn't exist:", video_path)
     poster_path = f'{_get_video_media_dir(mediadir, video_hash)}/poster.png'
     os.makedirs( os.path.dirname(poster_path), exist_ok=True )
     command = [
@@ -92,10 +92,6 @@ def generatePosterSimple(video_path: str, video_hash: str, mediadir: str, durati
     # ensure file exists
     if not os.path.exists(poster_path):
         raise FileExistsError("Poster doesn't exist after creation attempt")
-    
-    # Extra: fsync to flush at OS level (optional for FFmpeg, safer for custom writes)
-    with open(poster_path, 'rb') as f:
-        os.fsync(f.fileno())
     
     return 'poster.png' # _path_relative_to(poster_path, mediadir)
 
