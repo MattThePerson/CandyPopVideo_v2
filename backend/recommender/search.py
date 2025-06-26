@@ -19,7 +19,6 @@ def searchVideosFunction(videos_list: list[VideoData], search_query: SearchQuery
     # search_string, actor, studio, collection, include_terms, exclude_terms, date_added_from, date_added_to, date_released_from, date_released_to, only_favourites, sort_by = [ 
     #     search_params.get(x) for x in ['search', 'actor', 'studio', 'collection', 'include_terms', 'exclude_terms', 'date_added_from', 'date_added_to', 'date_released_from', 'date_released_to', 'only_favourites', 'sort_by']
     # ]
-    print(len(videos_list))
 
     q = search_query
     
@@ -47,8 +46,8 @@ def searchVideosFunction(videos_list: list[VideoData], search_query: SearchQuery
     if q.sortby and not q.search_string:
         videos_list = _sortVideos(videos_list, q.sortby)
 
+    # return
     word_cloud = _generate_word_cloud(videos_list, q.studio, q.actor, q.collection, q.include_terms)
-
     limited_results = videos_list[ q.startfrom: q.startfrom+q.limit ]
     videos_filtered_count = len(videos_list)
     return limited_results, videos_filtered_count, word_cloud
@@ -87,7 +86,7 @@ def _filterVideos(filtered: list[VideoData], search_query: SearchQuery, metadata
     
     if q.only_favourites:     filtered = [ vid for vid in filtered if ( meta.is_favourite(vid.hash, metadata) ) ]
     if q.actor:               filtered = [ vid for vid in filtered if ( _actor_in_video(q.actor, vid) ) ]
-    if q.studio:              filtered = [ vid for vid in filtered if ( ( vid.studio and vid.studio.lower() in vid.studio.lower() ) ) ]
+    if q.studio:              filtered = [ vid for vid in filtered if ( ( vid.studio and vid.studio.lower() in q.studio.lower() ) ) ]
     if q.collection:          filtered = [ vid for vid in filtered if ( (vid.collection and q.collection.lower() in vid.collection.lower()) ) ]
 
     if q.date_added_from:     filtered = [ vid for vid in filtered if ( (_get_video_date_released(vid) and _get_video_date_released(vid) >= q.date_added_from) ) ]
@@ -99,7 +98,7 @@ def _filterVideos(filtered: list[VideoData], search_query: SearchQuery, metadata
     for t_lower in include_terms:  filtered = [ vid for vid in filtered if ( t_lower in vid.path.lower() ) ]
     exclude_terms = [ t.lower() for t in q.exclude_terms ]
     for t_lower in exclude_terms:  filtered = [ vid for vid in filtered if ( t_lower not in vid.path.lower() ) ]
-
+    
     return filtered
 
 

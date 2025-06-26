@@ -1,6 +1,6 @@
 """ Routes for searching videos """
 import time
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Response, HTTPException
 
 from ..recommender.search import searchVideosFunction
 from ..schemas import SearchQuery, VideoData
@@ -9,7 +9,7 @@ from .. import db
 query_router = APIRouter()
 
 # SEARCH VIDEOS
-@query_router.post("/query/search-videos")
+@query_router.post("/search-videos")
 def search_videos(query: SearchQuery):
     video_dicts = db.read_table_as_dict('videos')
     video_objects_list = [ VideoData.from_dict(vd) for vd in video_dicts.values() ]
@@ -22,10 +22,10 @@ def search_videos(query: SearchQuery):
         None
     )
     if search_results_tuple is None:
-        return Response('Failed to get results', 500)
+        raise HTTPException(status_code=500, detail='Failed to get results')
     (results, videos_filtered_count, word_cloud) = search_results_tuple
     return {
-        'results': results,
+        'search_results': results,
         'videos_filtered_count': videos_filtered_count,
         'word_cloud': word_cloud,
         'time_taken': round( time.time()-start, 3 ),
@@ -33,22 +33,20 @@ def search_videos(query: SearchQuery):
 
 
 # GET SIMILAR VIDEOS
-@query_router.get("/query/get-similar-videos/{video_hash}/{start_from}/{limit}")
+@query_router.get("/get/similar-videos/{video_hash}/{start_from}/{limit}")
 def get_similar_videos(video_hash: str, start_from: int, limit: int):
-    print('video_hash:', video_hash)
-    return Response('Not implemented', 501)
-    print("[GET SIMILAR VIDEOS] Recieved query")
+    raise HTTPException(status_code=501, detail='Not implemented')
     # return jsonify(generateReponse('Not implemented')), 404
-    results = ff.get_similar_videos(hash, int(start_from), int(limit), videos_dict, tfidf_model)
-    if results == None:
-        jsonify(generateReponse('No results')), 400
-    return jsonify(generateReponse(results)), 200
+    # results = ff.get_similar_videos(hash, int(start_from), int(limit), videos_dict, tfidf_model)
+    # if results == None:
+    #     jsonify(generateReponse('No results')), 400
+    # return jsonify(generateReponse(results)), 200
 
 
 # GET SIMILAR PERFORMERS
-@query_router.get('/query/get-similar-performers/{performer}')
+@query_router.get('/get/similar-performers/{performer}')
 def get_similar_performers(performer: str):
-    return Response('Not implemented', 501)
+    raise HTTPException(status_code=501, detail='Not implemented')
     print(f'Getting similar performers to: "{performer}"')
     results = ff.get_similar_performers(performer, performer_embeddings)
     if results == None:
@@ -57,9 +55,9 @@ def get_similar_performers(performer: str):
 
 
 # GET SIMILAR STUDIOS
-@query_router.get('/query/get-similar-studios/{studio}')
+@query_router.get('/get/similar-studios/{studio}')
 def get_similar_studio(studio: str):
-    return Response('Not implemented', 501)
+    raise HTTPException(status_code=501, detail='Not implemented')
     return jsonify("Not implemented"), 404
     print(f'Getting similar studios to: "{studio}"')
     return jsonify(generateReponse(sims)), 200

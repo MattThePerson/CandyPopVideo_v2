@@ -45,6 +45,7 @@ function toggle_favourites_button_OFF(butt) {
 // LONG ASS FUNCTION
 function loadThumbnails() {
 
+    // TODO: Redo with sprite sheets!
     // create seek thumbnails
     videoDuration = videodata_global.duration_seconds;
     seekThumbnailInterval = getSeekThumbnailInterval(videoDuration);
@@ -150,8 +151,6 @@ progressionBarCanvas.height = progressionBarCanvas_thickness;
 progressionBarCanvas.width = window.screen.width;
 
 let video_metadata_loaded = false;
-let related_videos_load_amount = 8;
-let related_videos_loaded = 0;
 
 let favouritesButton = document.getElementById('add-favourite-button')
 
@@ -224,8 +223,8 @@ if (videoHash != null) {
         player = new Playerjs({
             id: "player",
             title: videodata.filename,
-            file: 'media/video/' + videoHash,
-            poster: `../../../media/${videodata.poster.replace('\\', '/')}`,
+            file: '../media/get/video/' + videoHash,
+            poster: `../media/get/poster/${videoHash}`,// `../static/preview/${videodata.poster.replace('\\', '/')}`,
             //autoplay: true,          // Autoplay the video (if allowed by the browser)
             preload: 'auto',          // Preload the video to reduce buffering (try "metadata" or "none" if performance is still an issue)
             seek: 5,                  // Seeks the video to the nearest 5 seconds
@@ -285,24 +284,26 @@ if (videoHash != null) {
             toggle_favourites_button_ON(favouritesButton);
         }
     
-        // load related videos
-    
-        makeApiRequestGET('api/query/get-similar-videos', [videodata.hash, 1, related_videos_load_amount], search_results => {
-            generate_results(search_results);
-        });
-        related_videos_loaded += related_videos_load_amount;
-    
-        // expand related results button
-        document.getElementById('expand-results-button').addEventListener('click', arg => {
-            console.log('Loading more related videos. Getting from index: ' + related_videos_loaded);
-            makeApiRequestGET('api/query/get-similar-videos', [videodata.hash, related_videos_loaded+1, related_videos_load_amount], search_results => {
+        /* load related videos */
+
+        const related_videos_load_amount = 8;
+        let related_videos_loaded = 0;
+        
+        const load_related_videos = (start_idx) => {
+            makeApiRequestGET('api/query/get/similar-videos', [videodata.hash, start_idx + 1, related_videos_load_amount], search_results => {
                 generate_results(search_results);
             });
-            related_videos_loaded += related_videos_load_amount;
+            return start_idx + related_videos_load_amount
+        };
+    
+        related_videos_loaded = load_related_videos(related_videos_loaded);
+        document.getElementById('expand-results-button').addEventListener('click', () => {
+            related_videos_loaded = load_related_videos(related_videos_loaded);
         });
     
-        // request seek thumbnails
-        makeApiRequestGET('api/ensure-media/seek-thumbnails', [videoHash], loadThumbnails);
+        /* request seek thumbnails */
+        makeApiRequestGET('media/ensure/seek-thumbnails', [videoHash], loadThumbnails);
+
     });
 }
 

@@ -10,9 +10,9 @@ with open('config.yaml', 'r') as f:
 
 # APP DATA
 APP_DATA_DIR = convert_to_wsl_path(CONFIG.get('app_data_dir'))
-DB_PATH = APP_DATA_DIR + '/app.db'
-PREVIEW_MEDIA_DIR = APP_DATA_DIR + '/media'
-CUSTOM_THUMBS_DIR = PREVIEW_MEDIA_DIR + '/custom_thumbs'
+DB_PATH =           APP_DATA_DIR + '/app.db'
+PREVIEW_MEDIA_DIR = APP_DATA_DIR + '/media/preview'
+CUSTOM_THUMBS_DIR = APP_DATA_DIR + '/media/custom_thumbs'
 os.makedirs(APP_DATA_DIR, exist_ok=True)
 
 # GIFS

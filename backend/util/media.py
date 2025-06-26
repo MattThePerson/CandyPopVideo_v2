@@ -17,6 +17,7 @@ from datetime import datetime
 
 from handymatt_media import media_generator
 
+from ..schemas import VideoData
 
 
 #region ### CHECKERS ###
@@ -26,13 +27,13 @@ def hasPoster(video_hash: str, mediadir: str) -> str|None:
     poster_path = os.path.join( _get_video_media_dir(mediadir, video_hash), 'poster.png' )
     if not os.path.exists(poster_path):
         return None
-    return _path_relative_to(poster_path, mediadir)
+    return 'poster.png' #_path_relative_to(poster_path, mediadir)
 
 
 # DEPRECATED
 def hasSeekThumbs(video_hash: str, mediadir: str):
     """ checks if seekthumbs.jpg and seekthumbs.vtt exist in video preview media dir """
-    videomediadir = _getMediaDirByHash(video_hash, mediadir)
+    videomediadir = _get_video_media_dir(video_hash, mediadir)
     return os.path.exists( videomediadir + '/seekthumbs.jpg') and os.path.exists( videomediadir + '/seekthumbs.vtt' )
 
 
@@ -49,15 +50,15 @@ def hasTeaserLarge(hash, mediadir):
 
 
 def hasPreviewThumbs(hash, mediadir, small=True):
-    vid_folder = os.path.join( _get_video_media_dir(mediadir, hash), 'previewthumbs' )
+    vid_folder = f'{_get_video_media_dir(mediadir, hash)}/previewthumbs'
     if not os.path.exists(vid_folder):
         return None
     res = '360' if small else '1080'
     thumb_paths = [ os.path.join('previewthumbs', f) for f in os.listdir(vid_folder) if res in f ] # http://localhost:8000/media/videos/0x0064e4c01f13/poster.png
     if thumb_paths == []:
         return None
+    # return thumbnail by second
     delta = (datetime.now() - datetime.strptime('1900', '%Y'))
-    # i = int(delta.days%len(thumbs_small))
     i = int(delta.seconds%len(thumb_paths))
     return thumb_paths[i]
 
@@ -68,10 +69,6 @@ def hasCustomThumb(hash, dir):
         return fn
     return False
 
-def _getMediaDirByHash(video_hash: str, mediadir: str):
-    return f'{mediadir}/videos/0x{video_hash}'
-
-
 
 
 #region ### GENERATORS ###
@@ -80,20 +77,27 @@ def generatePosterSimple(video_path: str, video_hash: str, mediadir: str, durati
     """ For given video path and hash, generates simple poster into mediadir and returns poster relative path """
     if not os.path.exists(video_path):
         raise FileNotFoundError("Video path doesn't exist")
-    poster_path = os.path.join( _get_video_media_dir(mediadir, video_hash), 'poster.png' )
+    poster_path = f'{_get_video_media_dir(mediadir, video_hash)}/poster.png'
     os.makedirs( os.path.dirname(poster_path), exist_ok=True )
     command = [
         'ffmpeg', 
-        '-ss', f'{duration_sec*0.1}',
+        '-ss', f'{duration_sec*0.2}',
         '-i', video_path,
         '-frames:v', "1",
         poster_path,
         '-loglevel', 'quiet',
     ]
     subprocess.run(command)
+    
+    # ensure file exists
     if not os.path.exists(poster_path):
         raise FileExistsError("Poster doesn't exist after creation attempt")
-    return _path_relative_to(poster_path, mediadir)
+    
+    # Extra: fsync to flush at OS level (optional for FFmpeg, safer for custom writes)
+    with open(poster_path, 'rb') as f:
+        os.fsync(f.fileno())
+    
+    return 'poster.png' # _path_relative_to(poster_path, mediadir)
 
 
 
@@ -170,13 +174,14 @@ def generateTeasersSmallForVideos(videos, mediadir, limit=None, redo=False):
                     break
 
 
-def generateSeekThumbnailsForVideos(videos, mediadir):
+def generateSeekThumbnailsForVideos(videos_list: list[VideoData], mediadir):
     succ, fails = [], []
-    for i, vd in enumerate(videos):
-        hash = vd['hash']
-        if not hasSeekThumbs(hash, mediadir, vd['duration_seconds']):
-            print("\r  ({}/{}) generating seek thumbs  {:<80}    ".format(i+1, len(videos), f"{vd['path'][:76]}"), end='')
-            generateSeekThumbs(vd['path'], hash, mediadir, vd['duration_seconds'])
+    for i, video_data in enumerate(videos_list):
+        if not hasSeekThumbs(video_data.hash, mediadir):
+            print("\r  ({}/{}) generating seek thumbs  {:<80}    ".format(i+1, len(videos_list), f"{video_data.path[:76]}"), end='')
+            vid_media_dir = _get_video_media_dir(mediadir, video_data.hash)
+            media_generator.generateSeekThumbnails(video_data.path, vid_media_dir)
+            # generateSeekThumbs(vd['path'], video_data.hash, mediadir, vd['duration_seconds'])
 
 
 def generatePreviewThumbnailsForVideos(videos, mediadir, redo=False, n_frames=30*10):
@@ -223,8 +228,10 @@ def link_custom_thumbs(videos_dict: dict[str, dict], custom_thumbs_dir: str) -> 
 
 
 def _get_video_media_dir(mediadir: str, video_hash: str) -> str:
-    """ gets path to videos media directory [{mediadir}/videos/0x{videohash}] """
-    return os.path.join( mediadir, 'videos/0x' + video_hash )
+    """ gets path to videos media directory {mediadir}/videos/0x{videohash}/"""
+    return f'{mediadir}/0x{video_hash}'
+
+
 
 def _path_relative_to(path: str, dirpath: str) -> str:
     return str(Path(path).relative_to(Path(dirpath)))

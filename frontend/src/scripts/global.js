@@ -57,9 +57,11 @@ function makeApiRequestGET(request, args, callback) {
             if (!response.ok) {
                 throw new Error(`(${request}) Network response: ${response.status}`);
             }
+            // console.log(`(${request}) 1st then`);
             return response.json();
         })
         .then(data => {
+            // console.log(`(${request}) 2nd then`);
             try {
                 callback(data)
             } catch (error) {
@@ -112,7 +114,7 @@ function makeApiRequestPOST(request, data, callback) {
 
 function GLOBAL_video_is_favourite(hash, callback) {
     //console.log("Checking if video is favourite: " + hash);
-    makeApiRequestGET('is-favourite', [hash], arg => {
+    makeApiRequestGET('api/favourites/is-fav', [hash], arg => {
         if (arg && arg.is_favourite) {
             callback();
         }

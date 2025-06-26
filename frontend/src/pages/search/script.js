@@ -225,11 +225,11 @@ console.log('Query: ', query)
 /* BACKEND SEARCH REQUEST */
 
 if (urlParams.size > 0) {
-    makeApiRequestPOST('api/query/search-videos', query, search_results => {
-        console.log('search_results:', search_results);
-        return;
+    makeApiRequestPOST('api/query/search-videos', query, results => {
+        console.log('search_results:', results);
+        // return;
         const use_custom_thumbnails = window.location.pathname.includes('listPage.html');
-        generate_results(search_results, {generate_nav : true}, use_custom_thumbnails);
+        generate_results(results, {generate_nav : true}, use_custom_thumbnails);
         
         if (query.actor) {
             console.log('Making performer panel');

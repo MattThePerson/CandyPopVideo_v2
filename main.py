@@ -2,15 +2,15 @@
 # production: gunicorn -w 4 -k uvicorn.workers.UvicornWorker app:app
 import os
 import sys
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from contextlib import asynccontextmanager
-from handymatt.wsl_paths import convert_to_wsl_path
 
-from backend.routers import api_router, ensure_media_router, query_router, dashboard_router
-from backend.util.load import scanVideos
+from backend.routers import api_router, media_router, query_router, dashboard_router
+from backend.schemas import VideoData
+from backend import db
 from config import PREVIEW_MEDIA_DIR, COLLECTIONS
 
 # from backend.schemas.video_data import VideoData
@@ -53,44 +53,18 @@ app = FastAPI(lifespan=lifespan)
 app.add_middleware(NoCacheMiddleware) # TODO: test removing
 
 # add routers
-app.include_router(api_router, prefix="/api")
-app.include_router(ensure_media_router, prefix="/api")
-app.include_router(query_router, prefix="/api")
-app.include_router(dashboard_router, prefix="/api")
-
+app.include_router(media_router,     prefix="/media")
+app.include_router(api_router,       prefix="/api")
+app.include_router(query_router,     prefix="/api/query")
+app.include_router(dashboard_router, prefix="/api/dashboard")
 
 # test
 @api_router.get("/api/hello")
 def read_root():
     return Response('I hearr ya', 200)
 
-
-# TODO: Move to base_router.py
-# videos route
-@app.get('/media/video/{video_hash}')
-def xyz(video_hash: str):
-    # data = state.videos_dict.get(video_hash)
-    print('finding video with hash:', video_hash)
-
-    import json
-    with open('data/videos.json', 'r') as f:
-        videos_dict = json.load(f)
-    print('Loaded dict of size:', len(videos_dict))
-    data = videos_dict.get(video_hash)
-    
-    if data is None:
-        return Response(f'Data not found for hash {video_hash}', 404)
-    video_path = convert_to_wsl_path(data['path'])
-    print('video_hash:', video_hash)
-    print('video_path', video_path)
-    if not os.path.exists(video_path):
-        return Response(f'Video path doesnt exist "{video_path}"', 404)
-    return FileResponse(video_path, media_type='video/mp4')
-
-
-# static (preview) media
-app.mount("/media/static", StaticFiles(directory=PREVIEW_MEDIA_DIR), name="media")
-
+# static folder: preview media
+app.mount("/static/preview-media", StaticFiles(directory=PREVIEW_MEDIA_DIR), name="preview-media")
 
 # frontend
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")

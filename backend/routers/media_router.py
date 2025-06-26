@@ -1,7 +1,9 @@
 """ Routes for api/media/ (eg. get-poster/) which handle checking that media exists and their creation """
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Response, HTTPException
+from fastapi.responses import FileResponse
 import os
 
+from handymatt.wsl_paths import convert_to_wsl_path
 from handymatt_media import media_generator
 
 from config import PREVIEW_MEDIA_DIR, CUSTOM_THUMBS_DIR
@@ -10,33 +12,49 @@ from ..schemas import VideoData
 from .. import db
 
 
-ensure_media_router = APIRouter()
+media_router = APIRouter()
+
+#   ROUTES:
+# media/static/<PTH>            -> StaticResponse()
+# media/get/<TYPE>/<HSH>        -> FileResponse(): can prompt creation  TYPE=[video, poster, ...]
+# media/ensure/<TYPE>/<HSH>     -> Response(): ensures media exists, prompts creation
 
 
-# CONFIRM SEEK THUMBNAIL
-@ensure_media_router.get("/ensure-media/poster/{video_hash}")
+# videos route
+@media_router.get('/get/video/{video_hash}')
+def xyz(video_hash: str):
+    video_data = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') )
+    if video_data is None:
+        raise HTTPException(404, 'No data found for that hash')
+    video_path = convert_to_wsl_path(video_data.path)
+    if not os.path.exists(video_path):
+        raise HTTPException(404, 'Video path doesnt exist')
+    return FileResponse(video_path, media_type='video/mp4')
+
+
+# ENSURE SEEK THUMBNAIL (Gets Poster)
+@media_router.get("/get/poster/{video_hash}")
 def confirm_poster(video_hash: str):
-    return Response('Not implemented', 501)
-    video_object = state.videos_dict.get(video_hash)
-    if video_object is None:
+    video_data = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') )
+    if video_data is None:
         print("Could not find video with hash:", video_hash)
         return Response("No video with that hash", 404)
-    # poster = media.hasPreviewThumbs(video_hash, PREVIEW_MEDIA_DIR, small=False)
-    poster = None
-    if poster is None:
-        poster = media.hasPoster(video_hash, PREVIEW_MEDIA_DIR) # use simpler poster
-        if poster is None:
-            print("Generating placeholder poster for:", video_object.filename)
-            poster = media.generatePosterSimple(video_object.path, video_hash, PREVIEW_MEDIA_DIR, video_object.duration_seconds)
-            if poster is None:
+    thumbnail = media.hasPreviewThumbs(video_hash, PREVIEW_MEDIA_DIR, small=False)
+    if thumbnail is None:
+        thumbnail = media.hasPoster(video_hash, PREVIEW_MEDIA_DIR) # use simpler poster
+        if thumbnail is None:
+            print("Generating placeholder poster for:", video_data.filename)
+            thumbnail = media.generatePosterSimple(video_data.path, video_hash, PREVIEW_MEDIA_DIR, video_data.duration_seconds)
+            if thumbnail is None:
                 return Response("Failed to generate poster", 500)
-    custom_thumb = media.hasCustomThumb(video_hash, CUSTOM_THUMBS_DIR)
-    return_obj = { 'poster_rel_path': poster, 'custom_thumb': custom_thumb }
-    return { 'main': return_obj }
+    thumbnail_path = f'{PREVIEW_MEDIA_DIR}/0x{video_hash}/{thumbnail}'
+    if not os.path.exists(thumbnail_path):
+        return Response('Thumbnail doesnt exist', 500)
+    return FileResponse(thumbnail_path)
 
 
-# CONFIRM SEEK THUMBNAIL
-@ensure_media_router.get("/ensure-media/seek-thumbnails/{video_hash}")
+# ENSURE SEEK THUMBNAIL
+@media_router.get("/ensure/seek-thumbnails/{video_hash}")
 def confirm_seek_thumbnails(video_hash: str):
     return Response('Temporarily disabled', 503)
 
@@ -65,10 +83,10 @@ def confirm_seek_thumbnails(video_hash: str):
     return Response('Unable to generate seek thumbs for video', 500)
 
 
-# CONFIRM PREVIEW THUMBNAILS
-@ensure_media_router.get("/ensure-media/preview-thumbnails/{video_hash}")
+# ENSURE PREVIEW THUMBNAILS
+@media_router.get("/ensure/preview-thumbnails/{video_hash}")
 def confirm_preview_thumbnails(video_hash: str):
-    return Response('Not implemented', 501)
+    raise HTTPException(status_code=501, detail='Not implemented')
     return jsonify(generateReponse("Not implemented")), 404
     r = videos_dict.get(hash)
     if not r:
@@ -82,29 +100,26 @@ def confirm_preview_thumbnails(video_hash: str):
     return jsonify(generateReponse()), 200
 
 
-# CONFIRM SEEK THUMBNAIL
-@ensure_media_router.get("/ensure-media/teaser-small/{video_hash}")
+# ENSURE SEEK THUMBNAIL
+@media_router.get("/ensure/teaser-small/{video_hash}")
 def confirm_teaser_small(video_hash: str):
-    return Response('Not implemented', 501)
+    # raise HTTPException(status_code=501, detail='Not implemented')
     print("[TEASER] Confirming small teaser for hash: ", hash)
-    r = videos_dict.get(hash)
-    if r == None:
-        print("Could not find video with hash:", hash)
-        return jsonify(), 404
-    if not bf.media_hasTeaserSmall(hash, MEDIADIR):
-        print("[TEASER] Generating small teaser")
-        teaser_path = bf.media_generateTeaserSmall(r['path'], hash, MEDIADIR, r['duration_seconds'])
-        if not os.path.exists(teaser_path):
-            print("[TEASER] ERROR: Generating teaser FAILED!")
-            return jsonify(), 400
-        return jsonify(generateReponse('Small teaser generated!')), 200
-    return jsonify(generateReponse('Small teaser already exists')), 200
+    video_data = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') );
+    if video_data is None:
+        raise HTTPException(404, f'Could not find video with hash: {video_hash}')
+    if not media.hasTeaserSmall(video_hash, PREVIEW_MEDIA_DIR):
+        teaser = media.generateTeaserSmall(video_data.path, video_hash, PREVIEW_MEDIA_DIR, video_data.duration_seconds)
+        if teaser is None or not os.path.exists(teaser):
+            raise HTTPException(500, 'Small teaser generation failed')
+    print('returning good!')
+    return {'msg': 'good!'}
 
 
-# CONFIRM SEEK THUMBNAIL
-@ensure_media_router.get("/ensure-media/teaser-large/{video_hash}")
+# ENSURE SEEK THUMBNAIL
+@media_router.get("/ensure/teaser-large/{video_hash}")
 def confirm_teaser_large(video_hash: str):
-    return Response('Not implemented', 501)
+    raise HTTPException(status_code=501, detail='Not implemented')
     print("[TEASER] Confirming large teaser for hash: ", hash)
     r = videos_dict.get(hash)
     if r == None:

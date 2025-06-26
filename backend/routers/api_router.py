@@ -1,6 +1,6 @@
 import random
 import time
-from fastapi import APIRouter, Response, Depends
+from fastapi import APIRouter, Response, Depends, HTTPException
 
 from handymatt.wsl_paths import convert_to_wsl_path, convert_to_windows_path
 
@@ -61,7 +61,7 @@ def get_random_video():
     video_dicts = db.read_table_as_dict('videos')
     hashes = list(video_dicts.keys())
     if hashes == []:
-        return Response("No hashes to pick from", 404)
+        raise HTTPException(status_code=404, detail='Not implemented')
     r = random.choice(hashes)
     print('random hash:', r)
     return {'hash' : r}
@@ -70,7 +70,7 @@ def get_random_video():
 # GET RANDOM VIDEO
 @api_router.get("/get/random-video-seeded/{seed}")
 def get_random_video_seeded(seed):
-    return Response('Not implemented', 501)
+    raise HTTPException(status_code=501, detail='Not implemented')
     print("Request recieved: 'get-random-video'")
     print("SEED:", seed)
     rng = random.Random(seed)
@@ -84,7 +84,7 @@ def get_random_video_seeded(seed):
 # GET RANDOM SPOTLIGHT VIDEO
 @api_router.get("/get/random-spotlight-video")
 def get_random_spotlight_video():
-    return Response('Not implemented', 501)
+    raise HTTPException(status_code=501, detail='Not implemented')
     print("Request recieved: 'get-random-video'")
     seed = (datetime.now() - datetime.strptime('1900 06:00:00', '%Y %H:%M:%S')).days
     print("SEED:", seed)
@@ -99,7 +99,7 @@ def get_random_spotlight_video():
 # GET ALL PERFORMERS
 @api_router.get("/get/all-performers")
 def get_performers():
-    return Response('Not implemented', 501)
+    raise HTTPException(status_code=501, detail='Not implemented')
     print(len(state.videos_dict))
     items = ff.getPerformers(state.videos_dict)
     print('Len of items:', len(items))
@@ -111,7 +111,7 @@ def get_performers():
 # GET ALL STUDIOS
 @api_router.get("/get/all-studios")
 def get_studios():
-    return Response('Not implemented', 501)
+    raise HTTPException(status_code=501, detail='Not implemented')
     items = ff.getStudios(videos_dict)
     print('Len of items:', len(items))
     if items:
@@ -122,7 +122,7 @@ def get_studios():
 # ADD FAVOURITE
 @api_router.post("/favourites/add/{video_hash}")
 def add_favourite(video_hash: str):
-    return Response('Not implemented', 501)
+    raise HTTPException(status_code=501, detail='Not implemented')
     if bf.is_favourite(hash, metadataHandler):
         return jsonify('favourite already exists'), 200
     bf.add_favourite(hash, metadataHandler)
@@ -132,7 +132,7 @@ def add_favourite(video_hash: str):
 # REMOVE FAVOURITE
 @api_router.post("/favourites/remove/{video_hash}")
 def remove_favourite(video_hash: str):
-    return Response('Not implemented', 501)
+    raise HTTPException(status_code=501, detail='Not implemented')
     if not bf.is_favourite(hash, metadataHandler):
         return jsonify('video already not favourites'), 200
     bf.remove_favourite(hash, metadataHandler)
@@ -140,9 +140,9 @@ def remove_favourite(video_hash: str):
 
 
 # IS FAVOURITE
-@api_router.get("/favourites/check/{video_hash}")
+@api_router.get("/favourites/is-fav/{video_hash}")
 def is_favourite(video_hash: str):
-    return Response('Not implemented', 501)
+    raise HTTPException(status_code=501, detail='Not implemented')
     if bf.is_favourite(hash, metadataHandler):
         return jsonify(generateReponse({'is_favourite': True})), 200
     return jsonify(generateReponse({'is_favourite': False})), 200

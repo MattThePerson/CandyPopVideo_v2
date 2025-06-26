@@ -1,7 +1,5 @@
 
 
-let amount_of_search_results = null;
-
 const default_thumbnails = [
     "media/default_media/preview_thumbs/thumb1.png",
     "media/default_media/preview_thumbs/thumb2.png",
@@ -152,6 +150,7 @@ function make_search_result_item(res, videoResultTemplate) {
     if (descriptionEl && res['scene_description']) {
         descriptionEl.innerText = res['scene_description']
     }
+
     // TAGS
     const tags_container = template.querySelector('.tags-bar');
     for (let tag of res['tags']) {
@@ -167,11 +166,12 @@ function make_search_result_item(res, videoResultTemplate) {
         }
     }
     template.querySelectorAll('.video-result-item > a').forEach(el => {
-        el.href = 'videoPage.html?hash=' + res['hash'];
+        el.href = 'pages/video/index.html?hash=' + res.hash;
         el.addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', res['filename'])); // add draggin the performer name
     });
+
     // make favourite indicator visible
-    GLOBAL_video_is_favourite(res['hash'], () => {
+    GLOBAL_video_is_favourite(res.hash, () => {
         const resItem = document.getElementById('item-' + res['hash']);
         try {
             resItem.querySelector('.favourite').style.display = 'block';
@@ -182,66 +182,45 @@ function make_search_result_item(res, videoResultTemplate) {
 
 /* MAIN FUNCTIONS */
 
+function setElementSrcWithRetries(element, src, retries=5, delay=500) {
+    const tryLoad = () => {
+        const testImg = new Image();
+        testImg.onload = () => {
+            element.src = src;
+        };
+        testImg.onerror = () => {
+            console.log(retries);
+            if (retries > 0) setTimeout(() => setElementSrcWithRetries(element, src, retries - 1, delay), delay);
+        };
+        testImg.src = src + `?t=${Date.now()}`;
+    };
+    tryLoad();
+}
 
-function generate_results(search_results, args, use_custom_thumbs) {
+function generate_results(results, args, use_custom_thumbs) {
 
-    console.log('generate results', search_results);
-    
-    const words = search_results['word_cloud'];
-    render_wordcloud(words);
+    render_wordcloud(results.word_cloud);
 
-    amount_of_search_results = search_results['amount_of_results'];
-    let r = search_results['videos'];
-    console.log(r);
     videoResultsContainer = document.getElementById('video-results-container');
     videoResultTemplate = document.getElementById('video-result-template');
     let posters_confirmed = 0;
 
-    r.forEach( (res, i) => {
-        let resultItem = make_search_result_item(res, videoResultTemplate);
+    /* ensure posters and teasers for search results */
+    results.search_results.forEach( (result, idx) => {
+        let resultItem = make_search_result_item(result, videoResultTemplate);
         videoResultsContainer.appendChild(resultItem);
         
-        makeApiRequestGET('confirm-poster', [res['hash']], poster_obj => {
-            // console.log(poster_obj)
-            if (use_custom_thumbs && poster_obj.custom_thumb) {
-                document.querySelector('#item-' + res.hash + ' .thumbnail').src = `../../../media/custom_thumbs/${poster_obj.custom_thumb}`;
-            } else {
-                document.querySelector('#item-' + res.hash + ' .thumbnail').src = `../../../media/static/0x${res.hash}/${poster_obj.poster}`;
-            }
-            posters_confirmed++;
-
-            // Confirm Teasers after all posters loaded
-            if (posters_confirmed >= r.length) {
-                r.forEach( (res, i) => {
-                    makeApiRequestGET('confirm-teaser-small', [res['hash']], arg => {
-                        document.querySelector('#item-' + res['hash'] + ' video').src = `media/videos/0x${res.hash}/teaser_small.mp4`
-                    });
-                });
-            }
-        });
+        const img_el = document.querySelector(`#item-${result.hash} .thumbnail`);
+        img_el.src = '../media/get/poster/' + result.hash;
+        
+        /* get video teaser */
+        setTimeout(() => {
+            makeApiRequestGET('media/ensure/teaser-small', [result.hash], (response) => {
+                const video_el = document.querySelector('#item-' + result.hash + ' video');
+                video_el.src = `../static/preview-media/0x${result.hash}/teaser_small.mp4`;
+            });
+        }, (Math.random()*400) + 100);
     });
-    
-    /* if (true) {
-        document.querySelectorAll('.video-result-item .thumb-container').forEach(thumbnailContainer => {
-            //const video = item.querySelector('.thumb-container video');
-            //const spinner = item.querySelector('.spinner');
-            console.log("here");
-            const thumbnail = thumbnailContainer.querySelector('.thumbnail');
-            
-            thumbnailContainer.addEventListener('mousemove', event => {
-                const rect = thumbnailContainer.getBoundingClientRect();
-                const x = event.clientX - rect.left;
-                const width = rect.width;
-                const proportion = Math.max(x / width, 0);
-                const index = Math.min(Math.floor(proportion * default_thumbnails.length), default_thumbnails.length - 1);
-                console.log(index);
-                thumbnail.src = default_thumbnails[index];
-            });
-            thumbnailContainer.addEventListener('mouseleave', () => {
-                thumbnail.src = default_thumbnails[0];
-            });
-        });
-    } */
     
     // Add event listener to search results to play teasers
     if (document.getElementById('video-results-container').classList.contains('default-view')) {
@@ -272,10 +251,9 @@ function generate_results(search_results, args, use_custom_thumbs) {
 
     // Configure page nav
     if (args && args.generate_nav) {
-        const number_of_pages = Math.max(1, Math.floor((amount_of_search_results-1) / query.limit) + 1);
-        try {
-            document.querySelector('#search-page-info .page-number').innerText += ' of ' + number_of_pages + ' (' + amount_of_search_results + ' search results, took ' + search_results['time_taken'] + ' seconds)';
-        } catch {}
+        const amount_of_results = results.videos_filtered_count;
+        const number_of_pages = Math.max(1, Math.floor((amount_of_results-1) / query.limit) + 1);
+        document.querySelector('#search-page-info .page-number').innerText += ' of ' + number_of_pages + ' (' + amount_of_results + ' search results, took ' + results.time_taken + ' seconds)';
         const current_page = Math.floor(query.startfrom / query.limit);
         const max_buttons = 11;
         
