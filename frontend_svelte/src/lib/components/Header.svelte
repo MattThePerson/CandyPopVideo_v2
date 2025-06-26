@@ -23,7 +23,7 @@
         <a href="/"             class:active={$page.url.pathname === "/"}>home</a>
         <a href="/search"       class:active={$page.url.pathname === "/search"}>search</a>
         <a href="/contact"      class:active={$page.url.pathname === "/contact"}>catalogue</a>
-        <a href="/other"             class:active={$page.url.pathname === "/other"}>other</a>
+        <a href="/"             class:active={$page.url.pathname === "/other"}>other</a>
         <button class="icon-button" ><RandomIcon --fill-color="#ccc"/></button>
         <button class="icon-button" ><SearchIcon --fill-color="#ccc"/></button>
         <a class="dashboard-link" href="/dashboard"    class:active={$page.url.pathname === "/dashboard"}>dashboard</a>

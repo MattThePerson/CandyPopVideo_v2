@@ -3,8 +3,8 @@
 !*/media/default*
 
 # genercal
-.*
 venv
+.venv
 __pycache__
 *.svg
 
@@ -13,7 +13,6 @@ __pycache__
 config.yaml
 tests/
 testing*
-.logs
 BAK
 *.bak
 **.pkl
@@ -22,6 +21,8 @@ BAK
 !/data/stopwords_eng.txt
 TODO.md
 
+.logs
+logs/*
 
 # frontend
 curatedCollections/
