@@ -11,6 +11,7 @@ from handymatt_media.metadata import video_metadata
 
 from ..schemas.video_data import VideoData
 from ..loggers import LOGGER_HASHING_FAILED, LOGGER_COLLISIONS
+import logging
 
 
 #region - PUBLIC -------------------------------------------------------------------------------------------------------
@@ -60,6 +61,18 @@ def process_videos(
     return videos_dict
 
 
+# 
+def combine_loaded_and_existing_videos(loaded: dict[str, VideoData], existing: dict[str, VideoData]) -> dict[str, VideoData]:
+    """ Combines existing and loaded videos ensuring that videos that we're not loaded get flagged as not being linked """
+    combined = {}
+    for pid, obj in existing.items():
+        obj.is_linked = False
+        combined[pid] = obj
+    for pid, obj in loaded.items():
+        obj.is_linked = True
+        combined[pid] = obj
+    return combined
+
 #region - PRIVATE ------------------------------------------------------------------------------------------------------
 
 def _get_video_hashes(
@@ -82,6 +95,7 @@ def _get_video_hashes(
         if video_hash is None or rehash_videos:
             try:
                 video_hash = video_analyser.getVideoHash_openCV(video_path)
+                # logging.info('Hashed video [{}] "{}"'.format(video_hash, video_path)) # Not working!
                 if video_hash is None:
                     hashing_failed.append(video_path)
                 videos_hashed.append((video_hash, video_path))

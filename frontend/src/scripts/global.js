@@ -156,9 +156,9 @@ function eraseAllCookies() {
 /* Event listener for reloading backend */
 
 
-document.getElementById("reload-backend-button")?.addEventListener('click', e => {
-    e.preventDefault();
-    console.log('Clicked!');
-    makeApiRequestGET('reload-backend', [], () => {});
-});
+// document.getElementById("reload-backend-button")?.addEventListener('click', e => {
+//     e.preventDefault();
+//     console.log('Clicked!');
+//     makeApiRequestGET('reload-backend', [], () => {});
+// });
 

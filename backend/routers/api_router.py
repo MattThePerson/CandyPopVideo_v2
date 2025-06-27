@@ -26,7 +26,6 @@ api_router = APIRouter()
 @api_router.get("/get/video-data/{video_hash}")
 def get_video(video_hash: str):
     print("Request recieved: 'get-video', hash: ", video_hash)
-    # video_data = state.videos_dict.get(video_hash)
     video_data = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') )
     if not video_data:
         print("Could not find video with hash:", video_hash)
@@ -55,16 +54,16 @@ def get_video(video_hash: str):
 
 # get("/get/video-metadata/{video_hash}")
 
+
 # GET RANDOM VIDEO
 @api_router.get("/get/random-video-hash")
 def get_random_video():
     video_dicts = db.read_table_as_dict('videos')
-    hashes = list(video_dicts.keys())
-    if hashes == []:
+    if video_dicts == {}:
         raise HTTPException(status_code=404, detail='Not implemented')
-    r = random.choice(hashes)
-    print('random hash:', r)
-    return {'hash' : r}
+    rando_hash = random.choice([ hsh for hsh, dct in video_dicts.items() if dct.get('is_linked') ])
+    print('random hash:', rando_hash)
+    return {'hash' : rando_hash}
 
 
 # GET RANDOM VIDEO

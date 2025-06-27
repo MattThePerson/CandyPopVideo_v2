@@ -43,7 +43,9 @@ class VideoData:
     tags_from_filename: list[str] = field(default_factory=list)
     tags_from_path:     list[str] = field(default_factory=list)
     tags_from_json:     list[str] = field(default_factory=list)
-    metadata:           dict = field(default_factory=dict)
+    metadata:                dict = field(default_factory=dict)
+    
+    is_linked:               bool = True
 
 
     def to_dict(self):

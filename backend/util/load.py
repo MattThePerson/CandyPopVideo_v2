@@ -1,22 +1,20 @@
 """ Functions for the scanning and loading of files """
 from typing import Any
-import os
 from pathlib import Path
 import time
-import yaml
 
 from handymatt.wsl_paths import convert_to_wsl_path
 
 from config import SCENE_FILENAME_FORMATS, VIDEO_EXTENSIONS
 from .metadata import metadata_load # TODO: outsource to handymatt dep
-from .process import process_videos
+from .process import process_videos, combine_loaded_and_existing_videos
 from ..schemas import VideoData
 from .. import db
 
 
+
 def scanVideos(collections: dict[str, list], rehash_videos: bool=False) -> None:
     """ Scan videos in directories and process. Steps: read videos from db, scan videos, process videos, save to db """
-    # include_folders, ignore_folders, collections_dict = _readFoldersAndCollections_YAML('config.yaml')
     include_folders, ignore_folders, collections_dict = _process_collection_dirs(collections)
     if include_folders is None:
         print("WARNING: No video folders read from config.yaml")
@@ -36,25 +34,14 @@ def scanVideos(collections: dict[str, list], rehash_videos: bool=False) -> None:
     video_objects: dict[str, VideoData] = process_videos(video_paths, existing_video_objects, collections_dict, SCENE_FILENAME_FORMATS, rehash_videos=rehash_videos)
     if len(video_objects) > 0:
         print("Successfully loaded {} videos in {:.1f}s ({:.2f} ms/vid)\n".format( len(video_objects), (time.time()-start), (time.time()-start)*1000/len(video_objects) ))
-    
-    # Write to db
-    video_dicts = { hsh: vd.to_dict() for hsh, vd in video_objects.items() }
-    db.write_dict_of_objects_to_db(video_dicts, 'videos')
+    combined_video_objects = combine_loaded_and_existing_videos(video_objects, existing_video_objects)
+    combined_video_dicts = { hsh: vd.to_dict()  for hsh, vd in combined_video_objects.items() }
+    db.write_dict_of_objects_to_db(combined_video_dicts, 'videos')
 
 
 
-# TODO: Remove
-def _readFoldersAndCollections_YAML(filepath: str) -> tuple[list[str], list[str], dict]:
-    """ Reads the list of colders and the collections they belong to from `video_folders.yaml """
-    if not os.path.exists(filepath):
-        raise FileNotFoundError("Collections file doesn't exist:", filepath)
-    
-    with open(filepath, 'r') as f:
-        data = yaml.safe_load(f)
-    
-    return _process_collection_dirs(data.get('collections'))
-    
-    
+# HELPERS
+
 def _process_collection_dirs(collections: dict[str, list]):
     include_folders: list[str] = []
     ignore_folders: list[str] = []

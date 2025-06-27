@@ -1,0 +1,149 @@
+<!-- window width on phone: 378 -->
+<!DOCTYPE html>
+<html lang="en"> <!-- DASHBOARD PAGE -->
+<head>
+    <base href="/src/">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="icon" type="image/x-icon" href="../static/icons/donut-pngs/donut_pink_inner.png">
+    
+    <!-- fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cascadia+Mono:ital,wght@0,200..700;1,200..700&display=swap" rel="stylesheet">
+    
+    <!-- default -->
+    <Link rel="stylesheet" href="styles/fontsAndGlobals.css">
+    <script defer           src="scripts/components.js" type="text/javascript"></script>
+    <script defer           src="scripts/global.js" type="text/javascript"></script>
+    
+    <!-- page -->
+    <script defer           src="pages/dashboard/script.js" type="text/javascript"></script>
+
+    <style>
+        :root {
+            --selection-color: rgba(0, 225, 255, 0.274);
+        }
+        
+        .page-content {
+            margin: 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .terminal-container {
+            width: 95%;
+            max-width: 100rem;
+        }
+        
+        #terminal {
+            font-family: monospace;
+            background: black;
+            background: rgb(53, 33, 33);
+            color: lime;
+            height: 74vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            padding: 0.45rem;
+            border: 2px solid #fff4;
+            border-radius: 5px;
+        }
+
+        #terminal .text-box {
+            display: flex;
+            flex-direction: column;
+        }
+        #terminal .text-box > div {
+            padding: 0.1rem;
+        }
+        
+        #terminal input {
+            border: none;
+            outline: none;
+            background: none;
+            color: #fff;
+            width: 100%;
+            background: #0005;
+            /* padding: 0.1rem; */
+            font-family: "Cascadia Mono";
+            font-size: 1rem;
+        }
+        .input-bar {
+            display: flex;
+        }
+        .line-start-arrow {
+            font-weight: bold !important;
+            color: yellow !important;
+            margin-right: 0.5rem !important;
+        }
+        .terminal-line {
+            display: flex;
+            /* background: red; */
+            /* margin: 0.1rem 0.3rem; */
+        }
+        .terminal-line div {
+            color: white;
+            font-family: "Cascadia Mono";
+            font-size: 1rem;
+        }
+
+        /* Buttons */
+
+        .buttons-container {
+            width: 100%;
+            display: flex;
+            justify-content: flex-start;
+            gap: 0.4rem;
+            margin: 0.5rem;
+            padding-right: 4rem;
+        }
+        
+        .buttons-container button {
+            background: black;
+            color: white;
+            border-radius: 5px;
+            padding: 0.2rem 0.4rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .buttons-container button:active {
+            background: grey;
+        }
+
+        #websocket-status-button.connecting {   background: rgb(187, 187, 12); }
+        #websocket-status-button.connected {    background: rgb(18, 187, 12); }
+        #websocket-status-button.disconnected { background: rgb(187, 32, 12); }
+        
+    </style>
+    
+</head>
+<body>
+    <div class="html-component-injector" html-component="header"></div>
+    
+    <div class="page-content">
+        
+        <div class="terminal-container">
+            <div class="buttons-container">
+                <button id="help-button">help</button>
+                <button id="clear-button">clear history</button>
+                <button id="interrupt-button">send interrupt</button>
+                <button id="websocket-status-button" class="connecting">connecting</button>
+            </div>
+            <div id="terminal">
+                <div class="text-box"></div>
+                <div class="input-bar">
+                    <div class="line-start-arrow">></div>
+                    <input type="text" autocomplete="off" placeholder="">
+                </div>
+            </div>
+            
+        </div>
+    
+    </div>
+    
+    <div class="html-component-injector" html-component="footer"></div>
+</body>
+</html>

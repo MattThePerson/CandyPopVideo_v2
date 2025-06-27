@@ -45,10 +45,10 @@ app.add_middleware(NoCacheMiddleware) # TODO: test removing
 app.include_router(media_router,     prefix="/media")
 app.include_router(api_router,       prefix="/api")
 app.include_router(query_router,     prefix="/api/query")
-app.include_router(dashboard_router, prefix="/api/dashboard")
+app.include_router(dashboard_router, prefix="")
 
 # test
-@api_router.get("/api/hello")
+@app.get("/api/hello")
 def read_root():
     return Response('I hearr ya', 200)
 
@@ -56,14 +56,15 @@ def read_root():
 app.mount("/static/preview-media", StaticFiles(directory=PREVIEW_MEDIA_DIR), name="preview-media")
 
 
+app.mount("/", StaticFiles(directory="frontend", html=True), name="")
+
 # [DEV] Determine which frontend to serve
-import os
-if os.getenv("USE_OLD_FRONTEND") == "1":
-    print('[PYTHON] Mounting "frontend"')
-    app.mount("/", StaticFiles(directory="frontend", html=True), name="old")
-else:
-    print('[PYTHON] Mounting "frontend_svelte/build"')
-    app.mount("/", StaticFiles(directory="frontend_svelte/build", html=True), name="new")
+# import os
+# if os.getenv("USE_OLD_FRONTEND") == "1":
+#     print('[PYTHON] Mounting "frontend"')
+# else:
+#     print('[PYTHON] Mounting "frontend_svelte/build"')
+#     app.mount("/", StaticFiles(directory="frontend_svelte/build", html=True), name="new")
 
 
 

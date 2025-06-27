@@ -12,7 +12,7 @@ query_router = APIRouter()
 @query_router.post("/search-videos")
 def search_videos(query: SearchQuery):
     video_dicts = db.read_table_as_dict('videos')
-    video_objects_list = [ VideoData.from_dict(vd) for vd in video_dicts.values() ]
+    video_objects_list = [ VideoData.from_dict(vd) for vd in video_dicts.values() if vd.get('is_linked') ]
     start = time.time()
     search_results_tuple = searchVideosFunction(
         video_objects_list,
