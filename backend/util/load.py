@@ -6,7 +6,7 @@ import time
 from handymatt.wsl_paths import convert_to_wsl_path
 
 from config import SCENE_FILENAME_FORMATS, VIDEO_EXTENSIONS
-from .metadata import metadata_load # TODO: outsource to handymatt dep
+from .metadata_json import metadata_load # TODO: outsource to handymatt dep
 from .process import process_videos, combine_loaded_and_existing_videos
 from ..schemas import VideoData
 from .. import db

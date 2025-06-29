@@ -4,7 +4,7 @@ import time
 from datetime import datetime
 
 from .tfidf import get_related_videos_from_query_TFIDF, STOPWORDS_ENG
-from ..util import meta
+from ..util import _favourites
 from ..schemas import SearchQuery, VideoData
 
 from handymatt import JsonHandler
@@ -84,7 +84,7 @@ def _filterVideos(filtered: list[VideoData], search_query: SearchQuery, metadata
     
     q = search_query
     
-    if q.only_favourites:     filtered = [ vid for vid in filtered if ( meta.is_favourite(vid.hash, metadata) ) ]
+    if q.only_favourites:     filtered = [ vid for vid in filtered if ( _favourites.is_favourite(vid.hash, metadata) ) ]
     if q.actor:               filtered = [ vid for vid in filtered if ( _actor_in_video(q.actor, vid) ) ]
     if q.studio:              filtered = [ vid for vid in filtered if ( ( vid.studio and vid.studio.lower() in q.studio.lower() ) ) ]
     if q.collection:          filtered = [ vid for vid in filtered if ( (vid.collection and q.collection.lower() in vid.collection.lower()) ) ]

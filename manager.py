@@ -19,9 +19,13 @@ async def backend_manager(args: argparse.Namespace, ws: WebSocket|None=None):
     
     if args.scan_libraries:
         await aprint(ws, 'Scanning videos ...')
-        # scanVideos(COLLECTIONS, rehash_videos=args.rehash_videos)
+        scanVideos(COLLECTIONS, rehash_videos=args.rehash_videos)
     elif args.limit:
         await aprint(ws, 'limiting to:', args.limit)
+    elif args.generate_media:
+        ...
+        await aprint(ws, 'Generating media')
+        ...
     else:
         await aprint(ws, 'No arguments passed')
 
@@ -55,32 +59,35 @@ def create_argument_parser(non_exiting=False):
 
     # [1] Status
     parser.add_argument('--status',                 action='store_true',        help='')
-    parser.add_argument('--media',                  action='store_true',        help='')
+    # parser.add_argument('--media',                  action='store_true',        help='')
     parser.add_argument('--cull-unlinked-media',    action='store_true',        help='')
 
     # [2] Library scanning
     parser.add_argument('--scan-libraries',         action='store_true',        help='')
-    parser.add_argument('--rehash-videos',          action='store_true',        help='')
-    parser.add_argument('--reread-json-metadata',   action='store_true',        help='')
-    parser.add_argument('--paths-filters',                                      help='')
-    parser.add_argument('--paths-exclude-filters',                              help='')
-    
+    parser.add_argument('--rehash-videos',          action='store_true',        help='[scan]')
+    parser.add_argument('--reread-json-metadata',   action='store_true',        help='[scan]')
     parser.add_argument('--regen-tfidf',            action='store_true',        help='')
     parser.add_argument('--regen-embeddings',       action='store_true',        help='')
 
+    parser.add_argument('--paths-filters',                                      help='[scan]') # if called, non scanning wont flip is_linked flag
+    parser.add_argument('--paths-exclude-filters',                              help='[scan]') # if called, non scanning wont flip is_linked flag
+    
+
     # [3] Media generation
-    parser.add_argument('--generate-media',        action='store_true',         help='')
-    parser.add_argument('--redo-media-gen',        action='store_true',         help='')
-    parser.add_argument('--filters',                                            help='')
-    parser.add_argument('--exclude-filters',                                    help='')
-    parser.add_argument('--from-collections',                                   help='')
-    parser.add_argument('--limit',                 type=int,                    help='')
-    parser.add_argument('--sortby',                                             help='')
-    parser.add_argument('--date-added-from',                                    help='')
-    parser.add_argument('--date-added-to',                                      help='')
+    parser.add_argument('--generate-media', '-gm',                              help='opts=[all|teasers|teasers_large|teaser_thumbs|preview_thumbs|seek_thumbs]')
+    parser.add_argument('--redo-media-gen',        action='store_true',         help='[media_gen] redo media gen (replace old)')
+    
+    parser.add_argument('--filters', '-f',                                      help='[media_gen] for which videos to generate media for | separated by comma')
+    parser.add_argument('--exclude-filters',                                    help='[media_gen] for which videos to generate media for | separated by comma')
+    parser.add_argument('--limit',                 type=int,                    help='[media_gen]')
+    parser.add_argument('--sortby',                                             help='[media_gen]')
+    parser.add_argument('--date-added-from',                                    help='[media_gen]')
+    parser.add_argument('--date-added-to',                                      help='[media_gen]')
+    
+    parser.add_argument('--select-collections',                                 help='[scan|media_gen]')
 
     # 
-    parser.add_argument('--verbose',               action='store_true',         help='')
+    # parser.add_argument('--verbose',               action='store_true',         help='')
     
     return parser
 

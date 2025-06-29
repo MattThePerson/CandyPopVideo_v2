@@ -24,7 +24,7 @@ api_router = APIRouter()
 
 # GET VIDEO
 @api_router.get("/get/video-data/{video_hash}")
-def get_video(video_hash: str):
+def ROUTE_get_video(video_hash: str):
     print("Request recieved: 'get-video', hash: ", video_hash)
     video_data = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') )
     if not video_data:
@@ -57,7 +57,7 @@ def get_video(video_hash: str):
 
 # GET RANDOM VIDEO
 @api_router.get("/get/random-video-hash")
-def get_random_video():
+def ROUTE_get_random_video():
     video_dicts = db.read_table_as_dict('videos')
     if video_dicts == {}:
         raise HTTPException(status_code=404, detail='Not implemented')
@@ -68,7 +68,7 @@ def get_random_video():
 
 # GET RANDOM VIDEO
 @api_router.get("/get/random-video-seeded/{seed}")
-def get_random_video_seeded(seed):
+def ROUTE_get_random_video_seeded(seed):
     raise HTTPException(status_code=501, detail='Not implemented')
     print("Request recieved: 'get-random-video'")
     print("SEED:", seed)
@@ -82,7 +82,7 @@ def get_random_video_seeded(seed):
 
 # GET RANDOM SPOTLIGHT VIDEO
 @api_router.get("/get/random-spotlight-video")
-def get_random_spotlight_video():
+def ROUTE_get_random_spotlight_video():
     raise HTTPException(status_code=501, detail='Not implemented')
     print("Request recieved: 'get-random-video'")
     seed = (datetime.now() - datetime.strptime('1900 06:00:00', '%Y %H:%M:%S')).days
@@ -97,7 +97,7 @@ def get_random_spotlight_video():
 
 # GET ALL PERFORMERS
 @api_router.get("/get/all-performers")
-def get_performers():
+def ROUTE_get_performers():
     raise HTTPException(status_code=501, detail='Not implemented')
     print(len(state.videos_dict))
     items = ff.getPerformers(state.videos_dict)
@@ -109,7 +109,20 @@ def get_performers():
 
 # GET ALL STUDIOS
 @api_router.get("/get/all-studios")
-def get_studios():
+def ROUTE_get_studios():
+    raise HTTPException(status_code=501, detail='Not implemented')
+    items = ff.getStudios(videos_dict)
+    print('Len of items:', len(items))
+    if items:
+        return jsonify(generateReponse(items)), 200
+    return jsonify(), 500
+
+
+# GET CATALOGURE
+@api_router.get("/get/catalogue")
+def ROUTE_get_catalogue():
+    video_dicts = db.read_table_as_dict('videos')
+    video_objects_list = [ VideoData.from_dict(vd) for vd in video_dicts.values() if vd.get('is_linked') ]
     raise HTTPException(status_code=501, detail='Not implemented')
     items = ff.getStudios(videos_dict)
     print('Len of items:', len(items))
@@ -120,7 +133,7 @@ def get_studios():
 
 # ADD FAVOURITE
 @api_router.post("/favourites/add/{video_hash}")
-def add_favourite(video_hash: str):
+def ROUTE_add_favourite(video_hash: str):
     raise HTTPException(status_code=501, detail='Not implemented')
     if bf.is_favourite(hash, metadataHandler):
         return jsonify('favourite already exists'), 200
@@ -130,7 +143,7 @@ def add_favourite(video_hash: str):
 
 # REMOVE FAVOURITE
 @api_router.post("/favourites/remove/{video_hash}")
-def remove_favourite(video_hash: str):
+def ROUTE_remove_favourite(video_hash: str):
     raise HTTPException(status_code=501, detail='Not implemented')
     if not bf.is_favourite(hash, metadataHandler):
         return jsonify('video already not favourites'), 200
@@ -140,7 +153,7 @@ def remove_favourite(video_hash: str):
 
 # IS FAVOURITE
 @api_router.get("/favourites/is-fav/{video_hash}")
-def is_favourite(video_hash: str):
+def ROUTE_is_favourite(video_hash: str):
     raise HTTPException(status_code=501, detail='Not implemented')
     if bf.is_favourite(hash, metadataHandler):
         return jsonify(generateReponse({'is_favourite': True})), 200

@@ -27,10 +27,12 @@ async def websocket_terminal_endpoint(websocket: WebSocket):
     
     try:
         while True:
+            
             text_recieved = await websocket.receive_text()
             if '--help' in text_recieved or '-h' in text_recieved:
                 print(parser.format_help())
                 await websocket.send_text(parser.format_help())
+                
             elif text_recieved == '__INTERRUPT__':
                 print('interrupt recieved')
                 if task and not task.done():
