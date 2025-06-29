@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from contextlib import asynccontextmanager
 
-from backend.routers import api_router, media_router, query_router, dashboard_router
+from app.routers import api_router, media_router, query_router, dashboard_router
 from config import PREVIEW_MEDIA_DIR, COLLECTIONS
 
 

@@ -132,7 +132,7 @@ def generateTeaserSmall(path, hash, mediadir, duration_sec, quiet=True):
     except Exception as e:
         print("[ERROR] generateTeasersSmall")
         print(e)
-        return None
+        return "NULL_PATH"
 
 
 def generateTeaserLarge(path, hash, mediadir, duration_sec):

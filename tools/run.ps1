@@ -13,26 +13,17 @@ if (-Not (Test-Path ".venv\Scripts\activate.ps1")) {
     exit 1
 }
 
-# [DEV] set env variable to determine frontend used
-
-$useNew = $false
+# [DEV] Handle .ps1 script options
 $forwardArgs = @()
+# $env:USE_OLD_FRONTEND = "1"
 
 foreach ($arg in $args) {
     if ($arg -eq "--use-new-frontend") {
-        Write-Host "[DEV] Captured '--use-new-frontend' command"
-        $useNew = $true
+        # Write-Host "[DEV] Captured '--use-new-frontend' command"
+        # $env:USE_OLD_FRONTEND = "0"
     } else {
         $forwardArgs += $arg
     }
-}
-
-if ($useNew) {
-    Write-Host "[DEV] Using env variable to use NEW frontend"
-    $env:USE_OLD_FRONTEND = "0"
-} else {
-    Write-Host "[DEV] Using env variable to use OLD frontend"
-    $env:USE_OLD_FRONTEND = "1"
 }
 
 # Start uvicorn

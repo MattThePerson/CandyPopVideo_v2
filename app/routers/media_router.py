@@ -44,7 +44,10 @@ def confirm_poster(video_hash: str):
         thumbnail = media.hasPoster(video_hash, PREVIEW_MEDIA_DIR) # use simpler poster
         if thumbnail is None:
             print("Generating placeholder poster for:", video_data.filename)
-            thumbnail = media.generatePosterSimple(video_data.path, video_hash, PREVIEW_MEDIA_DIR, video_data.duration_seconds)
+            try:
+                thumbnail = media.generatePosterSimple(video_data.path, video_hash, PREVIEW_MEDIA_DIR, video_data.duration_seconds)
+            except FileNotFoundError as e:
+                print('ERROR: Cant generate poster, video not found:', video_data.path)
             if thumbnail is None:
                 return Response("Failed to generate poster", 500)
     thumbnail_path = f'{PREVIEW_MEDIA_DIR}/0x{video_hash}/{thumbnail}'
@@ -79,10 +82,13 @@ def confirm_teaser_small(video_hash: str):
     if video_data is None:
         raise HTTPException(404, f'Could not find video with hash: {video_hash}')
     if not media.hasTeaserSmall(video_hash, PREVIEW_MEDIA_DIR):
-        teaser = media.generateTeaserSmall(video_data.path, video_hash, PREVIEW_MEDIA_DIR, video_data.duration_seconds)
-        if teaser is None or not os.path.exists(teaser):
+        teaser = "NULL_PATH"
+        try:
+            teaser = media.generateTeaserSmall(video_data.path, video_hash, PREVIEW_MEDIA_DIR, video_data.duration_seconds)
+        except FileNotFoundError as e:
+            print('ERROR: Cant generate teaser, video not found:', video_data.path)
+        if not os.path.exists(teaser):
             raise HTTPException(500, 'Small teaser generation failed')
-    # print('returning good!')
     return {'msg': 'good!'}
 
 

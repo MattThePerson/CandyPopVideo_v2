@@ -1,7 +1,7 @@
 import argparse
 from fastapi import WebSocket
 
-from backend.util.load import scanVideos
+from app.util.load import scanVideos
 from config import COLLECTIONS
 
 
