@@ -149,11 +149,14 @@ input.addEventListener('keydown', (e) => {
                     terminalEnter(input.value, textBox)
                     clearTerminal(textBox);
                 } else if (input.value === 'clear-history') {
-                    terminalEnter(input.value, textBox)
+                    terminalEnter(input.value, textBox);
                     clearTerminal(textBox, true);
                 } else if (input.value === 'help') {
-                    terminalEnter(input.value, textBox)
+                    terminalEnter(input.value, textBox);
                     printHelp(textBox);
+                } else if (input.value === 'connect') {
+                    terminalEnter(input.value, textBox);
+                    connectWebsocket();
                 } else {
                     terminalEnter(input.value, textBox, socket);
                 }
