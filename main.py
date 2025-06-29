@@ -1,8 +1,7 @@
 # command line: uvicorn main:app --workers 1 --port 8000
 # production: gunicorn -w 4 -k uvicorn.workers.UvicornWorker app:app
-from fastapi import FastAPI, Response, HTTPException
+from fastapi import FastAPI, Response, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from contextlib import asynccontextmanager
 
@@ -47,25 +46,21 @@ app.include_router(api_router,       prefix="/api")
 app.include_router(query_router,     prefix="/api/query")
 app.include_router(dashboard_router, prefix="")
 
-# test
+# hello
 @app.get("/api/hello")
-def read_root():
+def api_hello():
     return Response('I hearr ya', 200)
+
+# port
+@app.get("/api/get-port")
+def get_port(request: Request):
+    return {'port': request.url.port}
 
 # static folder: preview media
 app.mount("/static/preview-media", StaticFiles(directory=PREVIEW_MEDIA_DIR), name="preview-media")
 
 
 app.mount("/", StaticFiles(directory="frontend", html=True), name="")
-
-# [DEV] Determine which frontend to serve
-# import os
-# if os.getenv("USE_OLD_FRONTEND") == "1":
-#     print('[PYTHON] Mounting "frontend"')
-# else:
-#     print('[PYTHON] Mounting "frontend_svelte/build"')
-#     app.mount("/", StaticFiles(directory="frontend_svelte/build", html=True), name="new")
-
 
 
 # START

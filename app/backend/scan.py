@@ -1,46 +1,47 @@
 """ Functions for the scanning and loading of files """
-from typing import Any
 from pathlib import Path
 import time
 
 from handymatt.wsl_paths import convert_to_wsl_path
 
-from config import SCENE_FILENAME_FORMATS, VIDEO_EXTENSIONS
-from .metadata_json import metadata_load # TODO: outsource to handymatt dep
-from .process import process_videos, combine_loaded_and_existing_videos
-from ..schemas import VideoData
 from .. import db
+from config import SCENE_FILENAME_FORMATS, VIDEO_EXTENSIONS
+from ..util.metadata_json import metadata_load # TODO: outsource to handymatt dep
+from ..util.process import process_videos, combine_loaded_and_existing_videos
+from ..schemas import VideoData
+from .helpers import aprint
 
 
+#region main
 
-def scanVideos(collections: dict[str, list], rehash_videos: bool=False) -> None:
+async def scanVideos(collections: dict[str, list], rehash_videos: bool=False, ws=None) -> None:
     """ Scan videos in directories and process. Steps: read videos from db, scan videos, process videos, save to db """
     include_folders, ignore_folders, collections_dict = _process_collection_dirs(collections)
     if include_folders is None:
-        print("WARNING: No video folders read from config.yaml")
+        await aprint(ws, "WARNING: No video folders read from config.yaml")
         return
-    print('[SCAN] Scanning video paths from {} folders'.format(len(include_folders)))
+    await aprint(ws, '[SCAN] Scanning video paths from {} folders'.format(len(include_folders)))
     video_paths = _getVideoPathsFromFolders(include_folders, ignore_folders, include_extensions=VIDEO_EXTENSIONS)
-    print("Found {} videos in {} folders and {} collections".format(len(video_paths), len(include_folders), len(collections_dict)))
+    await aprint(ws, "Found {} videos in {} folders and {} collections".format(len(video_paths), len(include_folders), len(collections_dict)))
     
     # Load videos from db
     existing_dicts = db.read_table_as_dict('videos')
     existing_video_objects = { hsh: VideoData.from_dict(dct) for hsh, dct in existing_dicts.items() }
-    print('Exising objects:', len(existing_video_objects))
+    await aprint(ws, 'Exising objects:', len(existing_video_objects))
 
     # 
-    print("[PROCESS] Loading/Generating video objects")
+    await aprint(ws, "[PROCESS] Loading/Generating video objects")
     start = time.time()
     video_objects: dict[str, VideoData] = process_videos(video_paths, existing_video_objects, collections_dict, SCENE_FILENAME_FORMATS, rehash_videos=rehash_videos)
     if len(video_objects) > 0:
-        print("Successfully loaded {} videos in {:.1f}s ({:.2f} ms/vid)\n".format( len(video_objects), (time.time()-start), (time.time()-start)*1000/len(video_objects) ))
+        await aprint(ws, "Successfully loaded {} videos in {:.1f}s ({:.2f} ms/vid)\n".format( len(video_objects), (time.time()-start), (time.time()-start)*1000/len(video_objects) ))
     combined_video_objects = combine_loaded_and_existing_videos(video_objects, existing_video_objects)
     combined_video_dicts = { hsh: vd.to_dict()  for hsh, vd in combined_video_objects.items() }
     db.write_dict_of_objects_to_db(combined_video_dicts, 'videos')
 
 
 
-# HELPERS
+#region helpers
 
 def _process_collection_dirs(collections: dict[str, list]):
     include_folders: list[str] = []
@@ -79,5 +80,4 @@ def _getVideoPathsFromFolders(folders: list[str], ignore_folders: list[str] = []
         file_objects = [ obj for obj in file_objects if igfol not in str(obj) ]
     video_paths = sorted(set([str(obj) for obj in file_objects]))
     return video_paths
-
 

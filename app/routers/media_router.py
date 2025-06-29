@@ -6,10 +6,10 @@ import os
 from handymatt.wsl_paths import convert_to_wsl_path
 from handymatt_media import media_generator
 
-from config import PREVIEW_MEDIA_DIR, CUSTOM_THUMBS_DIR
-from ..util import media
-from ..schemas import VideoData
 from .. import db
+from config import PREVIEW_MEDIA_DIR, CUSTOM_THUMBS_DIR
+from ..schemas import VideoData
+from ..media import generators, checkers
 
 
 media_router = APIRouter()
@@ -39,13 +39,13 @@ def confirm_poster(video_hash: str):
     if video_data is None:
         print("Could not find video with hash:", video_hash)
         return Response("No video with that hash", 404)
-    thumbnail = media.hasPreviewThumbs(video_hash, PREVIEW_MEDIA_DIR, small=False)
+    thumbnail = checkers.hasPreviewThumbs(video_hash, PREVIEW_MEDIA_DIR, small=False)
     if thumbnail is None:
-        thumbnail = media.hasPoster(video_hash, PREVIEW_MEDIA_DIR) # use simpler poster
+        thumbnail = checkers.hasPoster(video_hash, PREVIEW_MEDIA_DIR) # use simpler poster
         if thumbnail is None:
             print("Generating placeholder poster for:", video_data.filename)
             try:
-                thumbnail = media.generatePosterSimple(video_data.path, video_hash, PREVIEW_MEDIA_DIR, video_data.duration_seconds)
+                thumbnail = generators.generatePosterSimple(video_data.path, video_hash, PREVIEW_MEDIA_DIR, video_data.duration_seconds)
             except FileNotFoundError as e:
                 print('ERROR: Cant generate poster, video not found:', video_data.path)
             if thumbnail is None:
@@ -81,10 +81,10 @@ def confirm_teaser_small(video_hash: str):
     video_data = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') );
     if video_data is None:
         raise HTTPException(404, f'Could not find video with hash: {video_hash}')
-    if not media.hasTeaserSmall(video_hash, PREVIEW_MEDIA_DIR):
+    if not checkers.hasTeaserSmall(video_hash, PREVIEW_MEDIA_DIR):
         teaser = "NULL_PATH"
         try:
-            teaser = media.generateTeaserSmall(video_data.path, video_hash, PREVIEW_MEDIA_DIR, video_data.duration_seconds)
+            teaser = generators.generateTeaserSmall(video_data.path, video_hash, PREVIEW_MEDIA_DIR, video_data.duration_seconds)
         except FileNotFoundError as e:
             print('ERROR: Cant generate teaser, video not found:', video_data.path)
         if not os.path.exists(teaser):
@@ -117,7 +117,7 @@ def confirm_seek_thumbnails(video_hash: str):
     return Response('Temporarily disabled', 503)
 
     # check they exist
-    vid_media_dir = media._getMediaDirByHash(video_hash, PREVIEW_MEDIA_DIR)
+    vid_media_dir = generators._getMediaDirByHash(video_hash, PREVIEW_MEDIA_DIR)
     if os.path.exists( vid_media_dir + '/seekthumbs.jpg') and os.path.exists( vid_media_dir + '/seekthumbs.vtt' ):
         return Response('Video has seek thumbnails', 200)
     

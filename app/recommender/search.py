@@ -16,10 +16,6 @@ from handymatt import JsonHandler
 # tfidf_model: tuple?
 def searchVideosFunction(videos_list: list[VideoData], search_query: SearchQuery, metadata: dict, tfidf_model, token_hashes) -> tuple[list, int, list] | None:
     """ Filter and sort a list of VideoData given a SearchQuery and TF-IDF model """
-    # search_string, actor, studio, collection, include_terms, exclude_terms, date_added_from, date_added_to, date_released_from, date_released_to, only_favourites, sort_by = [ 
-    #     search_params.get(x) for x in ['search', 'actor', 'studio', 'collection', 'include_terms', 'exclude_terms', 'date_added_from', 'date_added_to', 'date_released_from', 'date_released_to', 'only_favourites', 'sort_by']
-    # ]
-
     q = search_query
     
     if q.limit is None:     q.limit = 12
@@ -37,8 +33,7 @@ def searchVideosFunction(videos_list: list[VideoData], search_query: SearchQuery
         ...
     
     # filter videos
-    # videos_list = _filterVideos(videos_list, favs, actor, studio, collection, date_added_from, date_added_to, date_released_from, date_released_to, include_terms, exclude_terms, metadataHandler)
-    videos_list = _filterVideos(videos_list, q, metadata)
+    videos_list = filterVideoObjects(videos_list, q, metadata)
     if len(videos_list) < q.startfrom:
         return None
 
@@ -47,7 +42,7 @@ def searchVideosFunction(videos_list: list[VideoData], search_query: SearchQuery
         videos_list = _sortVideos(videos_list, q.sortby)
 
     # return
-    word_cloud = _generate_word_cloud(videos_list, q.studio, q.actor, q.collection, q.include_terms)
+    word_cloud = _generate_word_cloud(videos_list, q.studio, q.performer, q.collection, q.include_terms)
     limited_results = videos_list[ q.startfrom: q.startfrom+q.limit ]
     videos_filtered_count = len(videos_list)
     return limited_results, videos_filtered_count, word_cloud
@@ -80,17 +75,17 @@ def searchVideos_TFIDF(video_objects: list[VideoData], search_query: str, tfidf_
 
 
 # filter videos
-def _filterVideos(filtered: list[VideoData], search_query: SearchQuery, metadata: dict={}):
+def filterVideoObjects(filtered: list[VideoData], search_query: SearchQuery, metadata: dict={}):
     
     q = search_query
     
     if q.only_favourites:     filtered = [ vid for vid in filtered if ( _favourites.is_favourite(vid.hash, metadata) ) ]
-    if q.actor:               filtered = [ vid for vid in filtered if ( _actor_in_video(q.actor, vid) ) ]
+    if q.performer:               filtered = [ vid for vid in filtered if ( _actor_in_video(q.performer, vid) ) ]
     if q.studio:              filtered = [ vid for vid in filtered if ( ( vid.studio and vid.studio.lower() in q.studio.lower() ) ) ]
     if q.collection:          filtered = [ vid for vid in filtered if ( (vid.collection and q.collection.lower() in vid.collection.lower()) ) ]
 
-    if q.date_added_from:     filtered = [ vid for vid in filtered if ( (_get_video_date_released(vid) and _get_video_date_released(vid) >= q.date_added_from) ) ]
-    if q.date_added_to:       filtered = [ vid for vid in filtered if ( (_get_video_date_released(vid) and _get_video_date_released(vid) < q.date_added_to) ) ]
+    if q.date_added_from:     filtered = [ vid for vid in filtered if ( (vid.date_added >= q.date_added_from) ) ]
+    if q.date_added_to:       filtered = [ vid for vid in filtered if ( (vid.date_added < q.date_added_to) ) ]
     if q.date_released_from:  filtered = [ vid for vid in filtered if ( (vid.date_released and vid.date_released >= q.date_released_from) ) ]
     if q.date_released_to:    filtered = [ vid for vid in filtered if ( (vid.date_released and vid.date_released < q.date_released_to) ) ]
 
@@ -189,15 +184,13 @@ def _get_video_date_released(vid):
         return vid['date_released_d18']
     return vid.get('date_released')
 
-def _actor_in_video(actor, vid):
+def _actor_in_video(actor: str, vid: VideoData):
         actor = actor.lower()
-        performers_str = ''
-        if 'performers' in vid and vid['performers'] != None:
-            performers_str = ", ".join(vid['performers']).lower()
-        mention_performers = ''
-        if 'mention_performer' in vid and vid['mention_performer'] != None:
-            mention_performers = vid['mention_performer'].lower()
-        return actor in performers_str or actor in mention_performers
+        if vid.performers != None:
+            for perf in vid.performers:
+                if actor == perf.lower():
+                    return True
+        return False
 
 def _get_video_date(video):
     if 'date_released_d18' in video:

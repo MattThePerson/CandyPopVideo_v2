@@ -1,8 +1,15 @@
 import argparse
 from fastapi import WebSocket
+import yaml
 
-from app.util.load import scanVideos
-from config import COLLECTIONS
+from app import db
+from app.schemas import VideoData, SearchQuery
+from config import PREVIEW_MEDIA_DIR
+from app.backend import scan, generate
+from app.backend.helpers import aprint
+from app.recommender.search import filterVideoObjects
+
+GENERATE_MEDIA_OPTIONS = [ 'all', 'teasers', 'teasers_large', 'teaser_thumbs', 'preview_thumbs', 'seek_thumbs' ]
 
 
 async def backend_manager(args: argparse.Namespace, ws: WebSocket|None=None):
@@ -15,29 +22,64 @@ async def backend_manager(args: argparse.Namespace, ws: WebSocket|None=None):
     - showing status of media library
     """
     
-    # await aprint(ws, 'Welcome to backend manager')
+    if args.scan_libraries: # - SCAN ---------------------------------------------------------------
+        await aprint(ws, '[MAIN] Scanning videos ...')
+        with open('config.yaml', 'r') as f:
+            CONFIG = yaml.safe_load(f)
+        COLLECTIONS = CONFIG.get('collections')
+        await scan.scanVideos(COLLECTIONS, rehash_videos=args.rehash_videos, ws=ws)
     
-    if args.scan_libraries:
-        await aprint(ws, 'Scanning videos ...')
-        scanVideos(COLLECTIONS, rehash_videos=args.rehash_videos)
-    elif args.limit:
-        await aprint(ws, 'limiting to:', args.limit)
-    elif args.generate_media:
+    
+    elif args.generate_media: # - MEDIA ------------------------------------------------------------
+        # filter videos
+        video_dicts = db.read_table_as_dict('videos')
+        videos = [ VideoData.from_dict(dct) for hsh, dct in video_dicts.items() if dct.get('is_linked') ]
+        query = SearchQuery(
+            search_string = "NULL_STRING",
+            performer = args.performer,
+            studio = args.studio,
+            collection = args.select_collection,
+            include_terms = [ x.strip() for x in args.filters.split(',') ]          if args.filters         else [],
+            exclude_terms = [ x.strip() for x in args.exclude_filters.split(',') ]  if args.exclude_filters else [],
+            date_added_from = args.date_added_from,
+            date_added_to = args.date_added_to,
+            date_released_from = None,
+            date_released_to = None,
+            only_favourites = False,
+            sortby = "date_added",
+            limit = -1,
+            startfrom = 0,
+        )
+        videos = filterVideoObjects(videos, query)
+        if args.limit:
+            videos = videos[:args.limit]
+        
+        # call generators
+        await aprint(ws, 'Generating media for {} videos'.format(len(videos)))
+        alist = [ videos, PREVIEW_MEDIA_DIR ]
+        kdict = {"redo": args.redo_media_gen, "ws": ws}
+        opt = args.generate_media
+        try:
+            if opt == 'all' or opt == 'teasers':         await generate.mass_generate_small_teasers(  *alist, **kdict )
+            if opt == 'all' or opt == 'preview_thumbs':  await generate.mass_generate_preview_thumbs( *alist, **kdict )
+            if opt == 'all' or opt == 'seek_thumbs':     await generate.mass_generate_seek_thumbs(    *alist, **kdict )
+            if opt == 'all' or opt == 'teasers_large':   await generate.mass_generate_large_teasers(  *alist, **kdict )
+            if opt == 'all' or opt == 'teaser_thumbs':   await generate.mass_generate_teaser_thumbs(  *alist, **kdict )
+        except KeyboardInterrupt:
+            print('\n... interrupting')
+        
+
+    elif args.status: # - STATUS -------------------------------------------------------------------
+        await aprint(ws, )
         ...
-        await aprint(ws, 'Generating media')
-        ...
+
     else:
         await aprint(ws, 'No arguments passed')
 
 
-async def aprint(ws, *args, sep=' ', end='\n'):
-    text = sep.join(str(arg) for arg in args) + end
-    if ws is None:
-        print(text, end='')  # prevent double newline
-    else:
-        await ws.send_text(text)
 
 
+# Inheriting class that doesnt call sys.exit()
 class NoExitArgumentParser(argparse.ArgumentParser):
     """ Non exiting argument parser, for use in a REPL """
     
@@ -50,6 +92,7 @@ class NoExitArgumentParser(argparse.ArgumentParser):
         raise argparse.ArgumentError(None, message)
 
 
+# get argument parser instance
 def create_argument_parser(non_exiting=False):
 
     if non_exiting:
@@ -74,8 +117,11 @@ def create_argument_parser(non_exiting=False):
     
 
     # [3] Media generation
-    parser.add_argument('--generate-media', '-gm',                              help='opts=[all|teasers|teasers_large|teaser_thumbs|preview_thumbs|seek_thumbs]')
+    parser.add_argument('--generate-media', '-gm',                              help='opts=[all|teasers|teasers_large|teaser_thumbs|preview_thumbs|seek_thumbs]', choices=GENERATE_MEDIA_OPTIONS)
     parser.add_argument('--redo-media-gen',        action='store_true',         help='[media_gen] redo media gen (replace old)')
+    
+    parser.add_argument('--performer',                                          help='[media_gen] ')
+    parser.add_argument('--studio',                                             help='[media_gen] ')
     
     parser.add_argument('--filters', '-f',                                      help='[media_gen] for which videos to generate media for | separated by comma')
     parser.add_argument('--exclude-filters',                                    help='[media_gen] for which videos to generate media for | separated by comma')
@@ -83,12 +129,12 @@ def create_argument_parser(non_exiting=False):
     parser.add_argument('--sortby',                                             help='[media_gen]')
     parser.add_argument('--date-added-from',                                    help='[media_gen]')
     parser.add_argument('--date-added-to',                                      help='[media_gen]')
+    parser.add_argument('--select-collection',                                  help='Select collection to')
     
-    parser.add_argument('--select-collections',                                 help='[scan|media_gen]')
 
     # 
     # parser.add_argument('--verbose',               action='store_true',         help='')
-    
+
     return parser
 
 

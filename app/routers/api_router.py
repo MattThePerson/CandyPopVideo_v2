@@ -5,10 +5,8 @@ from fastapi import APIRouter, Response, Depends, HTTPException
 from handymatt.wsl_paths import convert_to_wsl_path, convert_to_windows_path
 
 from ..schemas import VideoData
-from ..util import media
+from ..media import generators
 from .. import db
-
-_media_dir = convert_to_wsl_path(r'A:\WhisperaHQ\MyPrograms\MyApplications\CandyPopApp\Frontend\media\videos') # TODO: Remove
 
 
 def generateReponse(main=None, time_taken=None):
@@ -31,15 +29,7 @@ def ROUTE_get_video(video_hash: str):
         print("Could not find video with hash:", video_hash)
         return Response(f"No video with that hash", 404)
     print("Found video:", video_data.path)
-    if not media.hasPoster(video_hash, _media_dir):
-        print("Generating early poster for:", video_data.filename)
-        media.generatePosterSimple(video_data.path, video_hash, _media_dir, video_data.duration_seconds)
-    # r['is_favourite'] = bf.is_favourite(video_hash, state.metadataHandler)
-    poster = media.hasPreviewThumbs(video_hash, _media_dir, small=True)
-    if poster == None:
-        poster = media.hasPoster(video_hash, _media_dir)
     response = video_data.to_dict()
-    response['poster'] = poster
     return response
     # update views
     # if state.videosHandler:

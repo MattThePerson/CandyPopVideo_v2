@@ -57,10 +57,11 @@ function getPageNavNumbers(current_page, amount_of_pages, max_buttons) {
 function format_added_time(date_added) {
     let diff_ms = (new Date()) - (new Date(date_added.replace(' ', 'T')));
     let string = ['second', 'minute', 'hour', 'day', 'week', 'month', 'year'];
-    let mult = [60, 60, 24, 7, 4.345, 12];
+    let mult =  [60, 60, 24, 7, 4.345, 12, 10];
+    let limit = [60, 60, 24, 7, 3*4.345, 12*3, 10];
     let ms = 1000;
     for (let i = 0; i < mult.length; i++) {
-        if (diff_ms < ms*mult[i]) {
+        if (diff_ms < ms*limit[i]) {
             let unit = Math.floor(diff_ms / ms);
             let ret = unit + ' ' + string[i];
             if (unit > 1)
@@ -80,7 +81,7 @@ function make_search_result_item(res, videoResultTemplate) {
     if (duration.startsWith("0:")) {
         duration = duration.substring(2);
     }
-    if (res['title'])  {
+    if (res.scene_title)  {
         let mention_performers = '';
         // if (res['mention_performer'])
         //     mention_performers = ' (' + res['mention_performer'] + ')'
@@ -90,9 +91,9 @@ function make_search_result_item(res, videoResultTemplate) {
         let jave_code_str = '';
         if (res['jave_code'])
             jave_code_str = '[' + res['jave_code'] + '] '
-        template.querySelector('h2').innerText = jave_code_str + line_str + res['title'];
+        template.querySelector('h2').innerText = jave_code_str + line_str + res.scene_title;
     } else {
-        template.querySelector('h2').innerText = res['filename'];
+        template.querySelector('h2').innerText = res.filename;
     }
     template.querySelector('.resolution').innerText = res['resolution'] + 'p';
     template.querySelector('.resolution').style.color = getResolutionTextColor(res['resolution']);
@@ -145,7 +146,7 @@ function make_search_result_item(res, videoResultTemplate) {
     if (res['collection'] == '') {
         template.querySelector('.collection').style.display = 'none';
     }
-    template.querySelector('.lower-bar .added-tag').innerText = 'Added ' + format_added_time(res['date_added']) + ' ago';
+    template.querySelector('.lower-bar .added-tag').innerText = 'Added ' + format_added_time(res.date_added) + ' ago';
     let descriptionEl = template.querySelector('p.description');
     if (descriptionEl && res['scene_description']) {
         descriptionEl.innerText = res['scene_description']
@@ -159,8 +160,8 @@ function make_search_result_item(res, videoResultTemplate) {
         el.innerText = tag;
         tags_container.appendChild(el);
     }
-    if ('jav_code' in res) {
-        template.querySelector('h2').innerText = res['jav_code'];
+    if (res.jav_code) {
+        template.querySelector('h2').innerText = res.jav_code;
         if (descriptionEl && 'title' in res) {
             descriptionEl.innerText = res['title'];
         }
@@ -214,8 +215,9 @@ function _ensure_search_results_small_teasers(search_results, idx=0) {
         video_el.preload = 'auto';
         video_el.src = `../static/preview-media/0x${current.hash}/teaser_small.mp4`;
         video_el.addEventListener('canplay', () => {
-            _ensure_search_results_small_teasers(search_results, idx+1);
+            // put it here to only load next when previous can play
         });
+        _ensure_search_results_small_teasers(search_results, idx+1);
     });
 
 }

@@ -92,13 +92,21 @@
 
         /* Buttons */
 
+        .buttons-bar {
+            display: flex;
+            justify-content: flex-start;
+            gap: 2rem;
+            align-items: flex-start;
+            padding-left: 2rem;
+        }
+        
         .buttons-container {
-            width: 100%;
+            /* width: 100%; */
             display: flex;
             justify-content: flex-start;
             gap: 0.4rem;
             margin: 0.5rem;
-            padding-right: 4rem;
+            /* padding-right: 4rem; */
         }
         
         .buttons-container button {
@@ -109,8 +117,9 @@
             font-weight: bold;
             cursor: pointer;
         }
-        .buttons-container button:active {
-            background: grey;
+
+        button.common-option-button {
+            background: rgb(165, 85, 165);
         }
 
         #websocket-status-button.connecting {   background: rgb(187, 187, 12); }
@@ -126,11 +135,18 @@
     <div class="page-content">
         
         <div class="terminal-container">
-            <div class="buttons-container">
-                <button id="help-button">help</button>
-                <button id="clear-button">clear history</button>
-                <button id="interrupt-button">send interrupt</button>
-                <button id="websocket-status-button" class="connecting">connecting</button>
+            <div class="buttons-bar">
+                <div class="buttons-container">
+                    <button id="help-button">help</button>
+                    <button id="clear-button">clear history</button>
+                    <button id="interrupt-button">send interrupt</button>
+                    <button id="websocket-status-button" class="connecting">connecting</button>
+                </div>
+                <div class="buttons-container">
+                    <button class="common-option-button">--scan-libraries</button>
+                    <button class="common-option-button">--generate-media all</button>
+                    <button class="common-option-button added-within-option">--generate-media all</button>
+                </div>
             </div>
             <div id="terminal">
                 <div class="text-box"></div>

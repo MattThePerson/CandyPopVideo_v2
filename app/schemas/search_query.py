@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 class SearchQuery(BaseModel):
     search_string:      str|None
-    actor:              str|None
+    performer:          str|None
     studio:             str|None
     collection:         str|None
     include_terms:      list[str]

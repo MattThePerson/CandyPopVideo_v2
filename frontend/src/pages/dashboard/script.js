@@ -52,7 +52,7 @@ function clearTerminal(textBox, hist=false) {
 }
 
 function addLineRaw(html, textBox) {
-    console.log('adding raw html:', html);
+    // console.log('adding raw html:', html);
     const line = document.createElement('div');
     line.className = 'terminal-line';
     line.innerHTML = html;
@@ -137,7 +137,9 @@ window.addEventListener('beforeunload', () => {
 });
 
 document.addEventListener('keydown', e => {
-    input.focus();
+    if (!e.ctrlKey) {
+        input.focus();
+    }
 });
 
 input.addEventListener('keydown', (e) => {
@@ -186,25 +188,27 @@ function connectWebsocket() {
 
     setStatusButtonClass(statusButton, 'connecting');
     
-    // get port from backend
-    const socket_port = 8020;
+    makeApiRequestGET('api/get-port', [], res => {
+        console.log('port number:', res.port);
+        socket_port = res.port;
 
-    socket = new WebSocket(`ws://localhost:${socket_port}/terminal`);
-
-    socket.onopen = () => {
-        addLine('websocket connected', textBox);
-        setStatusButtonClass(statusButton, 'connected');
-    };
+        socket = new WebSocket(`ws://localhost:${socket_port}/terminal`);
     
-    socket.onclose = (event) => {
-        addLine('websocket disconnected', textBox);
-        setStatusButtonClass(statusButton, 'disconnected');
-    };
-    
-    socket.onmessage = (event) => {
-        console.log(event.data);
-        addLines(event.data, textBox);
-    };
+        socket.onopen = () => {
+            addLine('websocket connected', textBox);
+            setStatusButtonClass(statusButton, 'connected');
+        };
+        
+        socket.onclose = (event) => {
+            addLine('websocket disconnected', textBox);
+            setStatusButtonClass(statusButton, 'disconnected');
+        };
+        
+        socket.onmessage = (event) => {
+            // console.log(event.data);
+            addLines(event.data, textBox);
+        };
+    });
 
 }
 
@@ -217,4 +221,18 @@ statusButton.onclick = () => {
 }
 
 clearButton.onclick = () => { clearTerminal(textBox, true) }
+
+document.querySelectorAll('button.common-option-button').forEach(button => {
+    button.onclick = () => {
+        const command = button.textContent
+        terminalEnter(command, textBox, socket);
+    };
+});
+
+const addedWithinButton = document.querySelector('.added-within-option');
+const now = new Date(); // Current datetime
+const twentyFourHoursAgo = new Date(now.getTime() - (2 * 24 * 60 * 60 * 1000));
+const dateAddedFrom = twentyFourHoursAgo.toISOString().slice(0, 10);
+// console.log(dateAddedFrom);
+addedWithinButton.textContent += ' --date-added-from ' + dateAddedFrom;
 
