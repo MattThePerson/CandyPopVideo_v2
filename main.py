@@ -36,7 +36,7 @@ class NoCacheMiddleware(BaseHTTPMiddleware):
 # FastAPI
 
 app = FastAPI(lifespan=lifespan)
-app.add_middleware(NoCacheMiddleware) # TODO: test removing
+app.add_middleware(NoCacheMiddleware)
 
 # add routers
 app.include_router(media_router,         prefix="/media")

@@ -16,3 +16,15 @@ class SearchQuery(BaseModel):
     sortby:             str|None
     limit:              int
     startfrom:          int
+
+
+class CatalogueQuery(BaseModel):
+    query_type:          str  # performers | studios
+    query_string:        str|None = None
+    use_sort_performers: bool = False
+    
+    filter_performer:   str|None = None
+    filter_studio:      str|None = None
+    filter_collection:  str|None = None
+    filter_tag:         str|None = None
+

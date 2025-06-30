@@ -4,14 +4,17 @@
 
 ## TODO
 
-- Improve media generation / add status
+- Add status
+- Figure out media gen errors
 - Convert entire collection to mp4
 - Generate preview media for entire collection
 - Improve frontend terminal experience
 - Add teaser thumbs
 - Add new catalogue page
+- Get performer (and studio) embeddings working
 <!-- - Bring over favourites & make metadata db -->
 <!-- - Get tfidf model working -->
+<!-- - Improve media generation -->
 <!-- - Add subtitles to video -->
 <!-- - Get vman script for mkv -> mp4 conversion -->
 <!-- - Get seek thumbs sprite sheets working -->
@@ -19,12 +22,27 @@
 
 
 
+CatalogueQuery:
+  - type: [performers|sort-performers|studios|collections|tags]
+  - query_string: str
+  - filter_performer: str
+  - filter_studio: str
+  - filter_collection: str
+  - filter_tag: str
 
+
+CatalogueResponse:
+  - performers:  [ (name, scenes), ... ]
+  - studios:     [ (name, scenes), ... ]
+  - collections: [ (name, scenes), ... ]
+  - tags:        [ (name, scenes), ... ]
+
+
+/query/get/catalogue/{CatalogueQuery}
 
 
 
 ## METADATA DB
-
 
 
 - favourite

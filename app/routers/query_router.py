@@ -1,11 +1,11 @@
 """ Routes for searching videos """
 import time
-from fastapi import APIRouter, Response, HTTPException
+from fastapi import APIRouter, HTTPException
 
 from .. import db
 from config import TFIDF_MODEL_PATH
 from ..recommender import search, similarity
-from ..schemas import SearchQuery, VideoData, VideoInteractions
+from ..schemas import SearchQuery, VideoData, VideoInteractions, CatalogueQuery
 from ..util.general import pickle_load
 
 
@@ -75,4 +75,26 @@ def ROUTE_get_similar_studio(studio: str):
     return jsonify("Not implemented"), 404
     print(f'Getting similar studios to: "{studio}"')
     return jsonify(generateReponse(sims)), 200
+
+
+from ..recommender.catalogue import get_catalogue
+
+# 
+@query_router.post('/get/catalogue')
+def ROUTE_get_catalogue(query: CatalogueQuery):
+    # raise HTTPException(status_code=501, detail='Not implemented')
+    video_dicts = db.read_table_as_dict('videos')
+    videos_list = [ VideoData.from_dict(vd) for vd in video_dicts.values() if vd.get('is_linked') ]
+    print('[catalogue] getting catalogue')
+    start = time.time()
+    result: dict = {}
+    result = get_catalogue(videos_list, query)
+    # try:
+    # except Exception as e:
+    #     print("[catalogue] Exception:", e)
+    #     raise HTTPException(status_code=500, detail="Exception while getting catalogue")
+    tt = time.time() - start
+    print('[catalogue] done. took {:.1f} sec'.format(tt))
+    result['time_taken'] = tt
+    return result
 

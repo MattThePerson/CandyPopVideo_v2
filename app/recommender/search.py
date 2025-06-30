@@ -1,10 +1,8 @@
 """ Functions related to video searching """
 import random
 import time
-from datetime import datetime
 
 from .tfidf import get_related_videos_from_query_TFIDF, STOPWORDS_ENG
-from ..util import _favourites
 from ..schemas import SearchQuery, VideoData, TFIDFModel, VideoInteractions
 
 # search, filter and sort videos
