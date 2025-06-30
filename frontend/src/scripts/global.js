@@ -81,7 +81,7 @@ function makeApiRequestGET(request, args, callback) {
 
 /* post json object */
 /* assumes request is being made by .html page in `src/pages/PAGE_NAME/index.html` */
-function makeApiRequestPOST(request, data, callback) {
+function makeApiRequestPOST_JSON(request, data, callback) {
     
     const options = {
         method: "POST",
@@ -112,18 +112,42 @@ function makeApiRequestPOST(request, data, callback) {
 
 }
 
+/* post json object */
+/* assumes request is being made by .html page in `src/pages/PAGE_NAME/index.html` */
+function makeApiRequestPOST(request, args, callback) {
+    
+    const options = {
+        method: "POST"
+    }
+
+    let api_call = request;
+    for (let arg of args) {
+        api_call = api_call + '/' + arg;
+    }
+
+    fetch(fetch_request_prefix + api_call, options)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`(${request}) Network response: ${response.status}`);
+            }
+            // console.log(response);
+            return response.json();
+        })
+        .then(data => {
+            try {
+                callback(data)
+            } catch (error) {
+                console.error(`Callback error (${request}):`, error);
+            }
+        })
+        .catch(error => {
+            console.error(error);
+    });
+
+}
 
 
 /* GLOBAL FUNCTIONS */
-
-function GLOBAL_video_is_favourite(hash, callback) {
-    //console.log("Checking if video is favourite: " + hash);
-    makeApiRequestGET('api/favourites/is-fav', [hash], arg => {
-        if (arg && arg.is_favourite) {
-            callback();
-        }
-    });
-}
 
 
 /* COOKIE FUNCTIONS */

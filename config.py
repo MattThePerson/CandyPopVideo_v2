@@ -26,3 +26,5 @@ VIDEO_EXTENSIONS = CONFIG.get('video_extensions')
 SCENE_FILENAME_FORMATS = CONFIG.get('scene_filename_formats')
 
 COLLECTIONS = CONFIG.get('collections')
+
+DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"

@@ -5,11 +5,11 @@ from datetime import datetime
 
 from .tfidf import get_related_videos_from_query_TFIDF, STOPWORDS_ENG
 from ..util import _favourites
-from ..schemas import SearchQuery, VideoData, TFIDFModel
+from ..schemas import SearchQuery, VideoData, TFIDFModel, VideoInteractions
 
 # search, filter and sort videos
 # metadata: incorperate into VideoData
-def searchVideosFunction(videos_list: list[VideoData], search_query: SearchQuery, metadata: dict, tfidf_model: TFIDFModel|None, token_hashes) -> tuple[list, int, list] | None:
+def searchVideosFunction(videos_list: list[VideoData], search_query: SearchQuery, video_interactions: dict[str, VideoInteractions], tfidf_model: TFIDFModel|None, token_hashes) -> tuple[list, int, list] | None:
     """ Filter and sort a list of VideoData given a SearchQuery and TF-IDF model """
     q = search_query
     
@@ -27,7 +27,9 @@ def searchVideosFunction(videos_list: list[VideoData], search_query: SearchQuery
         videos_list = searchVideos_TFIDF(videos_list, q.search_string, tfidf_model)
     
     # filter videos
-    videos_list = filterVideoObjects(videos_list, q, metadata)
+    if q.only_favourites:
+        videos_list = [ vd for vd in videos_list if _video_is_favourite(video_interactions.get(vd.hash)) ]
+    videos_list = filterVideoObjects(videos_list, q)
     if len(videos_list) < q.startfrom:
         return None
 
@@ -61,12 +63,12 @@ def searchVideos_TFIDF(video_objects: list[VideoData], search_query: str, tfidf_
 
 
 # filter videos
-def filterVideoObjects(filtered: list[VideoData], search_query: SearchQuery, metadata: dict={}):
+def filterVideoObjects(filtered: list[VideoData], search_query: SearchQuery):
     
     q = search_query
     
-    if q.only_favourites:     filtered = [ vid for vid in filtered if ( _favourites.is_favourite(vid.hash, metadata) ) ]
-    if q.performer:               filtered = [ vid for vid in filtered if ( _actor_in_video(q.performer, vid) ) ]
+    # if q.only_favourites:     filtered = [ vid for vid in filtered if ( _favourites.is_favourite(vid.hash, metadata) ) ]
+    if q.performer:           filtered = [ vid for vid in filtered if ( _actor_in_video(q.performer, vid) ) ]
     if q.studio:              filtered = [ vid for vid in filtered if ( ( vid.studio and vid.studio.lower() in q.studio.lower() ) ) ]
     if q.collection:          filtered = [ vid for vid in filtered if ( (vid.collection and q.collection.lower() in vid.collection.lower()) ) ]
 
@@ -84,30 +86,39 @@ def filterVideoObjects(filtered: list[VideoData], search_query: SearchQuery, met
 
 
 # sort videos
-def _sortVideos(videos, sort_by):
-    videos.sort(
+def _sortVideos(videos_list: list[VideoData], sortby_option: str) -> list[VideoData]:
+    # sort by scene title
+    videos_list.sort(
         reverse=False,
-        key=lambda video: ( (video.get(sort_by) is None) != False, video.get('title', '') )
+        key=lambda video: (None, video.scene_title),
     )
-    if sort_by == 'random':
-        random.seed(str(datetime.now()))
-        random.shuffle(videos)
+    
+    if sortby_option.startswith('random'):
+        seed = int(sortby_option.split('-')[-1])
+        random.seed(seed)
+        random.shuffle(videos_list)
+        
     else:
-        sort_reverse = ('desc' in sort_by)
-        for x in ['-asc', '-desc']:
-            sort_by = sort_by.replace(x, '')
-        sort_by = sort_by.replace('-', '_')
-        if sort_by == 'date_released':
-            videos.sort(
-                reverse=sort_reverse,
-                key=lambda video: ( (video.get(sort_by) is None) != sort_reverse, _get_video_date(video) ) # tuple where first element if boolean. 
-            )
-        else:
-            videos.sort(
-                reverse=sort_reverse,
-                key=lambda video: ( (video.get(sort_by) is None) != sort_reverse, video.get(sort_by) ) # tuple where first element if boolean. 
-            )
-    return videos
+        sort_reverse = ('desc' in sortby_option)
+        sortby_option = sortby_option.replace('-asc', '')
+        sortby_option = sortby_option.replace('-desc', '')
+        sortby_option = sortby_option.replace('-', '_')
+
+        videos_list.sort(
+            reverse=sort_reverse,
+            key=lambda video: ( (getattr(video, sortby_option) is None) != sort_reverse, getattr(video, sortby_option) ) # tuple where first element if boolean. 
+        )
+        # if sortby_option == 'date_released':
+        #     videos_list.sort(
+        #         reverse=sort_reverse,
+        #         key=lambda video: ( ( video.date_released is None) != sort_reverse, video.date_released ) # tuple where first element if boolean. 
+        #     )
+        # else:
+        #     videos_list.sort(
+        #         reverse=sort_reverse,
+        #         key=lambda video: ( (getattr(video, sortby_option) is None) != sort_reverse, getattr(video, sortby_option) ) # tuple where first element if boolean. 
+        #     )
+    return videos_list
 
 
 # generate word cloud
@@ -165,10 +176,6 @@ def get_bigrams(parts):
 
 ### HELPERS ###
 
-def _get_video_date_released(vid):
-    if 'date_released_d18':
-        return vid['date_released_d18']
-    return vid.get('date_released')
 
 def _actor_in_video(actor: str, vid: VideoData):
         actor = actor.lower()
@@ -178,8 +185,7 @@ def _actor_in_video(actor: str, vid: VideoData):
                     return True
         return False
 
-def _get_video_date(video):
-    if 'date_released_d18' in video:
-        return video['date_released_d18']
-    return video['date_released']
+
+def _video_is_favourite(vid_inter: VideoInteractions|None) -> bool:
+    return vid_inter != None and vid_inter.is_favourite
 

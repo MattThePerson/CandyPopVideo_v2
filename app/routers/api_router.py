@@ -10,13 +10,6 @@ from ..media import generators
 from .. import db
 
 
-def generateReponse(main=None, time_taken=None):
-    r = {}
-    r['collections'] = ['main'] # state.metadataHandler.getValue('collections', [])
-    r['main'] = main
-    r['time_taken'] = time_taken
-    return r
-
 
 api_router = APIRouter()
 
@@ -59,7 +52,7 @@ def ROUTE_get_random_video():
 
 
 # GET RANDOM VIDEO
-@api_router.get("/get/random-video-seeded/{seed}")
+@api_router.get("/get/random-video-hash-seeded/{seed}")
 def ROUTE_get_random_video_seeded(seed):
     raise HTTPException(status_code=501, detail='Not implemented')
     print("Request recieved: 'get-random-video'")
@@ -122,40 +115,3 @@ def ROUTE_get_catalogue():
     return jsonify(), 500
 
 
-# ADD FAVOURITE
-@api_router.post("/favourites/add/{video_hash}")
-def ROUTE_add_favourite(video_hash: str):
-    raise HTTPException(status_code=501, detail='Not implemented')
-    if bf.is_favourite(hash, metadataHandler):
-        return jsonify('favourite already exists'), 200
-    bf.add_favourite(hash, metadataHandler)
-    return jsonify('added favourite'), 200
-
-
-# REMOVE FAVOURITE
-@api_router.post("/favourites/remove/{video_hash}")
-def ROUTE_remove_favourite(video_hash: str):
-    raise HTTPException(status_code=501, detail='Not implemented')
-    if not bf.is_favourite(hash, metadataHandler):
-        return jsonify('video already not favourites'), 200
-    bf.remove_favourite(hash, metadataHandler)
-    return jsonify('removed favourite'), 200
-
-
-# IS FAVOURITE
-@api_router.get("/favourites/is-fav/{video_hash}")
-def ROUTE_is_favourite(video_hash: str):
-    raise HTTPException(status_code=501, detail='Not implemented')
-    if bf.is_favourite(hash, metadataHandler):
-        return jsonify(generateReponse({'is_favourite': True})), 200
-    return jsonify(generateReponse({'is_favourite': False})), 200
-
-
-# post("/views/add/{video_hash}")
-# get("/views/get/{video_hash}")
-
-# post("/likes/{video_hash}/add")
-# get("/likes/{video_hash}/get")
-
-# get("/rating/{video_hash}/add")
-# get("/rating/{video_hash}/get")

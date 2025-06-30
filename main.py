@@ -5,18 +5,15 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from contextlib import asynccontextmanager
 
-from app.routers import api_router, media_router, query_router, dashboard_router
-from config import PREVIEW_MEDIA_DIR, COLLECTIONS
+from config import PREVIEW_MEDIA_DIR
+from app.routers import api_router, media_router, query_router, dashboard_router, interact_router
 
 
 
 # Startup/Shutdown logic
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    
     try:
-        # print('Scanning media libraries ...')
-        # scanVideos(COLLECTIONS)
         ...
     except KeyboardInterrupt:
         print('\n... keyboard interrupt. stopping scan.')
@@ -25,6 +22,7 @@ async def lifespan(app: FastAPI):
     print('FastAPI shutting down ...')
 
 
+# CORS
 class NoCacheMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         response = await call_next(request)
@@ -41,10 +39,11 @@ app = FastAPI(lifespan=lifespan)
 app.add_middleware(NoCacheMiddleware) # TODO: test removing
 
 # add routers
-app.include_router(media_router,     prefix="/media")
-app.include_router(api_router,       prefix="/api")
-app.include_router(query_router,     prefix="/api/query")
-app.include_router(dashboard_router, prefix="")
+app.include_router(media_router,         prefix="/media")
+app.include_router(api_router,           prefix="/api")
+app.include_router(query_router,         prefix="/api/query")
+app.include_router(interact_router,      prefix="/api/interact")
+app.include_router(dashboard_router,     prefix="")
 
 # hello
 @app.get("/api/hello")

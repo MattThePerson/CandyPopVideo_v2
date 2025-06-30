@@ -1,18 +1,63 @@
 # NOTES
 
-TODO:
-- Get tfidf model working
+
+
+## TODO
+
 - Improve media generation / add status
-- Add subtitles to video
 - Convert entire collection to mp4
 - Generate preview media for entire collection
 - Improve frontend terminal experience
-- Bring over favourites & get working with db
 - Add teaser thumbs
 - Add new catalogue page
+<!-- - Bring over favourites & make metadata db -->
+<!-- - Get tfidf model working -->
+<!-- - Add subtitles to video -->
 <!-- - Get vman script for mkv -> mp4 conversion -->
 <!-- - Get seek thumbs sprite sheets working -->
 <!-- - Get media generation working -->
+
+
+
+
+
+
+
+## METADATA DB
+
+
+
+- favourite
+- views
+- likes
+- rating [S+|S|A|B+|B-|C]
+- markers
+- i_came_markers
+- user_comments
+
+
+
+## FAVOURITES TO MANUALLY ADD
+
+<!-- - "A:\Whispera\videos\_MainCollection\Alexis Texas\DigitalPlayground\Alexis Texas - DigitalPlayground - [2010] Girl Next Door - Scene 1 [Heather Starlet, Charles Dera] #Rimming #Threesome #DoubleBlowjob #BikiniSex.mkv" -->
+<!-- - "A:\Whispera\videos\_MainCollection\Alexis Texas\_LQ\Alexis Texas - HollyRandall - [2014] Sex In The City [Toni Ribas] #LQ #BlackLingerie #LightblueSheets.mkv" -->
+- "A:\Whispera\videos\_MainCollection\Alexis Texas\_LQ\Alexis Texas - RetromediaEntertainment - Bikini Frankenstein - Scene 1 (48fps, Color Graded) #PinkUndies #Classroom #HighHeels.mkv"
+- "A:\Whispera\videos\_MainCollection\_ByStudio\TonightsGirlfriend\Alexis Texas - TonightsGirlfriend - Role Playing with Alexis.mkv"
+- "A:\Whispera\videos\_MainCollection\Alexis Texas\ZTOD\Alexis Texas - ZTOD - [2010] Curvies - Scene 4 [Pat Myne] #WhiteLeatherCouch #Chocker.mkv"
+- "A:\Whispera\videos\_MainCollection\AJ Applegate\AJ Applegate - HotBabes4k - Big Booty AJ Goes Hardcore.mkv"
+- "A:\Whispera\videos\_MainCollection\AJ Applegate\AJ Applegate - BangBros - [2014] Monsters of Cock [Jack Napier].mkv"
+- "A:\Whispera\videos\_MainCollection\AJ Applegate\AJ Applegate - Wicked - [2018] He Loves Me in Stockings and Heels 2 [Tyler Nixon].mkv"
+- "A:\Whispera\videos\_MainCollection\AJ Applegate\SweetSinner\AJ Applegate - SweetSinner - [2016] Shades Of Kink 7 - Scene 4 [Tyler Nixon].mkv"
+- "A:\Whispera\videos\_MainCollection\_ByStudio\Bellesa\AJ Applegate - BellesaFilms - [2020] I'm Cold [Damon Dice].mkv"
+
+
+
+
+
+
+
+
+
 
 
 

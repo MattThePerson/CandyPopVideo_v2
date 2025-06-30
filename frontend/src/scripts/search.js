@@ -172,13 +172,17 @@ function make_search_result_item(res, videoResultTemplate) {
     });
 
     // make favourite indicator visible
-    GLOBAL_video_is_favourite(res.hash, () => {
-        const resItem = document.getElementById('item-' + res['hash']);
-        try {
-            resItem.querySelector('.favourite').style.display = 'block';
-        } catch {}
+    makeApiRequestGET('api/interact/favourites/check', [res.hash], response => {
+        if (response.is_favourite) {
+            const resItem = document.querySelector('#item-' + res.hash);
+            try {
+                resItem.querySelector('.favourite').style.display = 'block';
+            } catch {}
+        }
     });
+
     return template;
+
 }
 
 /* MAIN FUNCTIONS */
@@ -225,7 +229,7 @@ function _ensure_search_results_small_teasers(search_results, idx=0) {
 
 function generate_results(results, args, use_custom_thumbs) {
 
-    console.log('generating results:', results)
+    // console.log('generating results:', results)
     
     render_wordcloud(results.word_cloud);
 
@@ -371,14 +375,14 @@ function render_wordcloud(words) {
             }
         },
         click: function(item) {
-            let ic = urlParams.get('include-terms');
+            let ic = urlParams.get('include_terms');
             if (ic) {
                 ic += ', ' + item[0];
             } else {
                 ic = item[0]
             }
-            urlParams.set('include-terms', ic)
-            window.location.href = 'searchPage.html?' + urlParams.toString();
+            urlParams.set('include_terms', ic)
+            window.location.href = 'pages/search/index.html?' + urlParams.toString();
         }
     };
     WordCloud(canvas, config);

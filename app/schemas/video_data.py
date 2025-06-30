@@ -21,6 +21,7 @@ class VideoData:
     duration_seconds: float
 
     source_id:      Optional[str] = None
+    # source_url:     Optional[str] = None
 
     # collection
     collection:     Optional[str] = None
@@ -34,6 +35,8 @@ class VideoData:
     date_released:      Optional[str] = None
     scene_description:  Optional[str] = None
     jav_code:           Optional[str] = None
+    # data18_url:         Optional[str] = None
+    # date_released_d18:  Optional[str] = None
     performers:             list[str] = field(default_factory=list)
     sort_performers:        list[str] = field(default_factory=list)
     mention_performers:     list[str] = field(default_factory=list)
@@ -43,6 +46,7 @@ class VideoData:
     tags_from_filename: list[str] = field(default_factory=list)
     tags_from_path:     list[str] = field(default_factory=list)
     tags_from_json:     list[str] = field(default_factory=list)
+    # tags_from_d18:      list[str] = field(default_factory=list)
     metadata:                dict = field(default_factory=dict)
     
     is_linked:               bool = True

@@ -2,15 +2,17 @@
 
 const searchPanel = document.getElementById('search-panel');
 const searchButton = document.getElementById('search-button');
-const onlyFavsCheckbox = document.querySelector('input.only-favs');
+const onlyFavsCheckbox = document.querySelector('input.only_favourites');
 
 /* FUNCTIONS */
 
 function initiate_search(searchPanel) {
     let params = new URLSearchParams();
-    if (urlParams.get('sort-by')) {
-        params.set('sort-by', urlParams.get('sort-by'));
+    const urlparams_sortby = urlParams.get('sortby');
+    if (urlparams_sortby) {
+        params.set('sortby', urlparams_sortby);
     }
+
     // for (let pkey of ['search-string', 'performer', 'studio', 'collection', 'date-added-from', 'date-added-to', 'date-released-from', 'date-released-to', 'include-terms']) {
     //     let selector = `.${pkey}-input input`;
     //     try {
@@ -37,7 +39,7 @@ function initiate_search(searchPanel) {
         }
     });
     if (onlyFavsCheckbox.checked) {
-        params.set('only-favs', true);
+        params.set('only_favourites', true);
     }
     if (params.size > 0) {
         window.location.href = window.location.pathname + '?' + params.toString();
@@ -59,6 +61,9 @@ function get_search_page_title(urlParams) {
 
 
 function highlight_sort_button(sortBy) {
+    if (sortBy.includes('random')) {
+        sortBy = sortBy.split('-')[0];
+    }
     let type = 'desc';
     if (sortBy.includes('asc')) {
         type = 'asc';
@@ -90,7 +95,7 @@ document.querySelectorAll('#search-panel .search-input').forEach(inputElement =>
     });
 });
 
-// sort-by buttons
+// sortby buttons
 for (let button_group of searchPanel.querySelectorAll('.sort-panel .button-group')) {
     let sort_type = button_group.id.replace('-button-group', '');
     let main = button_group.querySelector('.main');
@@ -99,7 +104,8 @@ for (let button_group of searchPanel.querySelectorAll('.sort-panel .button-group
     main.addEventListener('click', e => {
         let sort_by_arg = null;
         if (sort_type == 'random') {
-            sort_by_arg = sort_type;
+            const random_seed = Math.floor(Math.random() * 9999) + 1;;
+            sort_by_arg = `random-${random_seed}`;
         } else {
             if (main.classList.contains('selected')) {
                 if (desc.classList.contains('selected'))
@@ -108,25 +114,25 @@ for (let button_group of searchPanel.querySelectorAll('.sort-panel .button-group
                     sort_by_arg = sort_type + '-desc';
             } else {
                 sort_by_arg = sort_type + '-desc';
-                if (sort_type == 'filename' || sort_type == 'title' || sort_type == 'studio')
+                if (sort_type == 'filename' || sort_type == 'scene-title' || sort_type == 'studio')
                     sort_by_arg = sort_by_arg.replace('desc', 'asc');
             }
         }
         const urlParams = new URLSearchParams(window.location.search);
-        urlParams.set('sort-by', sort_by_arg);
+        urlParams.set('sortby', sort_by_arg);
         urlParams.delete('page');
         window.location.href = window.location.pathname + '?' + urlParams.toString();
     });
     if (sort_type != 'random') {
         asc.addEventListener('click', e => {
             const urlParams = new URLSearchParams(window.location.search);
-            urlParams.set('sort-by', sort_type + '-asc');
+            urlParams.set('sortby', sort_type + '-asc');
             urlParams.delete('page');
             window.location.href = window.location.pathname + '?' + urlParams.toString();
         });
         desc.addEventListener('click', e => {
             const urlParams = new URLSearchParams(window.location.search);
-            urlParams.set('sort-by', sort_type + '-desc');
+            urlParams.set('sortby', sort_type + '-desc');
             urlParams.delete('page');
             window.location.href = window.location.pathname + '?' + urlParams.toString();
         });
@@ -135,25 +141,6 @@ for (let button_group of searchPanel.querySelectorAll('.sort-panel .button-group
 
 
 /* OLD QUERY */
-
-// let query_old = { limit: search_results_amount, startfrom: search_results_start_index };
-
-// for (let key of ['search-string', 'performer', 'studio', 'collection', 'date-added-from', 'date-added-to', 'date-released-from', 'date-released-to', 'include-terms', 'exclude-terms']) {
-//     if (urlParams.get(key)) {
-//         try {
-//             searchPanel.querySelector(`.${key}-input input`).value = urlParams.get(key);
-//         } catch {
-//             console.log('No such element: ', `.${key}-input input`);
-//         }
-//         let query_key = key.replace(/-/g, '_');
-//         if (key == 'performer') {
-//             query_key = 'actor'
-//         } else if (key == 'query') {
-//             query_key = 'search';
-//         }
-//         query_old[query_key] = urlParams.get(key);
-//     }
-// }
 
 
 /* HANDLE URL SEARCH PARAMS */
@@ -172,17 +159,7 @@ params.forEach((value, key) => {
     }
 });
 
-if (params.get('sort-by')) {
-    query['sort_by'] = params.get('sort-by');
-    highlight_sort_button(params.get('sort-by'));
-} else {
-    highlight_sort_button('date-added-desc');
-}
 
-if (params.get('only-favs')) {
-    query.only_favourites = true;
-    onlyFavsCheckbox.checked = true;
-}
 
 const pageNumber = parseInt(params.get('page')) || 1;
 document.querySelector('#search-page-info .page-number').innerText = 'Page ' + (pageNumber);
@@ -207,6 +184,8 @@ const query = {
     startfrom: -1,        // int,
 }
 
+
+/* url params to query */
 params.forEach((value, key) => {
     if (key in query) {
         query[key] = value;
@@ -221,12 +200,19 @@ if (typeof query.exclude_terms === 'string') query.exclude_terms = query.exclude
 
 console.log('Query: ', query)
 
+/* make ui changes based on params (using query) */
+
+if (query.sortby) highlight_sort_button(query.sortby);
+else              highlight_sort_button('date-added-desc');
+
+if (query.only_favourites)  onlyFavsCheckbox.checked = true;
+
 
 /* BACKEND SEARCH REQUEST */
 
 if (urlParams.size > 0) {
-    makeApiRequestPOST('api/query/search-videos', query, results => {
-        console.log('search_results:', results);
+    makeApiRequestPOST_JSON('api/query/search-videos', query, results => {
+        // console.log('search_results:', results);
         // return;
         const use_custom_thumbnails = window.location.pathname.includes('listPage.html');
         generate_results(results, {generate_nav : true}, use_custom_thumbnails);

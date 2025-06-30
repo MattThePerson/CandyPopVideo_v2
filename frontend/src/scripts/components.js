@@ -33,7 +33,7 @@ function HeaderTemplate() {
     <nav class="top-nav">
         <a href="pages/home/index.html" class="top-nav-item">HOME</a>
         <a href="pages/search/index.html" class="top-nav-item">SEARCH</a>
-        <!-- <a href="../list/index.html?sort-by=date-released-desc" class="top-nav-item">LIST PAGE</a> -->
+        <!-- <a href="../list/index.html?sortby=date-released-desc" class="top-nav-item">LIST PAGE</a> -->
         <a href="pages/catalogue/index.html" class="top-nav-item">CATALOGUE</a>
         <a href="pages/video/index.html" class="top-nav-item">RANDOM VIDEO</a>
         <!-- <a href="../spreadsheet/index.html" class="top-nav-item">SPREADSHEET</a> -->

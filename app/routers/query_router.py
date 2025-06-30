@@ -5,7 +5,7 @@ from fastapi import APIRouter, Response, HTTPException
 from .. import db
 from config import TFIDF_MODEL_PATH
 from ..recommender import search, similarity
-from ..schemas import SearchQuery, VideoData
+from ..schemas import SearchQuery, VideoData, VideoInteractions
 from ..util.general import pickle_load
 
 
@@ -16,12 +16,13 @@ query_router = APIRouter()
 def ROUTE_search_videos(query: SearchQuery):
     video_dicts = db.read_table_as_dict('videos')
     video_objects_list = [ VideoData.from_dict(vd) for vd in video_dicts.values() if vd.get('is_linked') ]
-    start = time.time()
+    video_interactions = { hsh: VideoInteractions.from_dict(vd) for hsh, vd in db.read_table_as_dict('interactions').items() }
     tfidf_model = pickle_load(TFIDF_MODEL_PATH)
+    start = time.time()
     search_results_tuple = search.searchVideosFunction(
         video_objects_list,
         query,
-        {}, #state.metadataHandler,
+        video_interactions,
         tfidf_model,
         None,
     )

@@ -256,9 +256,10 @@ let videodata_global;
 const videoHash = urlParams.get('hash');
 console.log("Video hash: " + videoHash);
 
-// GET VIDEO DATA
+// GET VIDEO
 if (videoHash != null) {
 
+    /* VIDEO DATA */
     makeApiRequestGET('api/get/video-data', [videoHash], videodata => {
         videodata_global = videodata;
         console.log('videodata:', videodata);
@@ -312,27 +313,6 @@ if (videoHash != null) {
         header.querySelector('.bitrate').innerText = Math.round(videodata.bitrate/100)/10 + 'mb';
         header.querySelector('.fps').innerText = videodata.FPS + 'fps';
     
-        // configure favourites button
-        favouritesButton.addEventListener('click', (args) => {
-            if (videodata['is_favourite']) {
-                console.log("removing favourite: ", videoHash);
-                makeApiRequestGET('remove-favourite', [videoHash], () => {
-                    toggle_favourites_button_OFF(favouritesButton);
-                    videodata['is_favourite'] = false;
-                });
-            } else {
-                console.log("adding favourite: ", videoHash);
-                makeApiRequestGET('add-favourite', [videoHash], () => {
-                    toggle_favourites_button_ON(favouritesButton);
-                    videodata['is_favourite'] = true;
-                });
-            }
-        });
-        toggle_favourites_button_OFF(favouritesButton);
-        if (videodata['is_favourite']) {
-            toggle_favourites_button_ON(favouritesButton);
-        }
-    
         /* load related videos */
 
         const related_videos_load_amount = 8;
@@ -357,6 +337,37 @@ if (videoHash != null) {
         loadSRTasVTT(`../media/get/subtitles/${videoHash}`, video_el);
         
     });
+
+    
+    /* VIDEO INTERACTIONS */
+    makeApiRequestGET('api/interact/get', [videoHash], video_interactions => {
+
+        console.log('video_interactions:', video_interactions);
+        
+        // configure favourites button
+        favouritesButton.onclick = (args) => {
+            if (video_interactions.is_favourite) {
+                console.log("removing favourite: ", videoHash);
+                makeApiRequestPOST('api/interact/favourites/remove', [videoHash], () => {
+                    toggle_favourites_button_OFF(favouritesButton);
+                    video_interactions.is_favourite = false;
+                });
+            } else {
+                console.log("adding favourite: ", videoHash);
+                makeApiRequestPOST('api/interact/favourites/add', [videoHash], () => {
+                    toggle_favourites_button_ON(favouritesButton);
+                    video_interactions.is_favourite = true;
+                });
+            }
+        };
+
+        toggle_favourites_button_OFF(favouritesButton);
+        if (video_interactions.is_favourite) {
+            toggle_favourites_button_ON(favouritesButton);
+        }
+        
+    });
+    
 }
 
 
