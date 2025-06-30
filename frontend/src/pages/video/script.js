@@ -45,7 +45,6 @@ function toggle_favourites_button_OFF(butt) {
 // LONG ASS FUNCTION
 async function loadThumbnails() {
 
-    console.log('seek thumbnails with sprite sheet ensured!');
     const videoElement = document.querySelector('#player video');
     const videoDuration = videodata_global.duration_seconds;
 
@@ -63,7 +62,6 @@ async function loadThumbnails() {
         const [x, y, w, h] = coords.split(',').map(Number);
         cues.push({ start: toSeconds(start), end: toSeconds(end), x, y, w, h });
     }
-    console.log(cues);
 
     const spriteUrl = `/static/preview-media/0x${videoHash}/seekthumbs.jpg`;
 
@@ -117,14 +115,43 @@ async function loadThumbnails() {
         }
     });
 
-    // playerContainer.addEventListener('mouseout', () => {
-    //     thumbnail.style.display = 'none';
-    // });
+    playerContainer.addEventListener('mouseout', () => {
+        thumbnail.style.display = 'none';
+    });
 }
 
 function toSeconds(timeStr) {
     const [h, m, s] = timeStr.split(':');
     return parseInt(h) * 3600 + parseInt(m) * 60 + parseFloat(s);
+}
+
+
+/* load subtitles */
+async function loadSRTasVTT(srtUrl, video_el) {
+    const response = await fetch(srtUrl);
+    let srt = await response.text();
+
+    console.log(srt);
+    
+    // Basic .srt → .vtt conversion
+    let vtt = 'WEBVTT\n\n' + srt
+        .replace(/\r/g, '')
+        .replace(/(\d+)\n(\d{2}:\d{2}:\d{2}),(\d{3}) --> (\d{2}:\d{2}:\d{2}),(\d{3})/g,
+                '$1\n$2.$3 --> $4.$5');
+
+    const blob = new Blob([vtt], { type: 'text/vtt' });
+    const url = URL.createObjectURL(blob);
+
+    const track = document.createElement('track');
+    track.kind = 'subtitles';
+    track.label = 'English';
+    track.srclang = 'en';
+    track.src = url;
+    track.default = true;
+
+    video_el.appendChild(track);
+
+    console.log(track);
 }
 
 // Fullscreen Progression Bar (Canvas) functions
@@ -327,10 +354,8 @@ if (videoHash != null) {
         /* request seek thumbnails */
         makeApiRequestGET('media/ensure/seek-thumbnails', [videoHash], loadThumbnails);
 
-        /* request subtitles */
-        makeApiRequestGET('media/get/subtitles', [videoHash], res => {
-            console.log(res);
-        });
+        const video_el = document.querySelector('#player video');
+        loadSRTasVTT(`../media/get/subtitles/${videoHash}`, video_el);
         
     });
 }

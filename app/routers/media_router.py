@@ -145,4 +145,4 @@ def confirm_seek_thumbnails(video_hash: str):
 # ENSURE SEEK THUMBNAIL
 @media_router.get("/get/subtitles/{video_hash}")
 def ROUTER_get_subtitles(video_hash: str):
-    return FileResponse(r'A:\Whispera\videos\JAV\.subtitles')
+    return FileResponse(r'A:\Whispera\videos\JAV\.subtitles\JUL-617.srt')
