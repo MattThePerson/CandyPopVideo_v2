@@ -5,16 +5,11 @@ from datetime import datetime
 
 from .tfidf import get_related_videos_from_query_TFIDF, STOPWORDS_ENG
 from ..util import _favourites
-from ..schemas import SearchQuery, VideoData
-
-from handymatt import JsonHandler
-
-# TODO: convert videos to list[VideoData]
+from ..schemas import SearchQuery, VideoData, TFIDFModel
 
 # search, filter and sort videos
-# metadataHandler: JsonHandler
-# tfidf_model: tuple?
-def searchVideosFunction(videos_list: list[VideoData], search_query: SearchQuery, metadata: dict, tfidf_model, token_hashes) -> tuple[list, int, list] | None:
+# metadata: incorperate into VideoData
+def searchVideosFunction(videos_list: list[VideoData], search_query: SearchQuery, metadata: dict, tfidf_model: TFIDFModel|None, token_hashes) -> tuple[list, int, list] | None:
     """ Filter and sort a list of VideoData given a SearchQuery and TF-IDF model """
     q = search_query
     
@@ -27,10 +22,9 @@ def searchVideosFunction(videos_list: list[VideoData], search_query: SearchQuery
     ))
     
     # search videos
-    if q.search_string:
+    if q.search_string and tfidf_model:
         # # videos_list = searchVideos_tokenHashes(videos_list, search_string, token_hashes)
-        # videos_list = searchVideos_TFIDF(videos_list, q.search_string, tfidf_model) # TODO: Re-enable and fix TF-IDF
-        ...
+        videos_list = searchVideos_TFIDF(videos_list, q.search_string, tfidf_model)
     
     # filter videos
     videos_list = filterVideoObjects(videos_list, q, metadata)
@@ -47,19 +41,11 @@ def searchVideosFunction(videos_list: list[VideoData], search_query: SearchQuery
     videos_filtered_count = len(videos_list)
     return limited_results, videos_filtered_count, word_cloud
 
-    results_object = {
-        'videos' : videos[startfrom: startfrom+limit],
-        'amount_of_results' : len(videos),
-        'word_cloud' : word_cloud
-    }
-    # return results_object
-
-
 
 
 
 # search videos TFIDF
-def searchVideos_TFIDF(video_objects: list[VideoData], search_query: str, tfidf_model):
+def searchVideos_TFIDF(video_objects: list[VideoData], search_query: str, tfidf_model: TFIDFModel):
     """ Get sorted and filtered list of video objects based on TF-IDF score for search query cast into TD-IDF feature space """
     print("\n[TFIDF] Finding related videos for query: '{}'".format(search_query))
     start = time.time()

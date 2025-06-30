@@ -2,24 +2,28 @@
 import time
 from fastapi import APIRouter, Response, HTTPException
 
-from ..recommender.search import searchVideosFunction
-from ..schemas import SearchQuery, VideoData
 from .. import db
+from config import TFIDF_MODEL_PATH
+from ..recommender import search, similarity
+from ..schemas import SearchQuery, VideoData
+from ..util.general import pickle_load
+
 
 query_router = APIRouter()
 
 # SEARCH VIDEOS
 @query_router.post("/search-videos")
-def search_videos(query: SearchQuery):
+def ROUTE_search_videos(query: SearchQuery):
     video_dicts = db.read_table_as_dict('videos')
     video_objects_list = [ VideoData.from_dict(vd) for vd in video_dicts.values() if vd.get('is_linked') ]
     start = time.time()
-    search_results_tuple = searchVideosFunction(
+    tfidf_model = pickle_load(TFIDF_MODEL_PATH)
+    search_results_tuple = search.searchVideosFunction(
         video_objects_list,
         query,
         {}, #state.metadataHandler,
-        [], #state.tfidf_model
-        None
+        tfidf_model,
+        None,
     )
     if search_results_tuple is None:
         raise HTTPException(status_code=500, detail='Failed to get results')
@@ -34,18 +38,27 @@ def search_videos(query: SearchQuery):
 
 # GET SIMILAR VIDEOS
 @query_router.get("/get/similar-videos/{video_hash}/{start_from}/{limit}")
-def get_similar_videos(video_hash: str, start_from: int, limit: int):
-    raise HTTPException(status_code=501, detail='Not implemented')
-    # return jsonify(generateReponse('Not implemented')), 404
-    # results = ff.get_similar_videos(hash, int(start_from), int(limit), videos_dict, tfidf_model)
-    # if results == None:
-    #     jsonify(generateReponse('No results')), 400
-    # return jsonify(generateReponse(results)), 200
+def ROUTE_get_similar_videos(video_hash: str, start_from: int, limit: int):
+    
+    tfidf_model = pickle_load(TFIDF_MODEL_PATH)
+    if tfidf_model is None:
+        print("TF-IDF model doesn't exist")
+        raise HTTPException(status_code=503, detail="TF-IDF model doesn't exist")
+    
+    video_dicts = list( db.read_table_as_dict('videos').values() )
+    videos, amount_of_results = similarity.get_similar_videos(video_hash, start_from, limit, video_dicts, tfidf_model)
+    if amount_of_results == 0:
+        raise HTTPException(status_code=404, detail="No similar videos found")
+    
+    return {
+        'search_results': videos,
+        'amount_of_results': amount_of_results,
+    }
 
 
 # GET SIMILAR PERFORMERS
 @query_router.get('/get/similar-performers/{performer}')
-def get_similar_performers(performer: str):
+def ROUTE_get_similar_performers(performer: str):
     raise HTTPException(status_code=501, detail='Not implemented')
     print(f'Getting similar performers to: "{performer}"')
     results = ff.get_similar_performers(performer, performer_embeddings)
@@ -56,7 +69,7 @@ def get_similar_performers(performer: str):
 
 # GET SIMILAR STUDIOS
 @query_router.get('/get/similar-studios/{studio}')
-def get_similar_studio(studio: str):
+def ROUTE_get_similar_studio(studio: str):
     raise HTTPException(status_code=501, detail='Not implemented')
     return jsonify("Not implemented"), 404
     print(f'Getting similar studios to: "{studio}"')

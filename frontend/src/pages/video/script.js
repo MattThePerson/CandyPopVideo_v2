@@ -131,7 +131,7 @@ async function loadSRTasVTT(srtUrl, video_el) {
     const response = await fetch(srtUrl);
     let srt = await response.text();
 
-    console.log(srt);
+    // console.log(srt);
     
     // Basic .srt → .vtt conversion
     let vtt = 'WEBVTT\n\n' + srt
@@ -151,7 +151,6 @@ async function loadSRTasVTT(srtUrl, video_el) {
 
     video_el.appendChild(track);
 
-    console.log(track);
 }
 
 // Fullscreen Progression Bar (Canvas) functions

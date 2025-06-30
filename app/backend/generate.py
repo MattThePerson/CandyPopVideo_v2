@@ -20,7 +20,7 @@ async def mass_generate_small_teasers(videos_list: list[VideoData], mediadir: st
                     .format( i+1, len(videos_list), type_, len(succ), len(fails), video_data.hash, Path(video_data.path).name[:118] ), end='')
         if not checkers.hasSeekThumbs(video_data.hash, mediadir) or redo:
             print()
-            media_path = "NULL_PATH"
+            media_path = ""
             try:
                 # START GENERATOR
                 media_path = generators.generateTeaserSmall(video_data.path, video_data.hash, mediadir, video_data.duration_seconds)
@@ -47,7 +47,7 @@ async def mass_generate_seek_thumbs(videos_list: list[VideoData], mediadir: str,
                     .format( i+1, len(videos_list), type_, len(succ), len(fails), video_data.hash, Path(video_data.path).name[:118] ), end='')
         if not checkers.hasSeekThumbs(video_data.hash, mediadir) or redo:
             print()
-            media_path = "NULL_PATH"
+            media_path = ""
             try:
                 # START GENERATOR
                 vid_media_dir = get_video_media_dir(mediadir, video_data.hash)
@@ -76,7 +76,7 @@ async def mass_generate_preview_thumbs(videos_list: list[VideoData], mediadir: s
                     .format( i+1, len(videos_list), type_, len(succ), len(fails), video_data.hash, Path(video_data.path).name[:118] ), end='')
         if not checkers.hasSeekThumbs(video_data.hash, mediadir) or redo:
             print()
-            media_path = "NULL_PATH"
+            media_path = ""
             try:
                 # START GENERATOR
                 thumbs = generators.generatePreviewThumbs(video_data.path, video_data.hash, mediadir, amount=5, n_frames=n_frames)
@@ -106,7 +106,7 @@ async def mass_generate_large_teasers_OLD(videos_list: list[VideoData], mediadir
                     .format( i+1, len(videos_list), type_, len(succ), len(fails), video_data.hash, Path(video_data.path).name[:118] ), end='')
         if not checkers.hasSeekThumbs(video_data.hash, mediadir) or redo:
             print()
-            media_path = "NULL_PATH"
+            media_path = ""
             try:
                 # START GENERATOR
                 media_path = generators.generateTeaserLarge(video_data.path, video_data.hash, mediadir, video_data.duration_seconds)
@@ -134,7 +134,7 @@ async def mass_generate_teaser_thumbs(videos_list: list[VideoData], mediadir: st
                     .format( i+1, len(videos_list), type_, len(succ), len(fails), video_data.hash, Path(video_data.path).name[:118] ), end='')
         if not checkers.hasSeekThumbs(video_data.hash, mediadir) or redo:
             print()
-            media_path = "NULL_PATH"
+            media_path = ""
             try:
                 # START GENERATOR
                 ...

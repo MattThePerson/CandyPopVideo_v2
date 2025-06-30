@@ -10,6 +10,7 @@ class VideoData:
     hash: str
     date_added: str
     path: str
+    filename: str
     
     # video attributes
     duration: str
@@ -19,7 +20,6 @@ class VideoData:
     bitrate: int
     duration_seconds: float
 
-    filename:       Optional[str] = None
     source_id:      Optional[str] = None
 
     # collection
@@ -28,15 +28,15 @@ class VideoData:
     path_relative:  Optional[str] = None
     
     # scene attributes
-    scene_title:    Optional[str] = None
-    studio:         Optional[str] = None
-    line:           Optional[str] = None
-    date_released:  Optional[str] = None
-    description:    Optional[str] = None
-    jav_code:       Optional[str] = None
-    performers:         list[str] = field(default_factory=list)
-    sort_performers:    list[str] = field(default_factory=list)
-    mention_performers: list[str] = field(default_factory=list)
+    scene_title:        Optional[str] = None
+    studio:             Optional[str] = None
+    line:               Optional[str] = None
+    date_released:      Optional[str] = None
+    scene_description:  Optional[str] = None
+    jav_code:           Optional[str] = None
+    performers:             list[str] = field(default_factory=list)
+    sort_performers:        list[str] = field(default_factory=list)
+    mention_performers:     list[str] = field(default_factory=list)
     
     # meta
     tags:               list[str] = field(default_factory=list)

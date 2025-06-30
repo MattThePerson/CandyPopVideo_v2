@@ -34,27 +34,32 @@ def process_videos(
     # hash_path_map: dict[str, str] = _get_video_hashes_multi(video_paths, existing_videos, rehash_videos=rehash_videos) # multithreaded
 
     # process videos
+    fails = []
     parser = StringParser(scene_filename_formats)
     for idx, (video_hash, video_path) in enumerate(hash_path_map.items()):
-        print('\rprocessing videos ({:_}/{:_})'.format(idx+1, len(hash_path_map)), end='')
+        print('\rprocessing videos ({:_}/{:_}) ({} fails) [{}] : {:<120} :'
+            .format(idx+1, len(hash_path_map), len(fails), video_hash, Path(video_path).name[:118]), end='')
         video_data: VideoData|None = existing_videos.get(video_hash)
         if video_data is None:
             video_data = _get_new_video_data_object(video_hash, video_path)
-        
-        video_data.path = video_path
-        video_data.filename = Path(video_path).name
-        video_data = _add_collection_attributes(video_data, collections_dict)
-        
-        # add data parsed from filename / path
-        video_data = _add_filename_parsed_data(video_data, parser)
-        
-        # read tags from json file and add them
-        ...
-        
-        # organize tags
-        ...
-        
-        videos_dict[video_hash] = video_data
+
+        if video_data is None:
+            fails.append((video_hash, video_path))
+        else:
+            video_data.path = video_path                # update incase of path change
+            video_data.filename = Path(video_path).name # update incase of path change
+            video_data = _add_collection_attributes(video_data, collections_dict)
+            
+            # add data parsed from filename / path
+            video_data = _add_filename_parsed_data(video_data, parser)
+            
+            # read tags from json file and add them
+            ...
+            
+            # organize tags
+            video_data = _organize_video_data_tags(video_data)
+            
+            videos_dict[video_hash] = video_data
     print()
 
     return videos_dict
@@ -85,7 +90,7 @@ def _get_video_hashes(
     videos_hashed, hashing_failed, collisions, extracted_ads_tag, other_errors = [], [], [], [], []
     path_hash_map = { video_data.path: hash for hash, video_data in existing_videos.items() }
     for idx, video_path in enumerate(video_paths):
-        print('\rFinding hashes for video paths ({:_}/{:_})'.format(idx+1, len(video_paths)), end='')
+        print('\rFinding hashes for video paths ({:_}/{:_}) : {:<120} :'.format(idx+1, len(video_paths), Path(video_path).name[:118]), end='')
         video_hash: str|None = path_hash_map.get(video_path)
         if video_hash is None: # get NTFS ADS tag
             video_hash = get_NTFS_ADS_tag(video_path, 'candypop-video-hash')
@@ -126,17 +131,24 @@ def _get_video_hashes(
 
 
 
-def _get_new_video_data_object(
-        video_hash: str, 
-        video_path: str, 
-    ) -> VideoData:
+def _get_new_video_data_object(video_hash: str, video_path: str) -> VideoData|None:
     """ Get initial video data object. Add only hash, path, filename, and video attributes """
     
-    extracted_data = video_analyser.getVideoData(video_path)
-    video_data = VideoData(
-        hash = video_hash,
-        path = video_path,
-        date_added = time.strftime('%Y-%m-%d %H:%M', time.localtime(os.path.getctime(video_path))), # ctime
+    extracted_data = {}
+    try:
+        extracted_data = video_analyser.getVideoData(video_path)
+    except Exception as e:
+        from ..loggers import LOADING_FAILED
+        err_msg = 'getVideoData() failed for [{}] \"{}\"\nmsg: {}'.format(video_hash, video_path, e)
+        print(err_msg)
+        LOADING_FAILED.error(err_msg)
+        return None
+    
+    return VideoData(
+        hash =          video_hash,
+        path =          video_path,
+        filename =      Path(video_path).name,
+        date_added =    time.strftime('%Y-%m-%d %H:%M', time.localtime(os.path.getctime(video_path))), # ctime
         duration =          extracted_data['duration'],
         duration_seconds =  extracted_data['duration_seconds'],
         filesize_mb =       extracted_data['filesize_mb'],
@@ -144,7 +156,6 @@ def _get_new_video_data_object(
         resolution =        extracted_data['resolution'],
         bitrate =           extracted_data['bitrate'],
     )
-    return video_data
 
 
 def _add_collection_attributes(data: VideoData, collections_dict: dict) -> VideoData:
@@ -161,7 +172,7 @@ def _add_collection_attributes(data: VideoData, collections_dict: dict) -> Video
     
     data.collection = collection
     data.parent_dir = parent_dir
-    data.path_relative = str(Path(data.path).relative_to(Path(parent_dir)))
+    data.path_relative = str(Path(data.path).relative_to(Path(parent_dir))).replace('\\', '/')
     return data
 
 
@@ -177,20 +188,56 @@ TAGS:
 
 
 
-def _add_filename_parsed_data(data: VideoData, parser: StringParser):
+def _add_filename_parsed_data(video_data: VideoData, parser: StringParser):
     """ Parse data from video filename, format slightly, and add to VideoData """
 
-    path_obj = Path(data.path)
-    scene_info = _parse_filename(path_obj.stem, parser)
-    if len(scene_info) == 1:  # matched only title, using dirname as sort_performers
+    path_obj = Path(video_data.path)
+    filename_info_dict = _parse_filename(path_obj.stem, parser)
+    if len(filename_info_dict) == 1:  # matched only title, using dirname as sort_performers
         fn = "{} - {}".format(path_obj.parent.name, path_obj.stem)
-        scene_info = _parse_filename(fn, parser)
+        filename_info_dict = _parse_filename(fn, parser)
+
+    return _add_filename_info_to_scene_data(video_data, filename_info_dict)
     
-    scene_info = _filter_scene_info(scene_info)
+    # video_data = _update_dataclass_from_dict(data, scene_info)
     
-    data = _update_dataclass_from_dict(data, scene_info)
+
+def _add_filename_info_to_scene_data(vd: VideoData, info: dict[str, str]):
+
+    # scene attributes
+    vd.scene_title =    info.get('scene_title')
+    vd.studio =         info.get('studio')
+    vd.line =           info.get('line')
+    vd.jav_code =       info.get('jav_code')
+    vd.source_id =      info.get('source_id')
     
-    return data
+    vd.sort_performers =    info.get('sort_performers', '').split(', ')
+    vd.mention_performers = info.get('mention_performers', '').split(', ')
+    vd.performers = _get_ordered_set( vd.sort_performers + vd.mention_performers )
+    
+    # use year if no date_released
+    date_released = None
+    if 'date_released' in info:
+        date_released = str(info['date_released'])
+    elif 'year' in info:
+        date_released = str(info['year'])
+    vd.date_released = date_released
+    
+    vd.tags_from_filename = info.get('tags', []) # type: ignore
+    
+    return vd
+
+
+def _organize_video_data_tags(video_data: VideoData):
+    """ Organize tags. Assumes all other attributes are in order. """
+    if video_data.path_relative:
+        parent_names = video_data.path_relative.replace(video_data.filename, '')
+        tags_from_path = [ t.replace('_', '') for t in parent_names.split('/') if t != '' ]
+        ignore_tags = video_data.performers + [ video_data.studio, video_data.line ]
+        video_data.tags_from_path = [ t for t in tags_from_path if t not in ignore_tags ]
+    
+    video_data.tags = list(set( video_data.tags_from_filename + video_data.tags_from_path + video_data.tags_from_json ))
+    return video_data
 
 
 def _filter_scene_info(info: dict) -> dict:

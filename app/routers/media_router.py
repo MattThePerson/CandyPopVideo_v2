@@ -77,8 +77,8 @@ def confirm_preview_thumbnails(video_hash: str):
 @media_router.get("/ensure/teaser-small/{video_hash}")
 def confirm_teaser_small(video_hash: str):
     # return Response('Temporarily disabled', 503)
-    print("[TEASER] Confirming small teaser for hash: ", hash)
-    video_data = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') );
+    print("[TEASER] Confirming small teaser for hash: ", video_hash)
+    video_data = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') )
     if video_data is None:
         raise HTTPException(404, f'Could not find video with hash: {video_hash}')
     if not checkers.hasTeaserSmall(video_hash, PREVIEW_MEDIA_DIR):

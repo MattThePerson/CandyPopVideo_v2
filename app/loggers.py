@@ -46,3 +46,10 @@ handler = logging.FileHandler(f'{_logger_dir}/media_gen_failed.log', mode='a')
 handler.setFormatter( logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s') )
 MEDIA_GEN_FAILED.addHandler(handler)
 
+# Configure hashing failed logger
+LOADING_FAILED = logging.getLogger('loading-failed')
+LOADING_FAILED.setLevel(logging.ERROR)
+handler = logging.FileHandler(f'{_logger_dir}/video_loading_failed.log', mode='a')
+handler.setFormatter( logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s') )
+LOADING_FAILED.addHandler(handler)
+

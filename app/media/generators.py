@@ -78,7 +78,7 @@ def generateTeaserSmall(path: str, video_hash: str, mediadir: str, duration_sec:
         return media_generator.generateVideoTeaser(path, outfolder, 'teaser_small.mp4', abs_amount_mode=True, n=clip_amount, clip_len=1.3, skip=2, smallSize=True, end_perc=98)
     except Exception as e:
         print("[ERROR] generateTeasersSmall:\n", e)
-        return "NULL_PATH"
+        return ""
 
 
 def generateTeaserLarge(path, hash, mediadir, duration_sec):

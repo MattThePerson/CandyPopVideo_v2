@@ -225,6 +225,8 @@ function _ensure_search_results_small_teasers(search_results, idx=0) {
 
 function generate_results(results, args, use_custom_thumbs) {
 
+    console.log('generating results:', results)
+    
     render_wordcloud(results.word_cloud);
 
     videoResultsContainer = document.getElementById('video-results-container');

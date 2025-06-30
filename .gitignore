@@ -1,4 +1,5 @@
 # genercal
+.vscode
 venv
 .venv
 __pycache__
