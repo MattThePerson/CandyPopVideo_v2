@@ -44,7 +44,7 @@ def generatePosterSimple(video_path: str, video_hash: str, mediadir: str, durati
 
 
 
-# DEPRECATED!
+# TODO: DEPRECATED! Remove
 def generateSeekThumbs_ffmpeg(videopath: str, video_hash: str, mediadir: str, duration_sec: float, height=180):
     """ Uses ffmpeg to generate seek thumbnails (HUOM: Doesn't generate spritesheet) """
     if not os.path.exists(videopath):
@@ -67,7 +67,7 @@ def generateSeekThumbs_ffmpeg(videopath: str, video_hash: str, mediadir: str, du
     print("Done.")
 
 
-def generateTeaserSmall(path: str, video_hash: str, mediadir: str, duration_sec: int|float, quiet=True):
+def generateTeaserSmall(path: str, video_hash: str, mediadir: str, duration_sec: int|float, quiet=True) -> str:
     outfolder = get_video_media_dir(mediadir, video_hash)
     if not os.path.exists(outfolder):
         print("Making folder: ", outfolder)
@@ -77,8 +77,7 @@ def generateTeaserSmall(path: str, video_hash: str, mediadir: str, duration_sec:
     try:
         return media_generator.generateVideoTeaser(path, outfolder, 'teaser_small.mp4', abs_amount_mode=True, n=clip_amount, clip_len=1.3, skip=2, smallSize=True, end_perc=98)
     except Exception as e:
-        print("[ERROR] generateTeasersSmall")
-        print(e)
+        print("[ERROR] generateTeasersSmall:\n", e)
         return "NULL_PATH"
 
 
@@ -88,13 +87,17 @@ def generateTeaserLarge(path, hash, mediadir, duration_sec):
         print("Making folder: ", outfolder)
         os.makedirs(outfolder)
     clip_amount = int( ( 584/119 + (11/5355)*duration_sec ) * 2 )
-    return media_generator.generateVideoTeaser(path, outfolder, 'teaser_large.mp4', abs_amount_mode=True, n=clip_amount, clip_len=1.65, skip=1, smallSize=False, end_perc=98)
+    try:
+        return media_generator.generateVideoTeaser(path, outfolder, 'teaser_large.mp4', abs_amount_mode=True, n=clip_amount, clip_len=1.65, skip=1, smallSize=False, end_perc=98)
+    except Exception as e:
+        print("[ERROR] generateTeasersSmall:\n", e)
+        return "NULL_PATH"
 
 
 def generatePreviewThumbs(path, hash, mediadir, amount=5, n_frames=30*10):
     vid_folder = os.path.join( get_video_media_dir(mediadir, hash), 'previewthumbs' )
     os.makedirs(vid_folder, exist_ok=True)
-    paths = media_generator.extractPreviewThumbs(path, vid_folder, amount=amount, resolution=[360, 1080], n_frames=n_frames)
+    return media_generator.extractPreviewThumbs(path, vid_folder, amount=amount, resolution=[360, 1080], n_frames=n_frames)
 
 
 

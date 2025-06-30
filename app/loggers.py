@@ -35,7 +35,14 @@ LOGGER_COLLISIONS.addHandler(handler)
 # Configure hashing failed logger
 LOGGER_HASHING_FAILED = logging.getLogger('hashing-failed')
 LOGGER_HASHING_FAILED.setLevel(logging.ERROR)
-handler = logging.FileHandler(f'{_logger_dir}/hashing_failed.log', mode='w')
+handler = logging.FileHandler(f'{_logger_dir}/hashing_failed.log', mode='a')
 handler.setFormatter( logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s') )
 LOGGER_HASHING_FAILED.addHandler(handler)
+
+# Configure hashing failed logger
+MEDIA_GEN_FAILED = logging.getLogger('media-gen-failed')
+MEDIA_GEN_FAILED.setLevel(logging.ERROR)
+handler = logging.FileHandler(f'{_logger_dir}/media_gen_failed.log', mode='a')
+handler.setFormatter( logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s') )
+MEDIA_GEN_FAILED.addHandler(handler)
 

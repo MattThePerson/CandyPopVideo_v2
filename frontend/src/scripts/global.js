@@ -58,7 +58,11 @@ function makeApiRequestGET(request, args, callback) {
                 throw new Error(`(${request}) Network response: ${response.status}`);
             }
             // console.log(`(${request}) 1st then`);
-            return response.json();
+            try {
+                return response.json();
+            } catch (error) {
+                return response.text();
+            }
         })
         .then(data => {
             // console.log(`(${request}) 2nd then`);

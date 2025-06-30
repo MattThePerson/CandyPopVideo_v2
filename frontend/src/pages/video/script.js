@@ -43,65 +43,88 @@ function toggle_favourites_button_OFF(butt) {
 }
 
 // LONG ASS FUNCTION
-function loadThumbnails() {
+async function loadThumbnails() {
 
-    // TODO: Redo with sprite sheets!
-    // create seek thumbnails
-    videoDuration = videodata_global.duration_seconds;
-    seekThumbnailInterval = getSeekThumbnailInterval(videoDuration);
-    i = 1;
-    for (let sec = seekThumbnailInterval; sec < videoDuration; sec += seekThumbnailInterval) {
-        const thumbnail = document.createElement("div");
-        const fn = generateThumbnailName(i++);
-        thumbnail.id = fn;
-        thumbnail.className = 'seekthumbnail';
-        thumbnail.innerHTML = `<img src="media/videos/0x${videoHash}/seekthumbs/${fn}.jpg" alt="Thumbnail at ${sec} seconds">`;
-        thumbnailContainer.appendChild(thumbnail);
-    }
-
-    // mousemove event listener
+    console.log('seek thumbnails with sprite sheet ensured!');
     const videoElement = document.querySelector('#player video');
+    const videoDuration = videodata_global.duration_seconds;
+
+    // Load and parse the VTT file
+    const response = await fetch(`/static/preview-media/0x${videoHash}/seekthumbs.vtt`);
+    const vttText = await response.text();
+    // console.log(vttText);
+    
+    const cues = [];
+    const cueRegex = /(\d+:\d+:\d+\.\d+)\s+-->\s+(\d+:\d+:\d+\.\d+)\s*\n(.+)/g;
+    let match;
+    while ((match = cueRegex.exec(vttText)) !== null) {
+        const [ , start, end, data ] = match;
+        const [imgUrl, coords] = data.trim().split('#xywh=');
+        const [x, y, w, h] = coords.split(',').map(Number);
+        cues.push({ start: toSeconds(start), end: toSeconds(end), x, y, w, h });
+    }
+    console.log(cues);
+
+    const spriteUrl = `/static/preview-media/0x${videoHash}/seekthumbs.jpg`;
+
+    // Create a single thumbnail div
+    const thumbnail = document.createElement('div');
+    thumbnail.id = 'sprite-thumbnail';
+    thumbnail.style.position = 'absolute';
+    // thumbnail.style.display = 'none';
+    thumbnail.style.backgroundImage = `url(${spriteUrl})`;
+    thumbnail.style.backgroundRepeat = 'no-repeat';
+    thumbnail.style.transform = 'scale(0.8)';
+    thumbnail.style.transformOrigin = 'bottom';
+    thumbnail.style.outline = "1px solid white";
+    thumbnail.style.borderRadius = "0.5rem";
+    thumbnailContainer.appendChild(thumbnail);
+
     playerContainer.addEventListener('mousemove', (event) => {
-        thumbnailContainer.style.display = 'block';
-        thumbnailContainer.style.width = Math.floor(videoElement.clientHeight * 0.4) + 'px';
-        document.querySelectorAll('.seekthumbnail').forEach( div => {
-            let img = div.querySelector('img');
-            img.style.display = 'none';
-        });
         const rect = videoElement.getBoundingClientRect();
         const posX = event.clientX - rect.left;
         const posY = event.clientY - rect.top;
         const diff = videoElement.clientHeight - posY;
-        let thumbnailReferenceContainer = playerContainer;
-        if (document.fullscreenElement) {
-            thumbnailReferenceContainer = document.fullscreenElement;
-        }
+
         if (diff <= thumbActivateThickness) {
-            thumbActivateThickness = 40;
             const hoverTime = (posX / rect.width) * videoDuration;
-            let seekThumbIndex = Math.floor(hoverTime / seekThumbnailInterval) + 1;
-            let seekThumbId = generateThumbnailName(seekThumbIndex);
-            let thumbnail = document.getElementById(seekThumbId);
-            let img = thumbnail.querySelector('img');
-            img.style.display = 'block';
-            let thumb_x_disp = event.clientX-img.clientWidth/2;
+            const cue = cues.find(c => hoverTime >= c.start && hoverTime < c.end);
+            if (!cue) return;
+
+            const cue_w = cue.w;
+            const cue_h = cue.h;
+            
+            Object.assign(thumbnail.style, {
+                display: 'block',
+                width: cue_w + 'px',
+                height: cue_h + 'px',
+                backgroundPosition: `-${cue.x}px -${cue.y}px`,
+            });
+
+            let thumb_x_disp = event.clientX - cue_w / 2;
             if (thumb_x_disp < 0) thumb_x_disp = 5;
-            let max_x_dist = thumbnailReferenceContainer.clientWidth - img.clientWidth - 26;
+            let max_x_dist = playerContainer.clientWidth - cue_w - 26;
             if (thumb_x_disp > max_x_dist) thumb_x_disp = max_x_dist;
             thumbnailContainer.style.left = `${thumb_x_disp}px`;
-            let thumb_y_disp = thumbnailReferenceContainer.clientHeight - img.clientHeight
+
+            let thumb_y_disp = playerContainer.clientHeight - cue_h;
             if (document.fullscreenElement) {
-                thumb_y_disp = window.innerHeight - img.clientHeight - 75;
+                thumb_y_disp = window.innerHeight - cue_h - 75;
             }
             thumbnailContainer.style.top = `${thumb_y_disp}px`;
         } else {
-            thumbActivateThickness = thumbActivateThickness_default;
+            thumbnail.style.display = 'none';
         }
     });
 
-    playerContainer.addEventListener('mouseout', () => {
-        thumbnailContainer.style.display = 'none';
-    });
+    // playerContainer.addEventListener('mouseout', () => {
+    //     thumbnail.style.display = 'none';
+    // });
+}
+
+function toSeconds(timeStr) {
+    const [h, m, s] = timeStr.split(':');
+    return parseInt(h) * 3600 + parseInt(m) * 60 + parseFloat(s);
 }
 
 // Fullscreen Progression Bar (Canvas) functions
@@ -136,7 +159,7 @@ function stopProgressBar() {
 
 let videoDuration = null;
 let seekThumbnailInterval = null;
-const thumbActivateThickness_default = 13;
+const thumbActivateThickness_default = 40;
 let thumbActivateThickness = thumbActivateThickness_default;
 
 const thumbnailContainer = document.getElementById('thumbnail-container');
@@ -234,7 +257,7 @@ if (videoHash != null) {
         let playerStartTime = urlParams.get('time');
         
         function setPlayerTime() {
-            console.log('in setPlayerTime()');
+            // console.log('in setPlayerTime()');
             let currentTime = player.api('time');
             if (currentTime !== false) {
                 if (playerStartTime) {
@@ -251,7 +274,7 @@ if (videoHash != null) {
         setPlayerTime();
     
         // add scene data to page
-        document.title = videodata.actor + ' - ' + videodata.title;
+        document.title = videodata.sort_performers.join(', ') + ' - ' + videodata.scene_title;
         const header = document.querySelector(".video-header");
         header.querySelector('.title').innerText = videodata.title;
         header.querySelector('.actor').innerText = videodata.actor;
@@ -304,6 +327,11 @@ if (videoHash != null) {
         /* request seek thumbnails */
         makeApiRequestGET('media/ensure/seek-thumbnails', [videoHash], loadThumbnails);
 
+        /* request subtitles */
+        makeApiRequestGET('media/get/subtitles', [videoHash], res => {
+            console.log(res);
+        });
+        
     });
 }
 

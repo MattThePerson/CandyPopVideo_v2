@@ -13,7 +13,7 @@ def hasPoster(video_hash: str, mediadir: str) -> str|None:
 
 def hasSeekThumbs(video_hash: str, mediadir: str):
     """ checks if seekthumbs.jpg and seekthumbs.vtt exist in video preview media dir """
-    videomediadir = get_video_media_dir(video_hash, mediadir)
+    videomediadir = get_video_media_dir(mediadir, video_hash)
     return os.path.exists( videomediadir + '/seekthumbs.jpg') and os.path.exists( videomediadir + '/seekthumbs.vtt' )
 
 
@@ -24,17 +24,17 @@ def hasTeaserSmall(video_hash: str, mediadir: str) -> bool:
     return os.path.exists(teaser_small_path)
 
 
-def hasTeaserLarge(hash, mediadir):
-    teaser_large_path = os.path.join( get_video_media_dir(mediadir, hash), 'teaser_large.mp4' )
+def hasTeaserLarge(video_hash: str, mediadir: str):
+    teaser_large_path = os.path.join( get_video_media_dir(mediadir, video_hash), 'teaser_large.mp4' )
     return os.path.exists(teaser_large_path)
 
 
-def hasPreviewThumbs(hash, mediadir, small=True):
-    vid_folder = f'{get_video_media_dir(mediadir, hash)}/previewthumbs'
+def hasPreviewThumbs(video_hash: str, mediadir: str, small=True):
+    vid_folder = f'{get_video_media_dir(mediadir, video_hash)}/previewthumbs'
     if not os.path.exists(vid_folder):
         return None
     res = '360' if small else '1080'
-    thumb_paths = [ os.path.join('previewthumbs', f) for f in os.listdir(vid_folder) if res in f ] # http://localhost:8000/media/videos/0x0064e4c01f13/poster.png
+    thumb_paths = [ os.path.join('previewthumbs', f) for f in os.listdir(vid_folder) if res in f ]
     if thumb_paths == []:
         return None
     # return thumbnail by second
@@ -43,8 +43,8 @@ def hasPreviewThumbs(hash, mediadir, small=True):
     return thumb_paths[i]
 
 
-def hasCustomThumb(hash, dir):
-    fn = f'[{hash}].png'
+def hasCustomThumb(video_hash: str, dir: str):
+    fn = f'[{video_hash}].png'
     if os.path.exists(os.path.join(dir, fn)):
         return fn
     return False

@@ -121,7 +121,7 @@ def _get_video_hashes(
             if idx > 5:
                 print('...')
                 break
-            print('{:_} : [{}] "{}/{}"'.format(idx+1, hsh, Path(pth).parent.name, Path(pth).name))
+            print('{:_} : [{}] "{}/{}"'.format(idx+1, hsh, Path(pth).parent.name, Path(pth).name[:120]))
     return hash_path_map
 
 
@@ -195,9 +195,12 @@ def _add_filename_parsed_data(data: VideoData, parser: StringParser):
 
 def _filter_scene_info(info: dict) -> dict:
     # use year if no date_released
-    if info.get('date_released') is None and 'year' in info:
-        info['date_released'] = str(info['year'])
+    if info.get('date_released'):
+        info['date_released'] = str(info['date_released'])
+    elif 'year' in info:
+        info['date_released'] = info['year']
         del info['year']
+    
     
     # add tags from filename
     if 'tags' in info:

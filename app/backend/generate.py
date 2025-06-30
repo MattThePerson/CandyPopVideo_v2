@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from argparse import Namespace
 
 from handymatt_media import media_generator
@@ -7,47 +8,146 @@ from ..schemas import VideoData
 from ..media import generators, checkers
 from ..media.helpers import get_video_media_dir
 from .helpers import aprint
+from ..loggers import MEDIA_GEN_FAILED
 
 
 
-#region generators
-
-async def mass_generate_small_teasers(videos: list[VideoData], mediadir, redo=False, ws=None):
-    succ, fails = [], []
-    for i, video_data in enumerate(videos):
-        await aprint(ws, "\r  ({}/{}) generating small teasers ({} fails) [{}] {:<120}     ".format( i+1, len(videos), len(fails), video_data.hash, f"{video_data.path[:118]}" ), end='')
-        if video_data.hash != -1 and (redo or not checkers.hasTeaserSmall(video_data.hash, mediadir)):
-            teaser_path = generators.generateTeaserSmall(video_data.path, video_data.hash, mediadir, video_data.duration_seconds)
-            if teaser_path == None or not os.path.exists(teaser_path):
-                fails.append(video_data)
-            else:
-                succ.append(video_data)
-
-
-async def mass_generate_seek_thumbs(videos_list: list[VideoData], mediadir: str, redo=False, ws=None):
+async def mass_generate_small_teasers(videos_list: list[VideoData], mediadir: str, redo=False, limit=None, ws=None):
+    type_ = 'small_teasers'
     succ, fails = [], []
     for i, video_data in enumerate(videos_list):
-        if not checkers.hasSeekThumbs(video_data.hash, mediadir):
-            await aprint(ws, "\r  ({}/{}) generating seek thumbs  {:<80}    ".format(i+1, len(videos_list), f"{video_data.path[:76]}"), end='')
-            vid_media_dir = get_video_media_dir(mediadir, video_data.hash)
-            media_generator.generateSeekThumbnails(video_data.path, vid_media_dir)
-            # generateSeekThumbs(vd['path'], video_data.hash, mediadir, vd['duration_seconds'])
-    ...
+        await aprint(ws, "\r  ({:_}/{:_}) generating {} (succ: {:_} | fails {:_})  [{}]  : {:<120} :"
+                    .format( i+1, len(videos_list), type_, len(succ), len(fails), video_data.hash, Path(video_data.path).name[:118] ), end='')
+        if not checkers.hasSeekThumbs(video_data.hash, mediadir) or redo:
+            print()
+            media_path = "NULL_PATH"
+            try:
+                # START GENERATOR
+                media_path = generators.generateTeaserSmall(video_data.path, video_data.hash, mediadir, video_data.duration_seconds)
+                # END GENERATOR
+            except Exception as e:
+                fails.append(video_data.path)
+                MEDIA_GEN_FAILED.error('{} EXCEPTION [{}] "{}"\n{}'.format(type_, video_data.hash, video_data.path, e))
+            if media_path is None or not os.path.exists(media_path):
+                fails.append(video_data.path)
+                MEDIA_GEN_FAILED.error('{} [{}] "{}"'.format(type_, video_data.hash, video_data.path))
+            else:
+                succ.append(video_data.path)
+            if limit and (len(succ) + len(fails)) >= limit:
+                break
+    await aprint(ws, '\nDone.')
+    return succ, fails
 
 
-async def mass_generate_preview_thumbs(videos: list[VideoData], mediadir, redo=False, n_frames=30*10, ws=None):
+async def mass_generate_seek_thumbs(videos_list: list[VideoData], mediadir: str, redo=False, limit=None, ws=None):
+    type_ = 'seek_thumbs'
     succ, fails = [], []
-    for i, video_data in enumerate(videos):
-        if redo or not checkers.hasPreviewThumbs(video_data.hash, mediadir, small=True):
-            await aprint(ws, "\r  ({}/{}) generating preview thumbnails [{}]  {:<80}    ".format(i+1, len(videos), video_data.hash, f"{video_data.path[:76]}"), end='')
-            generators.generatePreviewThumbs(video_data.path, video_data.hash, mediadir, amount=5, n_frames=n_frames)
-    ...
+    for i, video_data in enumerate(videos_list):
+        await aprint(ws, "\r  ({:_}/{:_}) generating {} (succ: {:_} | fails {:_})  [{}]  : {:<120} :"
+                    .format( i+1, len(videos_list), type_, len(succ), len(fails), video_data.hash, Path(video_data.path).name[:118] ), end='')
+        if not checkers.hasSeekThumbs(video_data.hash, mediadir) or redo:
+            print()
+            media_path = "NULL_PATH"
+            try:
+                # START GENERATOR
+                vid_media_dir = get_video_media_dir(mediadir, video_data.hash)
+                spritesheet_path, _ = media_generator.generateSeekThumbnails( video_data.path, vid_media_dir, n=400, height=300 )
+                media_path = spritesheet_path
+                # END GENERATOR
+            except Exception as e:
+                fails.append(video_data.path)
+                MEDIA_GEN_FAILED.error('{} EXCEPTION [{}] "{}"\n{}'.format(type_, video_data.hash, video_data.path, e))
+            if media_path is None or not os.path.exists(media_path):
+                fails.append(video_data.path)
+                MEDIA_GEN_FAILED.error('{} [{}] "{}"'.format(type_, video_data.hash, video_data.path))
+            else:
+                succ.append(video_data.path)
+            if limit and (len(succ) + len(fails)) >= limit:
+                break
+    await aprint(ws, '\nDone.')
+    return succ, fails
+
+
+async def mass_generate_preview_thumbs(videos_list: list[VideoData], mediadir: str, redo=False, limit=None, n_frames=30*10, ws=None):
+    type_ = 'preview_thumbs'
+    succ, fails = [], []
+    for i, video_data in enumerate(videos_list):
+        await aprint(ws, "\r  ({:_}/{:_}) generating {} (succ: {:_} | fails {:_})  [{}]  : {:<120} :"
+                    .format( i+1, len(videos_list), type_, len(succ), len(fails), video_data.hash, Path(video_data.path).name[:118] ), end='')
+        if not checkers.hasSeekThumbs(video_data.hash, mediadir) or redo:
+            print()
+            media_path = "NULL_PATH"
+            try:
+                # START GENERATOR
+                thumbs = generators.generatePreviewThumbs(video_data.path, video_data.hash, mediadir, amount=5, n_frames=n_frames)
+                if thumbs and thumbs != []:
+                    media_path = thumbs[0]
+                # END GENERATOR
+            except Exception as e:
+                fails.append(video_data.path)
+                MEDIA_GEN_FAILED.error('{} EXCEPTION [{}] "{}"\n{}'.format(type_, video_data.hash, video_data.path, e))
+            if media_path is None or not os.path.exists(media_path):
+                fails.append(video_data.path)
+                MEDIA_GEN_FAILED.error('{} [{}] "{}"'.format(type_, video_data.hash, video_data.path))
+            else:
+                succ.append(video_data.path)
+            if limit and (len(succ) + len(fails)) >= limit:
+                break
+    await aprint(ws, '\nDone.')
+    return succ, fails
 
 
 
-async def mass_generate_large_teasers(videos: list[VideoData], mediadir: str, redo=False, ws=None):
-    ...
-    
-async def mass_generate_teaser_thumbs(videos: list[VideoData], mediadir: str, redo=False, ws=None):
-    ...
-    
+async def mass_generate_large_teasers_OLD(videos_list: list[VideoData], mediadir: str, redo=False, limit=None, ws=None):
+    type_ = 'large_teasers'
+    succ, fails = [], []
+    for i, video_data in enumerate(videos_list):
+        await aprint(ws, "\r  ({:_}/{:_}) generating {} (succ: {:_} | fails {:_})  [{}]  : {:<120} :"
+                    .format( i+1, len(videos_list), type_, len(succ), len(fails), video_data.hash, Path(video_data.path).name[:118] ), end='')
+        if not checkers.hasSeekThumbs(video_data.hash, mediadir) or redo:
+            print()
+            media_path = "NULL_PATH"
+            try:
+                # START GENERATOR
+                media_path = generators.generateTeaserLarge(video_data.path, video_data.hash, mediadir, video_data.duration_seconds)
+                # END GENERATOR
+            except Exception as e:
+                fails.append(video_data.path)
+                MEDIA_GEN_FAILED.error('{} EXCEPTION [{}] "{}"\n{}'.format(type_, video_data.hash, video_data.path, e))
+            if media_path is None or not os.path.exists(media_path):
+                fails.append(video_data.path)
+                MEDIA_GEN_FAILED.error('{} [{}] "{}"'.format(type_, video_data.hash, video_data.path))
+            else:
+                succ.append(video_data.path)
+            if limit and (len(succ) + len(fails)) >= limit:
+                break
+    await aprint(ws, '\nDone.')
+    return succ, fails
+
+
+
+async def mass_generate_teaser_thumbs(videos_list: list[VideoData], mediadir: str, redo=False, limit=None, ws=None):
+    type_ = 'teaser_thumbs'
+    succ, fails = [], []
+    for i, video_data in enumerate(videos_list):
+        await aprint(ws, "\r  ({:_}/{:_}) generating {} (succ: {:_} | fails {:_})  [{}]  : {:<120} :"
+                    .format( i+1, len(videos_list), type_, len(succ), len(fails), video_data.hash, Path(video_data.path).name[:118] ), end='')
+        if not checkers.hasSeekThumbs(video_data.hash, mediadir) or redo:
+            print()
+            media_path = "NULL_PATH"
+            try:
+                # START GENERATOR
+                ...
+                # END GENERATOR
+            except Exception as e:
+                fails.append(video_data.path)
+                MEDIA_GEN_FAILED.error('{} EXCEPTION [{}] "{}"\n{}'.format(type_, video_data.hash, video_data.path, e))
+            if media_path is None or not os.path.exists(media_path):
+                fails.append(video_data.path)
+                MEDIA_GEN_FAILED.error('{} [{}] "{}"'.format(type_, video_data.hash, video_data.path))
+            else:
+                succ.append(video_data.path)
+            if limit and (len(succ) + len(fails)) >= limit:
+                break
+    await aprint(ws, '\nDone.')
+    return succ, fails

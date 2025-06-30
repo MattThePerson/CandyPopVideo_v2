@@ -108,25 +108,25 @@ function make_search_result_item(res, videoResultTemplate) {
     template.querySelector('.bitrate').innerText = Math.round(res['bitrate']/100)/10 + 'mb';
     template.querySelector('.bitrate').style.color = getBitrateTextColor(res['bitrate']);
     const actor_container = template.querySelector('.actors');
-    let performers = res['performers'];
-    if (res['mention_performer']) {
-        for (let perf of res['mention_performer'].split(', ')) {
-            performers.push(perf);
-        }
-    }
+    let performers = res.performers;
+    // if (res['mention_performer']) {
+    //     for (let perf of res['mention_performer'].split(', ')) {
+    //         performers.push(perf);
+    //     }
+    // }
     for (let performer of performers) {
         let span = document.createElement('span');
         let el = document.createElement('a');
         el.classList.add('actor');
         el.innerText = performer;
-        el.href = 'searchPage.html?' + String(new URLSearchParams({'performer' : performer}));
+        el.href = 'pages/search/index.html?' + String(new URLSearchParams({'performer' : performer}));
         el.addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', performer)); // add dragging the performer name
         span.appendChild(el);
         actor_container.appendChild(span);
     }
     if (res['studio']) {
         template.querySelector('.studio').innerText = res['studio'];
-        template.querySelector('.studio').href = 'searchPage.html?' + String(new URLSearchParams({'studio' : res['studio']}));
+        template.querySelector('.studio').href = 'pages/search/index.html?' + String(new URLSearchParams({'studio' : res['studio']}));
         template.querySelector('.studio').addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', res['studio'])); // add dragging the performer name
     } else {
         template.querySelector('.studio').style.display = 'none';
@@ -134,7 +134,7 @@ function make_search_result_item(res, videoResultTemplate) {
     try {
         if (res['line'] && template.querySelector('.line')) {
             template.querySelector('.line').innerText = res['line'];
-            template.querySelector('.line').href = 'searchPage.html?' + String(new URLSearchParams({'include-terms' : res['line']}));
+            template.querySelector('.line').href = 'pages/search/index.html?' + String(new URLSearchParams({'include-terms' : res['line']}));
             template.querySelector('.line').addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', res['line']));
         } else {
             template.querySelector('.line').parentNode.style.display = 'none';
@@ -237,11 +237,11 @@ function generate_results(results, args, use_custom_thumbs) {
         videoResultsContainer.appendChild(resultItem);
         
         const img_el = document.querySelector(`#item-${result.hash} .thumbnail`);
-        img_el.src = '../media/get/poster/' + result.hash;
+        img_el.src = '../media/get/poster/' + result.hash + '?t=' + Date.now();  // add time to force cache busting
         img_el.onload = () => {
             posters_loaded++;
             if (posters_loaded === results.search_results.length) {
-                console.log('Loading small teasers');
+                // console.log('Loading small teasers');
                 _ensure_search_results_small_teasers(results.search_results);
             }
         }

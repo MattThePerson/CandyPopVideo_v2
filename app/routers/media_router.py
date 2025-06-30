@@ -114,11 +114,12 @@ def confirm_teaser_large(video_hash: str):
 # ENSURE SEEK THUMBNAIL
 @media_router.get("/ensure/seek-thumbnails/{video_hash}")
 def confirm_seek_thumbnails(video_hash: str):
-    return Response('Temporarily disabled', 503)
+    # return Response('Temporarily disabled', 503)
 
     # check they exist
-    vid_media_dir = generators._getMediaDirByHash(video_hash, PREVIEW_MEDIA_DIR)
+    vid_media_dir = generators.get_video_media_dir(PREVIEW_MEDIA_DIR, video_hash)
     if os.path.exists( vid_media_dir + '/seekthumbs.jpg') and os.path.exists( vid_media_dir + '/seekthumbs.vtt' ):
+        return {'msg': 'Video has seek thumbs!'}
         return Response('Video has seek thumbnails', 200)
     
     # get video data
@@ -129,15 +130,19 @@ def confirm_seek_thumbnails(video_hash: str):
     # 
     print(f'Generating seek thumbnails for : "{video_data.path}"')
     try:
-        _ = media_generator.generateSeekThumbnails(video_data.path, vid_media_dir)
+        _ = media_generator.generateSeekThumbnails(video_data.path, vid_media_dir, n=400)
     except Exception as e:
-        print('ERROR: Unable to generate seek thumbnails')
-        print(e)
+        print('ERROR: Unable to generate seek thumbnails:\n', e)
         return Response('Unable to generate seek thumbs for video', 500)
     
     if os.path.exists( vid_media_dir + '/seekthumbs.jpg') and os.path.exists( vid_media_dir + '/seekthumbs.vtt' ):
+        return {'msg': 'Video has seek thumbs!'}
         return Response(f'Video has seekthumbs', 200)
 
     return Response('Unable to generate seek thumbs for video', 500)
 
 
+# ENSURE SEEK THUMBNAIL
+@media_router.get("/get/subtitles/{video_hash}")
+def ROUTER_get_subtitles(video_hash: str):
+    return FileResponse(r'A:\Whispera\videos\JAV\.subtitles')

@@ -5,7 +5,7 @@ import yaml
 from app import db
 from app.schemas import VideoData, SearchQuery
 from config import PREVIEW_MEDIA_DIR
-from app.backend import scan, generate
+from app.backend import generate, scan
 from app.backend.helpers import aprint
 from app.recommender.search import filterVideoObjects
 
@@ -30,7 +30,7 @@ async def backend_manager(args: argparse.Namespace, ws: WebSocket|None=None):
         await scan.scanVideos(COLLECTIONS, rehash_videos=args.rehash_videos, ws=ws)
     
     
-    elif args.generate_media: # - MEDIA ------------------------------------------------------------
+    if args.generate_media: # - MEDIA ------------------------------------------------------------
         # filter videos
         video_dicts = db.read_table_as_dict('videos')
         videos = [ VideoData.from_dict(dct) for hsh, dct in video_dicts.items() if dct.get('is_linked') ]
@@ -51,29 +51,56 @@ async def backend_manager(args: argparse.Namespace, ws: WebSocket|None=None):
             startfrom = 0,
         )
         videos = filterVideoObjects(videos, query)
-        if args.limit:
-            videos = videos[:args.limit]
         
         # call generators
         await aprint(ws, 'Generating media for {} videos'.format(len(videos)))
         alist = [ videos, PREVIEW_MEDIA_DIR ]
-        kdict = {"redo": args.redo_media_gen, "ws": ws}
+        kdict = { "redo": args.redo_media_gen, "limit": args.limit, "ws": ws }
         opt = args.generate_media
+        succs, fails = {}, {}
         try:
-            if opt == 'all' or opt == 'teasers':         await generate.mass_generate_small_teasers(  *alist, **kdict )
-            if opt == 'all' or opt == 'preview_thumbs':  await generate.mass_generate_preview_thumbs( *alist, **kdict )
-            if opt == 'all' or opt == 'seek_thumbs':     await generate.mass_generate_seek_thumbs(    *alist, **kdict )
-            if opt == 'all' or opt == 'teasers_large':   await generate.mass_generate_large_teasers(  *alist, **kdict )
-            if opt == 'all' or opt == 'teaser_thumbs':   await generate.mass_generate_teaser_thumbs(  *alist, **kdict )
+            if opt == 'all' or opt == 'teasers':       
+                succ, fail = await generate.mass_generate_small_teasers( *alist, **kdict )
+                succs['teasers'] = succ
+                fails['teasers'] = fail
+            if opt == 'all' or opt == 'preview_thumbs':
+                succ, fail = await generate.mass_generate_preview_thumbs( *alist, **kdict )
+                succs['preview_thumbs'] = succ
+                fails['preview_thumbs'] = fail
+            if opt == 'all' or opt == 'seek_thumbs':   
+                succ, fail = await generate.mass_generate_seek_thumbs( *alist, **kdict )
+                succs['seek_thumbs'] = succ
+                fails['seek_thumbs'] = fail
+            # if opt == 'all' or opt == 'teasers_large': 
+            #     succ, fail = await generate.mass_generate_large_teasers( *alist, **kdict )
+            #     succs['teasers_large'] = succ
+            #     fails['teasers_large'] = fail
+            # if opt == 'all' or opt == 'teaser_thumbs': 
+            #     succ, fail = await generate.mass_generate_teaser_thumbs( *alist, **kdict )
+            #     succs['teaser_thumbs'] = succ
+            #     fails['teaser_thumbs'] = fail
         except KeyboardInterrupt:
             print('\n... interrupting')
         
+        print('\n  WORK REPORT:\n')
+        print('TYPE              GENERATION COUNT')
+        succs['total'] = []
+        fails['total'] = []
+        for k, s in succs.items():
+            f = fails[k]
+            fails_str = ' ({:_} fails)'.format(len(f)) if f != [] else ''
+            print('{:<15} : {:_}{}'.format(k, len(s), fails_str))
+            if k != 'total':
+                succs['total'].extend(s)
+                fails['total'].extend(f)
+        print()
+        
 
-    elif args.status: # - STATUS -------------------------------------------------------------------
-        await aprint(ws, )
+    if args.status: # - STATUS -------------------------------------------------------------------
+        await aprint(ws, "Status:")
         ...
 
-    else:
+    if not args.status and not args.generate_media and not args.scan_libraries:
         await aprint(ws, 'No arguments passed')
 
 
@@ -106,7 +133,7 @@ def create_argument_parser(non_exiting=False):
     parser.add_argument('--cull-unlinked-media',    action='store_true',        help='')
 
     # [2] Library scanning
-    parser.add_argument('--scan-libraries',         action='store_true',        help='')
+    parser.add_argument('--scan-libraries', '-sl',  action='store_true',        help='')
     parser.add_argument('--rehash-videos',          action='store_true',        help='[scan]')
     parser.add_argument('--reread-json-metadata',   action='store_true',        help='[scan]')
     parser.add_argument('--regen-tfidf',            action='store_true',        help='')
