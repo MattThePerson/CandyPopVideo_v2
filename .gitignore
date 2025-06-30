@@ -18,6 +18,7 @@ BAK
 !/data/templates/
 !/data/stopwords_eng.txt
 TODO.md
+*.ipynb
 
 .logs
 
