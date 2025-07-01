@@ -48,7 +48,7 @@ app.include_router(dashboard_router,     prefix="")
 # hello
 @app.get("/api/hello")
 def api_hello():
-    return Response('I hearr ya', 200)
+    return {'msg': 'I hear you, you dirty dog'}
 
 # port
 @app.get("/api/get-port")

@@ -1,0 +1,73 @@
+:root {
+    --nav-dark: #060A0A;
+    --off-black: #060A0A;
+    --off-white: #ecede3;
+    --soft-white: #c4c5bd;
+    --darkest: #000;
+    --grey: #121717;
+    --icon-rose: #ff4ba2;
+    --actor-rose: #FF2C91;
+    --active-rose: #b72a6e;
+    --play-orange: #D79C29;
+    --search-cyan: #3EA7A7;
+    --selection-color: #501c51;
+    --apply-purple: #752868;
+}
+
+::-moz-selection {
+    /* Code for Firefox */
+    background: var(--selection-color);
+    color: var(--off-white);
+}
+::selection {
+    color: var(--off-white);
+    background: var(--selection-color);
+}
+
+/* FONTS */
+
+@font-face {
+    font-family: "Alba";
+    src: url('../../static/fonts/Alba/ALBAM___.TTF');
+}
+
+@font-face {
+    font-family: "Roboto Condensed";
+    src: url('../../static/fonts/Roboto_Condensed/RobotoCondensed-VariableFont_wght.ttf');
+}
+
+@font-face {
+    font-family: "Merriweather";
+    src: url('../../static/fonts/Merriweather/Merriweather-Regular.ttf');
+    font-weight: 400;
+}
+
+@font-face {
+    font-family: "Exo 2";
+    src: url('../../static/fonts/Exo2/Exo2-VariableFont_wght.ttf');
+}
+
+/* ALL & BODY */
+
+* {
+    margin: 0;
+    padding: 0;
+    color: var(--off-white);
+    font-family: sans-serif;
+    box-sizing: border-box;
+}
+
+body {
+    background: var(--grey);
+}
+
+.hidden {
+    display: None !important;
+}
+
+main {
+    display: flex;
+    justify-content: center;
+    min-height: 40rem;
+    padding: 1rem;
+}

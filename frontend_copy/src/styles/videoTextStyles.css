@@ -1,0 +1,95 @@
+
+.collection-tag {
+    font-family: "Exo 2";
+    font-weight: 600;
+    font-size: 20px;
+    padding: 3px 8px;
+    margin: 0.6em;
+    border: 1.8px solid var(--off-white);
+    border-radius: 6px;
+    width: fit-content;
+}
+
+.vid-info-list {
+    list-style: None;
+    display: flex;
+    align-items: center;
+}
+.vid-info-list li {
+    margin: 0 8px;
+    color: #bbb;
+    font-weight: 550;
+}
+.vid-info-list .icon {
+    fill: var(--off-white);
+}
+
+.video-title {
+    font-family: "Merriweather";
+    font-size: 40px;
+    margin: 0.2em;
+    transform: translate(-30px, 0);
+}
+
+.studio-and-date {
+    display: flex;
+}
+.studio-and-date div {
+    margin: 0 1em;
+    font-weight: bold;
+    font-size: 15px;
+}
+
+
+.video-actors {
+    display: flex;
+    font-weight: bold;
+    font-size: 20px;
+    margin: 0.5em 0;
+    transform: translate(-30px, 0);
+}
+.video-actors div {
+    margin: 0 8px;
+    color: var(--actor-rose);
+}
+
+/* BUTTONS */
+
+.video-buttons-row {
+    display: flex;
+    margin: 0.5em;
+}
+.video-buttons-row .icons path {
+    fill: white;
+}
+.video-button-text {
+    font-family: "Roboto Condensed";
+    font-weight: 700;
+    font-size: 20px;
+}
+
+.info-box form {
+}
+
+.video-button {
+    height: 38px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 0px 8px;
+    margin: 0 1em;
+    border-radius: 3px;
+}
+
+.video-button-play {
+    background: var(--play-orange);
+}
+.icon-play path {
+    fill: var(--off-white);
+}
+
+.video-button-search {
+    background: var(--search-cyan);
+}
+

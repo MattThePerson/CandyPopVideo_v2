@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en"> <!-- VIDEO PAGE -->
+
+<head>
+    <base href="/src/">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video page loading ...</title>
+    <link rel="icon" type="image/x-icon" href="../static/icons/donut-pngs/donut_pink_inner.png">
+    
+    <!-- default -->
+    <Link rel="stylesheet" href="styles/fontsAndGlobals.css">
+    <script defer           src="scripts/components.js" type="text/javascript"></script>
+    <script defer           src="scripts/global.js" type="text/javascript"></script>
+    
+    <!-- other -->
+    <Link rel="stylesheet" href="styles/videoTextStyles.css">
+    <Link rel="stylesheet" href="styles/carouselStyles.css">
+    <Link rel="stylesheet" href="styles/searchResults.css">
+    <script defer           src="scripts/search.js" type="text/javascript"></script>
+    <script defer           src="../packages/playerjs.js" type="text/javascript"></script>
+
+    <!-- page -->
+    <Link rel="stylesheet" href="pages/video/styles.css">
+    <script defer           src="pages/video/script.js" type="text/javascript"></script>
+
+    <style>
+        body {
+            overflow-x: hidden;
+        }
+        #video-player-container {
+            display: flex;
+            justify-content: center;
+            background: rgb(26, 26, 26);
+            width: 100%;
+            height: fit-content;
+        }
+        #player {
+            width: 99vw;
+            height: 740px;
+            /* max-width: 1300px; */
+            /* max-height: 500px; */
+        }
+        #thumbnail-container {
+            position: absolute;
+            /* display: none; */
+            /* width: fit-content; */
+            /* height: fit-content; */
+            /* max-height: 300px; */
+            left: 0px;
+            top: 0px;
+            z-index: 9999;
+            /* border: 4px solid red; */
+        }
+        .seekthumbnail > img {
+            z-index: 9999999999999;
+            border: 1.75px solid rgb(238, 238, 238);
+            border-radius: 6px;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* subtitles */
+        video::cue {
+            background: none;
+            color: white;
+            font-size: 2.7rem;
+            text-shadow: 1px 1px 4px black;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="html-component-injector" html-component="header"></div>
+
+    <div class="page-content">
+
+        <!-- VIDEO PLAYER SECTION -->
+
+        <section class="video-player-container-section">
+            
+            <div id="video-player-container">
+                <div id="player-container" class="">
+                    <div id="player"></div>
+                    <div id="thumbnail-container"></div>
+                    <canvas id="progression-bar-canvas" style="display: none;"></canvas>
+                </div>
+            </div>
+
+            <div class="video-header">
+                <div class="header-info">
+                    <ul class="vid-info-list">
+                        <li class="duration">26min 4sec</li>
+                        <svg class="icon icon-diamond-separator" height="10px" version="1.1" id="_x32_" viewBox="0 0 512 512"  xml:space="preserve"><g><polygon class="st0" points="256,0 72.115,256 256,512 439.885,256 	"/></g></svg>
+                        <li class="resolution">1080p</li>
+                        <svg class="icon icon-diamond-separator" height="10px" version="1.1" id="_x32_" viewBox="0 0 512 512"  xml:space="preserve"><g><polygon class="st0" points="256,0 72.115,256 256,512 439.885,256 	"/></g></svg>
+                        <li class="bitrate">5.9mb</li>
+                        <svg class="icon icon-diamond-separator" height="10px" version="1.1" id="_x32_" viewBox="0 0 512 512"  xml:space="preserve"><g><polygon class="st0" points="256,0 72.115,256 256,512 439.885,256 	"/></g></svg>
+                        <li class="fps">30fps</li>
+                    </ul>
+                    <h1 class="title video-title">Lesbian Jobs Scene #2: The Foot Job</h1>
+                    <span class="row-1">
+                    </span>
+                    <span class="row-2">
+                        <div class="collection collection-tag">Main</div>
+                        <div class="video-actors">
+                            <div class="actor"> Actor McActor</div>
+                        </div>
+                        <span class="studio-and-date">
+                            <span><div class="studio">BellSensations</div></span>
+                            <span><div class="year studio-and-date">2020</div></span>
+                        </span>
+                    </span>
+                </div>
+                <div class="header-buttons">
+                    <button id="add-favourite-button">Add to favourites</button>
+                </div>
+            </div>
+        </section>
+
+
+
+        <!-- FANCY PREVIEW SECTION -->
+        <!-- <section class="video-container">
+            <a id="show-video-display-button" href="javascript:void(0)">
+                <svg class="icon icon-camera" width="40px" viewBox="0 -2 32 32" version="1.1" ><g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage"><g id="Icon-Set-Filled" sketch:type="MSLayerGroup" transform="translate(-258.000000, -467.000000)"><path fill="#fff" d="M286,471 L283,471 L282,469 C281.411,467.837 281.104,467 280,467 L268,467 C266.896,467 266.53,467.954 266,469 L265,471 L262,471 C259.791,471 258,472.791 258,475 L258,491 C258,493.209 259.791,495 262,495 L286,495 C288.209,495 290,493.209 290,491 L290,475 C290,472.791 288.209,471 286,471 Z M274,491 C269.582,491 266,487.418 266,483 C266,478.582 269.582,475 274,475 C278.418,475 282,478.582 282,483 C282,487.418 278.418,491 274,491 Z M274,477 C270.687,477 268,479.687 268,483 C268,486.313 270.687,489 274,489 C277.313,489 280,486.313 280,483 C280,479.687 277.313,477 274,477 L274,477 Z" id="camera" sketch:type="MSShapeGroup"></path></g></g></svg>
+            </a>
+            <div class="video-box">
+                <div class="video-player">
+                    <video class="background-video" loop muted autoplay>
+                        <source src="" type="video/mp4"></src>
+                    </video>
+                    <div class="video-player-shadow"></div>
+                    <div class="video-player-shadow-dark"></div>
+                </div>
+            </div>
+            <div class="info-box">
+                <div class="collection-tag">Main</div>
+                <ul class="vid-info-list">
+                    <li>29m 51s</li>
+                    <svg class="icon icon-diamond-separator" height="10px" version="1.1" id="_x32_" viewBox="0 0 512 512"  xml:space="preserve"><g><polygon class="st0" points="256,0 72.115,256 256,512 439.885,256 	"/></g></svg>
+                    <li>1080p</li>
+                    <svg class="icon icon-diamond-separator" height="10px" version="1.1" id="_x32_" viewBox="0 0 512 512"  xml:space="preserve"><g><polygon class="st0" points="256,0 72.115,256 256,512 439.885,256 	"/></g></svg>
+                    <li>5200 kbps</li>
+                    <svg class="icon icon-diamond-separator" height="10px" version="1.1" id="_x32_" viewBox="0 0 512 512"  xml:space="preserve"><g><polygon class="st0" points="256,0 72.115,256 256,512 439.885,256 	"/></g></svg>
+                    <li>24fps</li>
+                </ul>
+                <div class="video-title">Lesbian Jobs Scene #2: The Foot Job</div>
+                <div class="studio-and-date">
+                    <div>ALL GIRL MASSAGE</div>
+                    <div>2016</div>
+                </div>
+                <div class="video-actors">
+                    <div>Ashley Fires</div>
+                    <div>Riley Reid</div>
+                </div>
+                <div class="video-buttons-row">
+                    <a href="file:///c:/Users/stirl/Downloads/New folder/Ashley Fires, Riley Reid ALL GIRL MASSAGE The Foot (1080p).mp4">
+                        <button class="video-button video-button-play">
+                            <div class="video-button-text">PLAY</div>
+                            <svg class="icon icon-play" width="20px" viewBox="-0.5 0 7 7" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g id="Dribbble-Light-Preview" transform="translate(-347.000000, -3766.000000)" fill="#000000"><g id="icons" transform="translate(56.000000, 160.000000)"><path d="M296.494737,3608.57322 L292.500752,3606.14219 C291.83208,3605.73542 291,3606.25002 291,3607.06891 L291,3611.93095 C291,3612.7509 291.83208,3613.26444 292.500752,3612.85767 L296.494737,3610.42771 C297.168421,3610.01774 297.168421,3608.98319 296.494737,3608.57322" id="play-[#1003]"></path></g></g></g></svg>
+                        </button>
+                    </a>
+                    <a href="search.html">
+                        <button class="video-button video-button-search">
+                            <div class="video-button-text" >SEARCH</div>
+                            <svg class="icon icon-search" width="20px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.6725 16.6412L21 21M19 11C19 15.4183 15.4183 19 11 19C6.58172 19 3 15.4183 3 11C3 6.58172 6.58172 3 11 3C15.4183 3 19 6.58172 19 11Z" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        </button>
+                    </a>
+                    <a href="https://www.data18.com/scenes/1158541" target="_blank">
+                        <button class="video-button video-button-data18">
+                            <div class="video-button-text" >SEARCH</div>
+                            <svg class="icon icon-open-external-link" height="40px" version="1.1" id="_x32_" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512"  xml:space="preserve"><g><path class="st0" d="M96,0v416h416V0H96z M472,376H136V40h336V376z"/><polygon class="st0" points="40,472 40,296 40,136 40,96 0,96 0,512 416,512 416,472 376,472 	"/><polygon class="st0" points="232.812,312.829 350.671,194.969 350.671,279.766 390.671,279.766 390.671,126.688 237.594,126.688 237.594,166.688 322.39,166.688 204.531,284.547 	"/></g></svg>
+                        </button>
+                    </a>
+                </div>
+            </div>
+        </section> -->
+
+        <!-- ABOUT CONTAINER -->
+        <section class="about-container">
+            <div class="description-container">
+                <h1 class="description-heading">Description</h1>
+                <p class="description-body">
+                    Story - When Riley Reid walked into the spa today, Ashley Fires was caught off guard, and never expected
+                    to meet Riley in this way. Ashley's been over loaded, all day long, so when Riley explains that because
+                    of her job as a caterer she's on her feet all day, Ashley insists that she work her magic on Riley's
+                    Feet. Ashley shows her eagerness to use her reflexology training and her acupressure techniques to help
+                    Riley relax. But Ashley has more on her mind. Ashley watched Riley undress, eager to see her beautiful
+                    feet. Soon Riley is in ecstasy, Ashley's foot job is making her feel like a whole new woman. one that
+                    could potentially rise to Ashley's sexual hunger, and together they can make their innermost lesbian
+                    desires come true. Ashley starts to rub Riley's feet on her nipples, stimulating herself.
+                    <br></br>
+                    Soon Ashley climbs on the table in eagerness and uses Riley's feet to stimulate her own pussy. Ashley
+                    tells Riley to relax, even though she's clearly reluctant, but Riley eventually gives in knowing that
+                    Ashley is in control of her relaxation and committed to making it happen for her. Ashley dives face
+                    first into Riley's hairy pussy and takes what seems like moments to make poor Riley explode in ecstasy
+                    of her new lesbian experience.
+                </p>
+            </div>
+            <div class="info-container">
+                <h1 class="info-heading">Info</h1>
+                <div class="table-container">
+                    <table class="scene-info-table">
+                        <caption>SCENE INFO</caption>
+                        <tbody>
+                            <tr>
+                                <th>Studio</th>
+                                <td>All Girl Massage</td>
+                            </tr>
+                            <tr>
+                                <th>Release Date</th>
+                                <td>2016.01.18</td>
+                            </tr>
+                            <tr>
+                                <th>Movie</th>
+                                <td>Lesbian Jobs</td>
+                            </tr>
+                            <tr>
+                                <th>Scene/Part</th>
+                                <td>2</td>
+                            </tr>
+                            <tr>
+                                <th>JAV CODE</th>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <th>Model</th>
+                                <td>-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <table class="video-info-table">
+                        <caption>VIDEO INFO</caption>
+                        <tbody>
+                            <tr>
+                                <th>Duration</th>
+                                <td>29 min 51 sec</td>
+                            </tr>
+                            <tr>
+                                <th>Resolution</th>
+                                <td>1080p</td>
+                            </tr>
+                            <tr>
+                                <th>Filesize</th>
+                                <td>1131 MB</td>
+                            </tr>
+                            <tr>
+                                <th>Bitrate</th>
+                                <td>5200 kbps</td>
+                            </tr>
+                            <tr>
+                                <th>Framerate</th>
+                                <td>24 fps</td>
+                            </tr>
+                            <tr>
+                                <th>Hash</th>
+                                <td>1234</td>
+                            </tr>
+                            <tr>
+                                <th>Location</th>
+                                <td>C:\Users\stirl\Downloads\New folder\</td>
+                            </tr>
+                            <tr>
+                                <th>Date Added</th>
+                                <td>2024.02.01</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- STILLS VIEW CONTAINER -->
+
+        <!-- <section class="carousel-section">
+            <div class="carousel-container">
+                <div class="carousel-slider-wrapper">
+                    <div class="carousel-slider">
+                        <img id="slide-1" src="media/_other/1234/stills/1.png" />
+                        <img id="slide-2" src="media/_other/1234/stills/2.png" />
+                        <img id="slide-3" src="media/_other/1234/stills/3.png" />
+                        <img id="slide-4" src="media/_other/1234/stills/4.png" />
+                        <img id="slide-5" src="media/_other/1234/stills/5.png" />
+                        <img id="slide-6" src="media/_other/1234/stills/6.png" />
+                        <img id="slide-7" src="media/_other/1234/stills/7.png" />
+                        <img id="slide-8" src="media/_other/1234/stills/8.png" />
+                        <img id="slide-9" src="media/_other/1234/stills/9.png" />
+                        <img id="slide-10" src="media/_other/1234/stills/10.png" />
+                        <img id="slide-11" src="media/_other/1234/stills/11.png" />
+                        <img id="slide-12" src="media/_other/1234/stills/12.png" />
+                        <img id="slide-13" src="media/_other/1234/stills/13.png" />
+                    </div>
+                    <div class="carousel-slider-nav">
+                        <a href="#slide-1"></a>
+                        <a href="#slide-2"></a>
+                        <a href="#slide-3"></a>
+                        <a href="#slide-4"></a>
+                        <a href="#slide-5"></a>
+                        <a href="#slide-6"></a>
+                        <a href="#slide-7"></a>
+                        <a href="#slide-8"></a>
+                        <a href="#slide-9"></a>
+                        <a href="#slide-10"></a>
+                        <a href="#slide-11"></a>
+                        <a href="#slide-12"></a>
+                        <a href="#slide-13"></a>
+                    </div>
+                </div>
+            </div>
+        </section> -->
+
+        <!-- SIMILAR VIDEOS CONTAINER -->
+        
+        <section id="video-results-section">
+            <div id="video-results-container" class="default-view"></div>
+            <button id="expand-results-button">SHOW MORE RESULTS</button>
+        </section>
+
+        <template id="video-result-template">
+            <div class="video-result-item">
+                <a class="thumb-container" href="">
+                    <!-- <img src="media/default-thumbnail.png" alt=""> -->
+                    <img class="thumbnail" src="" alt="">
+                    <video preload="none" muted loop></video>
+                    <div class="spinner"></div>
+                    <div class="stats">
+                        <div class="res-and-duration">
+                            <div class="resolution">1080p</div>
+                            <div class="fps" style="display: none;">30fps</div>
+                            <div class="bitrate">3.1mb</div>
+                        </div>
+                    </div>
+                    <div class="duration">19:69</div>
+                    <div class="collection-and-favourite-contianer">
+                        <div class="collection">Default</div>
+                        <div class="favourite">FAV</div>
+                    </div>
+                </a>
+                <div class="actor-studio-bar">
+                    <div class="actors"></div>
+                    <a class="studio" href=""></a>
+                    <a class="year" href=""></a>
+                    <div></div>
+                </div>
+                <a class="title-container" href="">
+                    <h2>This is just a temporary title</h2>
+                </a>
+                <div class="lower-bar">
+                    <div class="added-tag">Added 3 hours ago</div>
+                    <div class="tags-bar"></div>
+                </div>
+            </div>
+        </template>
+    
+    </div>
+    <div class="html-component-injector" html-component="footer"></div>
+</body>
+
+</html>
