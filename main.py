@@ -59,7 +59,7 @@ def get_port(request: Request):
 app.mount("/static/preview-media", StaticFiles(directory=PREVIEW_MEDIA_DIR), name="preview-media")
 
 
-app.mount("/", StaticFiles(directory="frontend", html=True), name="")
+app.mount("/", StaticFiles(directory="frontend_copy", html=True), name="")
 
 
 # START
