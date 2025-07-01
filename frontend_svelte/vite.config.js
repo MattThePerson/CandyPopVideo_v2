@@ -7,7 +7,7 @@ export default defineConfig({
 	server: {
         proxy: {
             '^/(api|media|terminal)(/.*)?$': { // proxy all requests 
-				target: 'http://localhost:8000', // Backend server
+				target: 'http://localhost:8011', // Backend server
 				changeOrigin: true,
 				rewrite: (path) => path, // Forward the full path
 			},

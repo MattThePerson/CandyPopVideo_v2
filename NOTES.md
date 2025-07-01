@@ -12,6 +12,7 @@
 - Add teaser thumbs
 - Add new catalogue page
 - Get performer (and studio) embeddings working
+- Add method of seeing tf-idf tokens
 <!-- - Bring over favourites & make metadata db -->
 <!-- - Get tfidf model working -->
 <!-- - Improve media generation -->

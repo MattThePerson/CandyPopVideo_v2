@@ -1,15 +1,26 @@
 <script>
+    import { onMount } from "svelte";
     import "../app.css";
     import '../fonts.css';
     import Header from "$lib/components/Header.svelte";
     import Footer from "$lib/components/Footer.svelte";
+    
+    let showFooter = false;
+    onMount(() => {
+        console.log(window.location.pathname);
+        showFooter = (window.location.pathname !== '/catalogue');
+        console.log(showFooter);
+    });
+    
 </script>
 
 <Header />
 <main>
     <slot />
 </main>
-<Footer />
+{#if showFooter}
+    <Footer />
+{/if}
 
 <style>
     main {
