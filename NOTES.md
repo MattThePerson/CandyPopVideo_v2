@@ -4,10 +4,10 @@
 
 ## TODO
 
-- [frontend] [new] port & refactor search page
-- [frontend] [new] port & refactor video page
-- [frontend] [new] port & refactor home page
-- [frontend] [new] port & refactor dashboard page
+<!-- - [frontend] [new] port & clean search page -->
+- [frontend] [new] port & clean video page
+- [frontend] [new] port & clean home page
+- [frontend] [new] port & clean dashboard page
 - [frontend] [new] Add new catalogue page
 - [frontend] Create custom video player
 - [frontend] [new] Add new search result cards

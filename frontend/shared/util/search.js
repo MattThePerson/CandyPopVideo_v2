@@ -1,240 +1,18 @@
 
 
-const default_thumbnails = [
-    "media/default_media/preview_thumbs/thumb1.png",
-    "media/default_media/preview_thumbs/thumb2.png",
-    "media/default_media/preview_thumbs/thumb3.png",
-    "media/default_media/preview_thumbs/thumb4.png",
-    "media/default_media/preview_thumbs/thumb5.png",
-    "media/default_media/preview_thumbs/thumb6.png",
-    "media/default_media/preview_thumbs/thumb7.png",
-    "media/default_media/preview_thumbs/thumb8.png",
-    "media/default_media/preview_thumbs/thumb9.png",
-    "media/default_media/preview_thumbs/thumb10.png"
-]
-
-/* FUNCTIONS */
-
-function switch_to_page(n) {
-    console.log("Switching to page: " + n)
-    let url = new URL(window.location.href);
-    if (url.searchParams.has('page')) {
-        url.searchParams.set('page', n);
-    } else {
-        url.searchParams.append('page', n);
-    }
-    window.location.href = url.toString();
-}
-
-function getPageNavNumbers(current_page, amount_of_pages, max_buttons) {
-    if (amount_of_pages == 1) 
-        return [1];
-    if (current_page > amount_of_pages) current_page = amount_of_pages;
-    if (current_page < 1)               current_page = 1;
-
-    let pages = [];
-    let i = current_page;
-    pages.push(i);
-    let disp = 1;
-    while ( pages.length < Math.min(amount_of_pages, max_buttons) ) {
-        let hold = pages.length;
-        let lo = i - disp;
-        let hi = i + disp;
-        if (lo > 0)                 pages.push(lo);
-        if (hi <= amount_of_pages)  pages.push(hi);
-        if (pages.length == hold)
-            break;
-        disp += 1;
-    }
-    pages.sort((a,b) => (a - b));
-    pages[0] = 1;
-    pages[pages.length-1] = amount_of_pages;
-    if ( Math.abs(pages[0]-pages[1]) > 1 )  pages[1] = -1;
-    if ( Math.abs(pages[pages.length-1]-pages[pages.length-2]) > 1 ) pages[pages.length-2] = -1;
-    return pages;
-}
-
-function format_added_time(date_added) {
-    let diff_ms = (new Date()) - (new Date(date_added.replace(' ', 'T')));
-    let string = ['second', 'minute', 'hour', 'day', 'week', 'month', 'year'];
-    let mult =  [60, 60, 24, 7, 4.345, 12, 10];
-    let limit = [60, 60, 24, 7, 3*4.345, 12*3, 10];
-    let ms = 1000;
-    for (let i = 0; i < mult.length; i++) {
-        if (diff_ms < ms*limit[i]) {
-            let unit = Math.floor(diff_ms / ms);
-            let ret = unit + ' ' + string[i];
-            if (unit > 1)
-                ret = ret + 's';
-            return ret;
-        }
-        ms *= mult[i];
-    }
-}
-
-function make_search_result_item(res, videoResultTemplate) {
-    const template = videoResultTemplate.content.cloneNode(true);
-    const item = template.querySelector('.video-result-item');
-    item.id = 'item-' + res['hash'];
-    item.setAttribute('data-hash', res['hash']);
-    let duration = res['duration'];
-    if (duration.startsWith("0:")) {
-        duration = duration.substring(2);
-    }
-    if (res.scene_title)  {
-        let mention_performers = '';
-        // if (res['mention_performer'])
-        //     mention_performers = ' (' + res['mention_performer'] + ')'
-        let line_str = '';
-        if (res['line'])
-            line_str = '[' + res['line'] + '] '
-        let jave_code_str = '';
-        if (res['jave_code'])
-            jave_code_str = '[' + res['jave_code'] + '] '
-        template.querySelector('h2').innerText = jave_code_str + line_str + res.scene_title;
-    } else {
-        template.querySelector('h2').innerText = res.filename;
-    }
-    template.querySelector('.resolution').innerText = res['resolution'] + 'p';
-    template.querySelector('.resolution').style.color = getResolutionTextColor(res['resolution']);
-    try {
-        template.querySelector('.duration').innerText = duration;
-    } catch {}
-    try {
-        template.querySelector('.duration-pretty').innerText = format_duration(duration);
-    } catch {}
-    if (res['fps'] == 29) res['fps'] = 30;
-    template.querySelector('.fps').innerText = res['fps'] + 'fps';
-    template.querySelector('.bitrate').innerText = Math.round(res['bitrate']/100)/10 + 'mb';
-    template.querySelector('.bitrate').style.color = getBitrateTextColor(res['bitrate']);
-    const actor_container = template.querySelector('.actors');
-    let performers = res.performers;
-    // if (res['mention_performer']) {
-    //     for (let perf of res['mention_performer'].split(', ')) {
-    //         performers.push(perf);
-    //     }
-    // }
-    for (let performer of performers) {
-        let span = document.createElement('span');
-        let el = document.createElement('a');
-        el.classList.add('actor');
-        el.innerText = performer;
-        el.href = 'pages/search/index.html?' + String(new URLSearchParams({'performer' : performer}));
-        el.addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', performer)); // add dragging the performer name
-        span.appendChild(el);
-        actor_container.appendChild(span);
-    }
-    if (res['studio']) {
-        template.querySelector('.studio').innerText = res['studio'];
-        template.querySelector('.studio').href = 'pages/search/index.html?' + String(new URLSearchParams({'studio' : res['studio']}));
-        template.querySelector('.studio').addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', res['studio'])); // add dragging the performer name
-    } else {
-        template.querySelector('.studio').style.display = 'none';
-    }
-    try {
-        if (res['line'] && template.querySelector('.line')) {
-            template.querySelector('.line').innerText = res['line'];
-            template.querySelector('.line').href = 'pages/search/index.html?' + String(new URLSearchParams({'include-terms' : res['line']}));
-            template.querySelector('.line').addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', res['line']));
-        } else {
-            template.querySelector('.line').parentNode.style.display = 'none';
-        }
-    } catch {}
-
-    template.querySelector('.year').innerText = res.date_released_d18 || res.date_released || res.year || '';
-    template.querySelector('.collection').innerText = res['collection'];
-    if (res['collection'] == '') {
-        template.querySelector('.collection').style.display = 'none';
-    }
-    template.querySelector('.lower-bar .added-tag').innerText = 'Added ' + format_added_time(res.date_added) + ' ago';
-    let descriptionEl = template.querySelector('p.description');
-    if (descriptionEl && res['scene_description']) {
-        descriptionEl.innerText = res['scene_description']
-    }
-
-    // TAGS
-    const tags_container = template.querySelector('.tags-bar');
-    for (let tag of res['tags']) {
-        let el = document.createElement('div');
-        el.classList.add('tag');
-        el.innerText = tag;
-        tags_container.appendChild(el);
-    }
-    if (res.jav_code) {
-        template.querySelector('h2').innerText = res.jav_code;
-        if (descriptionEl && 'title' in res) {
-            descriptionEl.innerText = res['title'];
-        }
-    }
-    template.querySelectorAll('.video-result-item > a').forEach(el => {
-        el.href = 'pages/video/index.html?hash=' + res.hash;
-        el.addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', res['filename'])); // add draggin the performer name
-    });
-
-    // make favourite indicator visible
-    makeApiRequestGET('api/interact/favourites/check', [res.hash], response => {
-        if (response.is_favourite) {
-            const resItem = document.querySelector('#item-' + res.hash);
-            try {
-                resItem.querySelector('.favourite').style.display = 'block';
-            } catch {}
-        }
-    });
-
-    return template;
-
-}
-
-/* MAIN FUNCTIONS */
-
-function setElementSrcWithRetries(element, src, retries=5, delay=500) {
-    const tryLoad = () => {
-        const testImg = new Image();
-        testImg.onload = () => {
-            element.src = src;
-        };
-        testImg.onerror = () => {
-            console.log(retries);
-            if (retries > 0) setTimeout(() => setElementSrcWithRetries(element, src, retries - 1, delay), delay);
-        };
-        testImg.src = src + `?t=${Date.now()}`;
-    };
-    tryLoad();
-}
+import { makeApiRequestGET } from "./request.js";
 
 
+//region - MAIN --------------------------------------------------------------------------------------------------------
 
-// recursively loads an array of videos sequentially
-function _ensure_search_results_small_teasers(search_results, idx=0) {
-
-    if (idx == search_results.length) {
-        return;
-    }
-    
-    let current = search_results[idx];
-    // console.log('idx:', idx, search_results.length);
-
-    makeApiRequestGET('media/ensure/teaser-small', [current.hash], () => {
-        const video_el = document.querySelector('#item-' + current.hash + ' video');
-        video_el.preload = 'auto';
-        video_el.src = `../static/preview-media/0x${current.hash}/teaser_small.mp4`;
-        video_el.addEventListener('canplay', () => {
-            // put it here to only load next when previous can play
-        });
-        _ensure_search_results_small_teasers(search_results, idx+1);
-    });
-
-}
-
-
-function generate_results(results, args, use_custom_thumbs) {
+export function generate_results(results, args, query) {
 
     // console.log('generating results:', results)
     
     render_wordcloud(results.word_cloud);
 
-    videoResultsContainer = document.getElementById('video-results-container');
-    videoResultTemplate = document.getElementById('video-result-template');
+    const videoResultsContainer = document.getElementById('video-results-container');
+    const videoResultTemplate = document.getElementById('video-result-template');
     let posters_loaded = 0;
 
     /* ensure posters and teasers for search results */
@@ -243,7 +21,7 @@ function generate_results(results, args, use_custom_thumbs) {
         videoResultsContainer.appendChild(resultItem);
         
         const img_el = document.querySelector(`#item-${result.hash} .thumbnail`);
-        img_el.src = '../media/get/poster/' + result.hash + '?t=' + Date.now();  // add time to force cache busting
+        img_el.src = '/media/get/poster/' + result.hash + '?t=' + Date.now();  // add time to force cache busting
         img_el.onload = () => {
             posters_loaded++;
             if (posters_loaded === results.search_results.length) {
@@ -345,7 +123,208 @@ function generate_results(results, args, use_custom_thumbs) {
 }
 
 
+//region - MAIN HELPERS ------------------------------------------------------------------------------------------------
 
+
+/* 4 uses */
+function switch_to_page(n) {
+    console.log("Switching to page: " + n)
+    let url = new URL(window.location.href);
+    if (url.searchParams.has('page')) {
+        url.searchParams.set('page', n);
+    } else {
+        url.searchParams.append('page', n);
+    }
+    window.location.href = url.toString();
+}
+
+
+function getPageNavNumbers(current_page, amount_of_pages, max_buttons) {
+    if (amount_of_pages == 1) 
+        return [1];
+    if (current_page > amount_of_pages) current_page = amount_of_pages;
+    if (current_page < 1)               current_page = 1;
+
+    let pages = [];
+    let i = current_page;
+    pages.push(i);
+    let disp = 1;
+    while ( pages.length < Math.min(amount_of_pages, max_buttons) ) {
+        let hold = pages.length;
+        let lo = i - disp;
+        let hi = i + disp;
+        if (lo > 0)                 pages.push(lo);
+        if (hi <= amount_of_pages)  pages.push(hi);
+        if (pages.length == hold)
+            break;
+        disp += 1;
+    }
+    pages.sort((a,b) => (a - b));
+    pages[0] = 1;
+    pages[pages.length-1] = amount_of_pages;
+    if ( Math.abs(pages[0]-pages[1]) > 1 )  pages[1] = -1;
+    if ( Math.abs(pages[pages.length-1]-pages[pages.length-2]) > 1 ) pages[pages.length-2] = -1;
+    return pages;
+}
+
+
+function format_added_time(date_added) {
+    let diff_ms = (new Date()) - (new Date(date_added.replace(' ', 'T')));
+    let string = ['second', 'minute', 'hour', 'day', 'week', 'month', 'year'];
+    let mult =  [60, 60, 24, 7, 4.345, 12, 10];
+    let limit = [60, 60, 24, 7, 3*4.345, 12*3, 10];
+    let ms = 1000;
+    for (let i = 0; i < mult.length; i++) {
+        if (diff_ms < ms*limit[i]) {
+            let unit = Math.floor(diff_ms / ms);
+            let ret = unit + ' ' + string[i];
+            if (unit > 1)
+                ret = ret + 's';
+            return ret;
+        }
+        ms *= mult[i];
+    }
+}
+
+
+function make_search_result_item(res, videoResultTemplate) {
+    const template = videoResultTemplate.content.cloneNode(true);
+    const item = template.querySelector('.video-result-item');
+    item.id = 'item-' + res['hash'];
+    item.setAttribute('data-hash', res['hash']);
+    let duration = res['duration'];
+    if (duration.startsWith("0:")) {
+        duration = duration.substring(2);
+    }
+    if (res.scene_title)  {
+        let mention_performers = '';
+        // if (res['mention_performer'])
+        //     mention_performers = ' (' + res['mention_performer'] + ')'
+        let line_str = '';
+        if (res['line'])
+            line_str = '[' + res['line'] + '] '
+        let jave_code_str = '';
+        if (res['jav_code'])
+            jave_code_str = '[' + res['jav_code'] + '] '
+        template.querySelector('h2').innerText = jave_code_str + line_str + res.scene_title;
+    } else {
+        template.querySelector('h2').innerText = res.filename;
+    }
+    template.querySelector('.resolution').innerText = res['resolution'] + 'p';
+    template.querySelector('.resolution').style.color = getResolutionTextColor(res['resolution']);
+    try {
+        template.querySelector('.duration').innerText = duration;
+    } catch {}
+    try {
+        template.querySelector('.duration-pretty').innerText = formatDuration(duration);
+    } catch {}
+    if (res['fps'] == 29) res['fps'] = 30;
+    template.querySelector('.fps').innerText = res['fps'] + 'fps';
+    template.querySelector('.bitrate').innerText = Math.round(res['bitrate']/100)/10 + 'mb';
+    template.querySelector('.bitrate').style.color = getBitrateTextColor(res['bitrate']);
+    const actor_container = template.querySelector('.actors');
+    let performers = res.performers;
+    // if (res['mention_performer']) {
+    //     for (let perf of res['mention_performer'].split(', ')) {
+    //         performers.push(perf);
+    //     }
+    // }
+    for (let performer of performers) {
+        let span = document.createElement('span');
+        let el = document.createElement('a');
+        el.classList.add('actor');
+        el.innerText = performer;
+        el.href = '/pages/search/index.html?' + String(new URLSearchParams({'performer' : performer}));
+        el.addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', performer)); // add dragging the performer name
+        span.appendChild(el);
+        actor_container.appendChild(span);
+    }
+    if (res['studio']) {
+        template.querySelector('.studio').innerText = res['studio'];
+        template.querySelector('.studio').href = '/pages/search/index.html?' + String(new URLSearchParams({'studio' : res['studio']}));
+        template.querySelector('.studio').addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', res['studio'])); // add dragging the performer name
+    } else {
+        template.querySelector('.studio').style.display = 'none';
+    }
+    try {
+        if (res['line'] && template.querySelector('.line')) {
+            template.querySelector('.line').innerText = res['line'];
+            template.querySelector('.line').href = '/pages/search/index.html?' + String(new URLSearchParams({'include-terms' : res['line']}));
+            template.querySelector('.line').addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', res['line']));
+        } else {
+            template.querySelector('.line').parentNode.style.display = 'none';
+        }
+    } catch {}
+
+    template.querySelector('.year').innerText = res.date_released_d18 || res.date_released || res.year || '';
+    template.querySelector('.collection').innerText = res['collection'];
+    if (res['collection'] == '') {
+        template.querySelector('.collection').style.display = 'none';
+    }
+    template.querySelector('.lower-bar .added-tag').innerText = 'Added ' + format_added_time(res.date_added) + ' ago';
+    let descriptionEl = template.querySelector('p.description');
+    if (descriptionEl && res['scene_description']) {
+        descriptionEl.innerText = res['scene_description']
+    }
+
+    // TAGS
+    const tags_container = template.querySelector('.tags-bar');
+    for (let tag of res['tags']) {
+        let el = document.createElement('div');
+        el.classList.add('tag');
+        el.innerText = tag;
+        tags_container.appendChild(el);
+    }
+    if (res.jav_code) {
+        template.querySelector('h2').innerText = res.jav_code;
+        if (descriptionEl && 'title' in res) {
+            descriptionEl.innerText = res['title'];
+        }
+    }
+    template.querySelectorAll('.video-result-item > a').forEach(el => {
+        el.href = '/pages/video/index.html?hash=' + res.hash;
+        el.addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', res['filename'])); // add draggin the performer name
+    });
+
+    // make favourite indicator visible
+    makeApiRequestGET('/api/interact/favourites/check', [res.hash], response => {
+        if (response.is_favourite) {
+            const resItem = document.querySelector('#item-' + res.hash);
+            try {
+                resItem.querySelector('.favourite').style.display = 'block';
+            } catch {}
+        }
+    });
+
+    return template;
+
+}
+
+
+// recursively loads an array of videos sequentially
+function _ensure_search_results_small_teasers(search_results, idx=0) {
+
+    if (idx == search_results.length) {
+        return;
+    }
+    
+    let current = search_results[idx];
+    // console.log('idx:', idx, search_results.length);
+
+    makeApiRequestGET('/media/ensure/teaser-small', [current.hash], () => {
+        const video_el = document.querySelector('#item-' + current.hash + ' video');
+        video_el.preload = 'auto';
+        video_el.src = `/static/preview-media/0x${current.hash}/teaser_small.mp4`;
+        video_el.addEventListener('canplay', () => {
+            // put it here to only load next when previous can play
+        });
+        _ensure_search_results_small_teasers(search_results, idx+1);
+    });
+
+}
+
+
+/* render wordcloud */
 function render_wordcloud(words) {
     let limit = 35;
     const canvas = document.getElementById('wordCloudCanvas');
@@ -389,10 +368,10 @@ function render_wordcloud(words) {
 }
 
 
-/* HELPER FUNCTIONS */
+//region - MISC. HELPERS -----------------------------------------------------------------------------------------------
 
 
-function format_duration(duration) {
+function formatDuration(duration) {
     const parts = duration.split(':');
     let hours = 0, minutes = 0, seconds = 0;
     if (parts.length === 2) {
@@ -408,7 +387,6 @@ function format_duration(duration) {
     partsArray.push(`${seconds}s`);
     return partsArray.join(" ");
 }
-
 
 function getResolutionTextColor(res) {
     return 'white';

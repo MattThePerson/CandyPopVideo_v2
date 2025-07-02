@@ -1,58 +1,18 @@
 
-const searchInput = document.getElementById("nav-bar-search-input");
-const headerSearchButton = document.getElementById("nav-bar-search-button");
-const urlParams = new URLSearchParams(window.location.search);
 
-/* searchInput.addEventListener("keydown", e => {
-    if (e.key === 'Enter') {
-        console.log(e.target.value);
-    }
-});
- */
-
-headerSearchButton.addEventListener("click", e => {
-    value = searchInput.value;
-    if (value != "") {
-        const urlParams = new URLSearchParams({'query' : value});
-        url = "searchPage.html?" + urlParams.toString();
-        window.location.href = url;
-    } else {
-        console.log("No string given to input");
-    }
-});
-
-/* 
-// save page scroll
-window.addEventListener('beforeunload', function() {
-    localStorage.setItem('scrollPosition', window.scrollY);
-});
-
-// Restore the scroll position after the page loads
-window.addEventListener('load', function() {
-    setTimeout(function() {
-        const scrollPosition = localStorage.getItem('scrollPosition');
-        if (scrollPosition) {
-            window.scrollTo(0, parseInt(scrollPosition, 10));
-        }
-    }, 100);
-});
- */
 
 
 /* API FUNCTIONS */
 
-const fetch_request_prefix = '../' // base is /src/
-
-/* simple url args */
-/* assumes request is being made by .html page in `src/pages/PAGE_NAME/index.html` */
-function makeApiRequestGET(request, args, callback) {
+/* get request */
+export function makeApiRequestGET(request, args, callback) {
 
     let api_call = request;
     for (let arg of args) {
         api_call = api_call + '/' + arg;
     }
 
-    fetch(fetch_request_prefix + api_call)
+    fetch(api_call)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`(${request}) Network response: ${response.status}`);
@@ -80,8 +40,7 @@ function makeApiRequestGET(request, args, callback) {
 
 
 /* post json object */
-/* assumes request is being made by .html page in `src/pages/PAGE_NAME/index.html` */
-function makeApiRequestPOST_JSON(request, data, callback) {
+export function makeApiRequestPOST_JSON(request, data, callback) {
     
     const options = {
         method: "POST",
@@ -91,7 +50,7 @@ function makeApiRequestPOST_JSON(request, data, callback) {
         body: JSON.stringify(data),
     }
     
-    fetch(fetch_request_prefix + request, options)
+    fetch(request, options)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`(${request}) Network response: ${response.status}`);
@@ -112,9 +71,8 @@ function makeApiRequestPOST_JSON(request, data, callback) {
 
 }
 
-/* post json object */
-/* assumes request is being made by .html page in `src/pages/PAGE_NAME/index.html` */
-function makeApiRequestPOST(request, args, callback) {
+/* post request */
+export function makeApiRequestPOST(request, args, callback) {
     
     const options = {
         method: "POST"
@@ -125,7 +83,7 @@ function makeApiRequestPOST(request, args, callback) {
         api_call = api_call + '/' + arg;
     }
 
-    fetch(fetch_request_prefix + api_call, options)
+    fetch(api_call, options)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`(${request}) Network response: ${response.status}`);
@@ -147,16 +105,14 @@ function makeApiRequestPOST(request, args, callback) {
 }
 
 
-/* GLOBAL FUNCTIONS */
-
 
 /* COOKIE FUNCTIONS */
 
-function setCookie(name, value) {
+export function setCookie(name, value) {
     document.cookie = name + "=" + (value || "") + "; path=/"; // 'path=/' ensures cookie is accessible on all pages
 }
 
-function getCookie(name) {
+export function getCookie(name) {
     let nameEQ = name + "=";
     let ca = document.cookie.split(';'); // Get all cookies
     for (let i = 0; i < ca.length; i++) {
@@ -167,11 +123,11 @@ function getCookie(name) {
     return null;
 }
 
-function eraseCookie(name) {
+export function eraseCookie(name) {
     document.cookie = name + "=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 }
 
-function eraseAllCookies() {
+export function eraseAllCookies() {
     let cookies = document.cookie.split(";");
     for (let i = 0; i < cookies.length; i++) {
         let cookie = cookies[i];
@@ -181,12 +137,4 @@ function eraseAllCookies() {
     }
 }
 
-/* Event listener for reloading backend */
-
-
-// document.getElementById("reload-backend-button")?.addEventListener('click', e => {
-//     e.preventDefault();
-//     console.log('Clicked!');
-//     makeApiRequestGET('reload-backend', [], () => {});
-// });
 

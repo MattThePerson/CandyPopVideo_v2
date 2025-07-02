@@ -4,6 +4,14 @@ const searchPanel = document.getElementById('search-panel');
 const searchButton = document.getElementById('search-button');
 const onlyFavsCheckbox = document.querySelector('input.only_favourites');
 
+const searchInput = document.getElementById("nav-bar-search-input");
+const headerSearchButton = document.getElementById("nav-bar-search-button");
+
+console.log(window.location.search);
+const urlParams = new URLSearchParams(window.location.search);
+console.log(urlParams);
+
+
 /* FUNCTIONS */
 
 function initiate_search(searchPanel) {
@@ -209,6 +217,8 @@ if (query.only_favourites)  onlyFavsCheckbox.checked = true;
 
 
 /* BACKEND SEARCH REQUEST */
+
+console.log(urlParams);
 
 if (urlParams.size > 0) {
     makeApiRequestPOST_JSON('api/query/search-videos', query, results => {
