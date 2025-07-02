@@ -55,7 +55,6 @@
     a {
         text-decoration: none;
         padding: 0.4rem 0.3rem;
-        
     }
     
     /* page links */

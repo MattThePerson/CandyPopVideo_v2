@@ -4,15 +4,28 @@
 
 ## TODO
 
-- Add status
-- Figure out media gen errors
-- Convert entire collection to mp4
-- Generate preview media for entire collection
-- Improve frontend terminal experience
-- Add teaser thumbs
-- Add new catalogue page
-- Get performer (and studio) embeddings working
-- Add method of seeing tf-idf tokens
+- [frontend] [new] port & refactor search page
+- [frontend] [new] port & refactor video page
+- [frontend] [new] port & refactor home page
+- [frontend] [new] port & refactor dashboard page
+- [frontend] [new] Add new catalogue page
+- [frontend] Create custom video player
+- [frontend] [new] Add new search result cards
+- [frontend] [new] Add new search panel
+- [frontend] [new] Add new video page
+- [frontend] [new] Add search box to search button
+- [frontend] Improve frontend terminal experience
+- [media] Figure out media gen errors
+- [media] Handle JAV collection
+- [media] Handle PH collection
+- [media] Transcode non remuxable
+- [media] Convert entire collection to mp4
+- [media] Generate preview media for entire collection
+- [backend] Add teaser thumbs
+- [backend] Get performer (and studio) embeddings working
+- [backend] Add method of seeing tf-idf tokens
+- [backend] Add preview media status
+<!-- - [frontend] [new] get header looking like svelte header -->
 <!-- - Bring over favourites & make metadata db -->
 <!-- - Get tfidf model working -->
 <!-- - Improve media generation -->

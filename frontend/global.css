@@ -27,6 +27,11 @@
 /* FONTS */
 
 @font-face {
+    font-family: "Jaro";
+    src: url('static/fonts/Jaro-Regular.ttf');
+}
+
+@font-face {
     font-family: "Alba";
     src: url('../../static/fonts/Alba/ALBAM___.TTF');
 }

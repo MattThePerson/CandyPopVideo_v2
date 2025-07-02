@@ -2,7 +2,10 @@
 import { Header } from "../components/Header.js";
 import { Footer } from "../components/Footer.js";
 
-const components = [Header, Footer];
+const components = [
+    Header,
+    Footer,
+];
 
 
 export function injectComponents() {
@@ -16,10 +19,18 @@ export function injectComponents() {
         // console.log('componentName:', componentName);
         try {
             const html = componentMethods[componentName]();
-            el.insertAdjacentHTML("afterend", html);
-            el.remove();
-        } catch (e) {
-            console.error("ERROR: Unable to get html for component:", componentName);
+            el.innerHTML = html;
+            el.querySelectorAll('script').forEach(script => {
+                const newScript = document.createElement('script');
+                if (script.src) {
+                    newScript.src = script.src;
+                } else {
+                    newScript.textContent = script.textContent;
+                }
+                document.head.appendChild(newScript);
+            });
+        } catch (err) {
+            console.error(`ERROR: Unable to inject html for component '${componentName}': ${err}`);
         }
     });
     
