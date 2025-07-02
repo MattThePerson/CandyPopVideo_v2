@@ -4,17 +4,16 @@ from ..recommender import tfidf  # Weird import
 from scipy.sparse import csr_matrix, vstack
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-from ..schemas import TFIDFModel
+from ..schemas import TFIDFModel, VideoData
 
-def get_similar_videos(video_hash: str, startfrom: int, limit: int, video_dicts: list[dict], tfidf_model) -> tuple[list[dict], int]:
+def get_similar_videos(video_hash: str, startfrom: int, limit: int, videos_list: list[VideoData], tfidf_model: TFIDFModel) -> tuple[list[VideoData], int]:
     sims = tfidf.get_similar_videos_for_hash_TFIDF(video_hash, tfidf_model)
     if sims is None or len(sims) == 0:
         return [], 0
     hash_sims = { hash: score for hash, score in sims }
-    # videos = [ vid for vid in videos_dict.values() if vid['hash'] in hash_sims ]
-    video_dicts = [ vid for vid in video_dicts if vid['hash'] in hash_sims ]
-    video_dicts.sort( reverse=True, key=lambda vid: hash_sims[vid['hash']] )
-    return video_dicts[startfrom: startfrom+limit], len(video_dicts)
+    videos_list = [ vid for vid in videos_list if vid.hash in hash_sims ]
+    videos_list.sort( reverse=True, key=lambda vid: hash_sims[vid.hash] )
+    return videos_list[startfrom: startfrom+limit], len(videos_list)
 
 
 def get_similar_performers(performer: str, embeddings_object: TFIDFModel) -> list[dict]:

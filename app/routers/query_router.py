@@ -46,13 +46,16 @@ def ROUTE_get_similar_videos(video_hash: str, start_from: int, limit: int):
         print("TF-IDF model doesn't exist")
         raise HTTPException(status_code=503, detail="TF-IDF model doesn't exist")
     
-    video_dicts = list( db.read_table_as_dict('videos').values() )
-    videos, amount_of_results = similarity.get_similar_videos(video_hash, start_from, limit, video_dicts, tfidf_model)
+    video_dicts = db.read_table_as_dict('videos')
+    videos_list = [ VideoData.from_dict(dct) for dct in video_dicts.values() ]
+    video_results, amount_of_results = similarity.get_similar_videos(video_hash, start_from, limit, videos_list, tfidf_model)
+    video_dict_results = [ vd.to_dict() for vd in video_results ]
     if amount_of_results == 0:
+        print('UNEXPECTED: Got 0 similar videos')
         raise HTTPException(status_code=404, detail="No similar videos found")
     
     return {
-        'search_results': videos,
+        'search_results': video_dict_results,
         'amount_of_results': amount_of_results,
     }
 

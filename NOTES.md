@@ -5,9 +5,9 @@
 ## TODO
 
 <!-- - [frontend] [new] port & clean search page -->
-- [frontend] [new] port & clean video page
-- [frontend] [new] port & clean home page
-- [frontend] [new] port & clean dashboard page
+<!-- - [frontend] [new] port & clean video page -->
+<!-- - [frontend] [new] port & clean home page -->
+<!-- - [frontend] [new] port & clean dashboard page -->
 - [frontend] [new] Add new catalogue page
 - [frontend] Create custom video player
 - [frontend] [new] Add new search result cards
@@ -25,6 +25,7 @@
 - [backend] Get performer (and studio) embeddings working
 - [backend] Add method of seeing tf-idf tokens
 - [backend] Add preview media status
+<!-- - [backend] Find why no similar-videos for f5593d2a6f9a -->
 <!-- - [frontend] [new] get header looking like svelte header -->
 <!-- - Bring over favourites & make metadata db -->
 <!-- - Get tfidf model working -->

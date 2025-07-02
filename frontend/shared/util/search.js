@@ -190,42 +190,42 @@ function format_added_time(date_added) {
 function make_search_result_item(res, videoResultTemplate) {
     const template = videoResultTemplate.content.cloneNode(true);
     const item = template.querySelector('.video-result-item');
-    item.id = 'item-' + res['hash'];
-    item.setAttribute('data-hash', res['hash']);
-    let duration = res['duration'];
+    item.id = 'item-' + res.hash;
+    item.setAttribute('data-hash', res.hash);
+    let duration = res.duration;
     if (duration.startsWith("0:")) {
         duration = duration.substring(2);
     }
     if (res.scene_title)  {
         let mention_performers = '';
-        // if (res['mention_performer'])
-        //     mention_performers = ' (' + res['mention_performer'] + ')'
+        // if (res.mention_performer)
+        //     mention_performers = ' (' + res.mention_performer + ')'
         let line_str = '';
-        if (res['line'])
-            line_str = '[' + res['line'] + '] '
+        if (res.line)
+            line_str = '[' + res.line + '] '
         let jave_code_str = '';
-        if (res['jav_code'])
-            jave_code_str = '[' + res['jav_code'] + '] '
+        if (res.jav_code)
+            jave_code_str = '[' + res.jav_code + '] '
         template.querySelector('h2').innerText = jave_code_str + line_str + res.scene_title;
     } else {
         template.querySelector('h2').innerText = res.filename;
     }
-    template.querySelector('.resolution').innerText = res['resolution'] + 'p';
-    template.querySelector('.resolution').style.color = getResolutionTextColor(res['resolution']);
+    template.querySelector('.resolution').innerText = res.resolution + 'p';
+    template.querySelector('.resolution').style.color = getResolutionTextColor(res.resolution);
     try {
         template.querySelector('.duration').innerText = duration;
     } catch {}
     try {
         template.querySelector('.duration-pretty').innerText = formatDuration(duration);
     } catch {}
-    if (res['fps'] == 29) res['fps'] = 30;
-    template.querySelector('.fps').innerText = res['fps'] + 'fps';
-    template.querySelector('.bitrate').innerText = Math.round(res['bitrate']/100)/10 + 'mb';
-    template.querySelector('.bitrate').style.color = getBitrateTextColor(res['bitrate']);
+    if (res.fps == 29) res.fps = 30;
+    template.querySelector('.fps').innerText = res.fps + 'fps';
+    template.querySelector('.bitrate').innerText = Math.round(res.bitrate/100)/10 + 'mb';
+    template.querySelector('.bitrate').style.color = getBitrateTextColor(res.bitrate);
     const actor_container = template.querySelector('.actors');
     let performers = res.performers;
-    // if (res['mention_performer']) {
-    //     for (let perf of res['mention_performer'].split(', ')) {
+    // if (res.mention_performer) {
+    //     for (let perf of res.mention_performer.split(', ')) {
     //         performers.push(perf);
     //     }
     // }
@@ -234,42 +234,42 @@ function make_search_result_item(res, videoResultTemplate) {
         let el = document.createElement('a');
         el.classList.add('actor');
         el.innerText = performer;
-        el.href = '/pages/search/index.html?' + String(new URLSearchParams({'performer' : performer}));
+        el.href = '/pages/search/page.html?' + String(new URLSearchParams({'performer' : performer}));
         el.addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', performer)); // add dragging the performer name
         span.appendChild(el);
         actor_container.appendChild(span);
     }
-    if (res['studio']) {
-        template.querySelector('.studio').innerText = res['studio'];
-        template.querySelector('.studio').href = '/pages/search/index.html?' + String(new URLSearchParams({'studio' : res['studio']}));
-        template.querySelector('.studio').addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', res['studio'])); // add dragging the performer name
+    if (res.studio) {
+        template.querySelector('.studio').innerText = res.studio;
+        template.querySelector('.studio').href = '/pages/search/page.html?' + String(new URLSearchParams({'studio' : res.studio}));
+        template.querySelector('.studio').addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', res.studio)); // add dragging the performer name
     } else {
         template.querySelector('.studio').style.display = 'none';
     }
     try {
-        if (res['line'] && template.querySelector('.line')) {
-            template.querySelector('.line').innerText = res['line'];
-            template.querySelector('.line').href = '/pages/search/index.html?' + String(new URLSearchParams({'include-terms' : res['line']}));
-            template.querySelector('.line').addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', res['line']));
+        if (res.line && template.querySelector('.line')) {
+            template.querySelector('.line').innerText = res.line;
+            template.querySelector('.line').href = '/pages/search/page.html?' + String(new URLSearchParams({'include-terms' : res.line}));
+            template.querySelector('.line').addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', res.line));
         } else {
             template.querySelector('.line').parentNode.style.display = 'none';
         }
     } catch {}
 
     template.querySelector('.year').innerText = res.date_released_d18 || res.date_released || res.year || '';
-    template.querySelector('.collection').innerText = res['collection'];
-    if (res['collection'] == '') {
+    template.querySelector('.collection').innerText = res.collection;
+    if (res.collection == '') {
         template.querySelector('.collection').style.display = 'none';
     }
     template.querySelector('.lower-bar .added-tag').innerText = 'Added ' + format_added_time(res.date_added) + ' ago';
     let descriptionEl = template.querySelector('p.description');
-    if (descriptionEl && res['scene_description']) {
-        descriptionEl.innerText = res['scene_description']
+    if (descriptionEl && res.scene_description) {
+        descriptionEl.innerText = res.scene_description
     }
 
     // TAGS
     const tags_container = template.querySelector('.tags-bar');
-    for (let tag of res['tags']) {
+    for (let tag of res.tags) {
         let el = document.createElement('div');
         el.classList.add('tag');
         el.innerText = tag;
@@ -278,12 +278,12 @@ function make_search_result_item(res, videoResultTemplate) {
     if (res.jav_code) {
         template.querySelector('h2').innerText = res.jav_code;
         if (descriptionEl && 'title' in res) {
-            descriptionEl.innerText = res['title'];
+            descriptionEl.innerText = res.title;
         }
     }
     template.querySelectorAll('.video-result-item > a').forEach(el => {
-        el.href = '/pages/video/index.html?hash=' + res.hash;
-        el.addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', res['filename'])); // add draggin the performer name
+        el.href = '/pages/video/page.html?hash=' + res.hash;
+        el.addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', res.filename)); // add draggin the performer name
     });
 
     // make favourite indicator visible
@@ -336,6 +336,7 @@ function render_wordcloud(words) {
     const wordArray = words.slice(0, limit).map(([word, freq]) => 
         [ word, Math.sqrt(freq) / totalFreq * 40 ]
     );
+    const urlParams = '...';
     const config = {
         list: wordArray,
         gridSize: 20,
@@ -361,7 +362,7 @@ function render_wordcloud(words) {
                 ic = item[0]
             }
             urlParams.set('include_terms', ic)
-            window.location.href = 'pages/search/index.html?' + urlParams.toString();
+            window.location.href = 'pages/search/page.html?' + urlParams.toString();
         }
     };
     WordCloud(canvas, config);

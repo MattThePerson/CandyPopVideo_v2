@@ -1,4 +1,57 @@
 
+main {
+    padding-top: 0 !important;
+}
+
+/* styles brought over from html */
+
+body {
+    overflow-x: hidden;
+}
+
+#video-player-container {
+    display: flex;
+    justify-content: center;
+    background: rgb(26, 26, 26);
+    width: 100%;
+    height: fit-content;
+}
+#player {
+    width: 99vw;
+    height: 740px;
+    /* max-width: 1300px; */
+    /* max-height: 500px; */
+}
+#thumbnail-container {
+    position: absolute;
+    /* display: none; */
+    /* width: fit-content; */
+    /* height: fit-content; */
+    /* max-height: 300px; */
+    left: 0px;
+    top: 0px;
+    z-index: 9999;
+    /* border: 4px solid red; */
+}
+.seekthumbnail > img {
+    z-index: 9999999999999;
+    border: 1.75px solid rgb(238, 238, 238);
+    border-radius: 6px;
+    width: 100%;
+    height: 100%;
+}
+
+/* subtitles */
+video::cue {
+    background: none;
+    color: white;
+    font-size: 2.7rem;
+    text-shadow: 1px 1px 4px black;
+}
+
+
+/* root */
+
 :root {
     --video-container-height: calc(40vw + 100px);
 }
