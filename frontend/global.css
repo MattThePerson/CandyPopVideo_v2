@@ -4,7 +4,7 @@
     --off-white: #ecede3;
     --soft-white: #c4c5bd;
     --darkest: #000;
-    --grey: #121717;
+    --grey: #090a0a;
     --icon-rose: #ff4ba2;
     --actor-rose: #FF2C91;
     --active-rose: #b72a6e;
@@ -52,6 +52,11 @@
     src: url('../../static/fonts/Exo2/Exo2-VariableFont_wght.ttf');
 }
 
+@font-face {
+    font-family: "Quicksand";
+    src: url('../../static/fonts/Quicksand/Quicksand-VariableFont_wght.ttf');
+}
+
 /* ALL & BODY */
 
 * {
@@ -73,7 +78,6 @@ body {
 main {
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
     min-height: 40rem;
     padding: 1rem;

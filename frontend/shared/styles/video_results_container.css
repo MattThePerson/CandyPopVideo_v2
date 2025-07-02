@@ -1,0 +1,32 @@
+
+
+#video-results-styler {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    width: 100%;
+    height: fit-content;
+
+    gap: 4px;
+}
+
+
+
+/* BUTTONS */
+
+#expand-results-button {
+    padding: 0.4rem 1rem;
+    background: rgb(61, 9, 61);
+    border: 1.25px solid rgb(202, 202, 202);
+    font-size: 18px;
+    font-weight: 400;
+    border-radius: 7px;
+    margin: 3rem;
+}
+#expand-results-button:hover {
+    background: rgb(82, 15, 82);
+    cursor: pointer;
+}
+#expand-results-button:active {
+    background: rgb(61, 9, 61);
+}

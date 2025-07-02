@@ -17,10 +17,12 @@ export function Header(){
         
         <span>
             <span class="page-links">
-                <a class="page-link" href="/pages/home/page.html"      >home</a>
-                <a class="page-link" href="/pages/search/page.html"    >search</a>
-                <a class="page-link" href="/pages/catalogue/page.html" >catalogue</a>
-                <a class="page-link" href="/pages/curated/page.html"   >curated</a>
+                <a class="page-link" href="/pages/home/page.html"        >home</a>
+                <a class="page-link" href="/pages/home_new/page.html"        >home(new)</a>
+                <a class="page-link" href="/pages/search/page.html"      >search</a>
+                <a class="page-link" href="/pages/search_new/page.html"  >search(new)</a>
+                <a class="page-link" href="/pages/catalogue/page.html"   >catalogue</a>
+                <a class="page-link" href="/pages/curated/page.html"     >curated</a>
             </span>
 
             <button id="random-video-button" class="icon-button">
@@ -47,9 +49,8 @@ export function Header(){
     /* make current page link active */
     document.querySelectorAll('nav a').forEach(a_el => {
         if (a_el.href.includes(document.location.pathname)) a_el.classList.add('active')
-    })
+    });
 </script>
-
 
 <style>
     
@@ -68,10 +69,11 @@ export function Header(){
             transform: translateY(-2.5px);
         }
         div:nth-child(2) { /* Video */
-            color: orange;
+            color: rgb(240, 102, 22);
             font-family: sans-serif;
             font-weight: 600;
-            font-size: 1.3rem;
+            font-size: 1.4rem;
+            letter-spacing: -0.5px;
         }
     }
     
