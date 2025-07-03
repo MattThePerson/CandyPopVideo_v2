@@ -1,0 +1,228 @@
+
+/* STRUCTURE */
+
+.panel {
+    display: flex;
+    flex-direction: column;
+    width: 80rem;
+    max-width: 90vw;
+    background: black;
+    border: 1.9px solid #bbbb;
+    border-radius: 0.8rem;
+    margin: 1rem 2rem;
+    padding: 2px 0.5rem;
+    box-shadow: 0 0 7px #444;
+}
+
+.panel * { display: flex; }
+
+button {
+    all: unset;
+    padding: 3px 6px;
+    border: 1px solid white;
+    cursor: pointer;
+    user-select: none;
+}
+
+.top-bar {
+    justify-content: space-between;
+    padding: 5px;
+    border-bottom: 2px solid #bbb4;
+}
+
+.panel-body {
+    margin: 5px;
+}
+
+.bottom-bar {
+    margin-top: auto;
+    justify-content: space-between;
+}
+
+
+/* - TOP BAR ---------------------------------------------------------------- */
+
+.top-bar .left-side,
+.top-bar .right-side {
+    gap: 0.5rem;
+    align-items: center;
+}
+
+button.apply {
+    font-family: 'Jaro';
+    font-size: 1.2rem;
+    background: green;
+    padding: 0 1.2rem;
+    padding-bottom: 3px;
+    border-radius: 5px;
+    border: 1px solid #7773;
+    margin-right: 10px;
+}
+button.apply:hover  { opacity: 0.9; }
+button.apply:active { opacity: 1; }
+button.apply:focus { outline: 2px solid rgb(221, 37, 129); }
+
+button.search {
+    border: none;
+
+    svg { fill: #ccc; }
+}
+button.search:hover {
+    svg {fill: white; }
+}
+
+input.search {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 1rem;
+    background: #7773;
+    color: #ddd;
+    padding: 4px 0.8rem;
+    border: none;
+    outline: none;
+    border-radius: 5px;
+    width: 100%;
+}
+
+
+/* - BODY ------------------------------------------------------------------- */
+
+.panel-body {
+    justify-content: space-around;
+    padding: 0.5rem 0.5rem;
+    gap: 0.5rem;
+}
+
+.panel-body h3 {
+    font-family: 'Inria Serif';
+    width: 3rem;
+    height: fit-content;
+    text-align: right;
+    color: #999;
+    margin: 0.6rem 1rem;
+    margin-left: 0;
+}
+
+.tag-filters-section {
+    width: auto;
+}
+
+.tag-filters-container {
+    /* background: pink; */
+    height: fit-content;
+    flex-wrap: wrap;
+    column-gap: 1rem;
+    row-gap: 5px;
+}
+
+.tag-filters-container .column {
+    flex-direction: column;
+    width: fit-content;
+}
+
+.tag-filters-container .holder {
+    width: 24rem;
+    height: 1.5rem;
+    /* background: yellow; */
+    /* outline: 1px solid white; */
+    align-items: center;
+}
+.tag-filters-container .holder h4 {
+    display: block;
+    font-size: 1rem;
+    width: 7rem;
+    text-align: right;
+    margin-right: 1rem;
+}
+.tag-filters-container .holder input {
+    width: 100%;
+    background: white;
+    outline: none;
+    border: none;
+    border-radius: 4px;
+    padding: 2px 0.7rem;
+}
+
+/* ATTRIBUTE FILTERS SECTION */
+
+.attribute-filters-section {
+    /* background: orange; */
+}
+.attribute-filters-container {
+    flex-direction: column;
+    /* background: orange; */
+    height: fit-content;
+    gap: 5px;
+    padding: 8px 5px;
+}
+
+.attribute-filters-container .wrapper {
+    width: 15rem;
+    height: 1.5rem;
+    align-items: center;
+    /* background: green; */
+}
+
+.attribute-filters-container button {
+    all: unset;
+    background: #ddd;
+    color: #444;
+    border-radius: 50%;
+    cursor: pointer;
+    margin: 0 0.5rem;
+    text-align: center;
+    text-justify: center;
+    height: 1rem;
+    min-width: 1rem;
+    font-weight: bold;
+    user-select: none;
+}
+.attribute-filters-container button:focus { outline: 1px solid red; }
+
+
+.attribute-filters-container .holder {
+    /* background: red; */
+    height: 100%;
+    align-items: center;
+    gap: 5px;
+}
+
+.attribute-filters-container h5 {
+    width: 7rem;
+    margin-right: 5px;
+}
+
+.attribute-filters-container input {
+    height: fit-content;
+    width: 100%;
+    background: grey;
+}
+.attribute-filters-container input:focus {
+    background: white;
+}
+
+
+/* - BOTTOM BAR ------------------------------------------------------------- */
+
+.bottom-bar button {
+    font-family: 'Inria Serif';
+    font-weight: bold;
+    font-size: 1rem;
+    /* font-family: sans-serif; */
+    background: #111;
+    color: #ddd;
+    border-radius: 0.3rem;
+    border: 1px solid #aaa8;
+    text-wrap: nowrap;
+    height: fit-content;
+}
+.bottom-bar button:hover { opacity: 0.8; }
+.bottom-bar button:active { border-color: white; }
+
+.bottom-bar .left-side,
+.bottom-bar .right-side {
+    gap: 3px;
+    padding: 2px 0.3rem;
+    flex-wrap: wrap;
+}
+
+

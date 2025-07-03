@@ -64,6 +64,18 @@
     src: url('../../static/fonts/Inter/Inter-VariableFont_opsz,wght.ttf');
 }
 
+@font-face {
+    font-family: "Inria Serif";
+    font-weight: normal;
+    src: url('../../static/fonts/Inria_Serif/InriaSerif-Regular.ttf');
+}
+
+@font-face {
+    font-family: "Inria Serif";
+    font-weight: bold;
+    src: url('../../static/fonts/Inria_Serif/InriaSerif-Bold.ttf');
+}
+
 
 /* ALL & BODY */
 

@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Search Page</title>
     <link rel="icon" type="image/x-icon" href="/static/icons/donut-pngs/donut_pink_inner.png">
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <script type="module" src="script.js"></script>
     <link rel="stylesheet" href="styles.css">
@@ -15,7 +17,7 @@
     <link rel="stylesheet" href="/shared/styles/searchResults.css">
     <script defer src="/shared/libraries/wordcloud2.min.js"></script>
     
-    
+    <script src="../../shared/web_components/search_panel.js"></script>
     
 </head>
 <body>
@@ -23,7 +25,13 @@
 
     <main>
 
+        <search-panel></search-panel>
         
+        <section class="related-videos-section" style="visibility: hidden">
+            <!-- <h2>Related videos:</h2> -->
+            <div class="video-cards-styler" class="grid-view"></div>
+            <!-- <button id="expand-results-button">LOAD MORE RESULTS</button> -->
+        </section>
 
     </main>
     

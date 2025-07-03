@@ -1,5 +1,5 @@
 
-import { injectComponents } from '../../shared/util/component.js'
+import { injectComponents } from '../shared/util/component.js'
 import '../../shared/web-components/search_result_card.js';
 
 injectComponents(); /* inject my custom components */
