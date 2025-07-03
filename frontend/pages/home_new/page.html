@@ -22,20 +22,20 @@
         
         <section class="target-video-section">
             <span>
-                <h2>Target Video for:</h2><h3></h3>
+                <h3>Spotlight Video for</h3>
             </span>
             
             <div class="target-video-container">
+                loading ...
             </div>
         </section>
 
-        
-        
         <!-- SIMILAR VIDEOS SECTION -->
         
-        <section class="video-results-section">
-            <div id="video-results-styler" class="grid-view"></div>
-            <button id="expand-results-button">SHOW MORE RESULTS</button>
+        <section class="related-videos-section" style="visibility: hidden">
+            <h2>Related videos:</h2>
+            <div class="video-cards-styler" class="grid-view"></div>
+            <button id="expand-results-button">LOAD MORE RESULTS</button>
         </section>
         
     </main>
@@ -49,6 +49,7 @@
         display: flex;
         flex-direction: column;
         align-items: center;
+        justify-content: center;
 
         span {
             display: flex;
@@ -61,11 +62,19 @@
         margin: 1rem;
     }
     
-    section.video-results-section {
+    section.related-videos-section {
         display: flex;
         flex-direction: column;
+        justify-content: center;
         align-items: center;
         width: 100%;
+
+        h2 {
+            margin-bottom: 1.9rem;
+            margin-left: 8%;
+            align-self: flex-start;
+        }
     }
+
 </style>
 </html>

@@ -15,6 +15,8 @@
 - [frontend] [new] Add new video page
 - [frontend] [new] Add search box to nav search button
 - [frontend] Improve frontend terminal experience
+- [frontend] Add nav dropdown to select search result style (for grid view)
+- [frontend] Make list view search result component
 - [media] Handle JAV collection
 - [media] Handle PH collection
 - [media] Transcode non remuxable

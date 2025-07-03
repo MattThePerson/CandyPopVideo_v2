@@ -203,10 +203,10 @@ function make_search_result_item(res, videoResultTemplate) {
         let line_str = '';
         if (res.line)
             line_str = '[' + res.line + '] '
-        let jave_code_str = '';
+        let jav_code_str = '';
         if (res.jav_code)
-            jave_code_str = '[' + res.jav_code + '] '
-        template.querySelector('h2').innerText = jave_code_str + line_str + res.scene_title;
+            jav_code_str = '[' + res.jav_code + '] '
+        template.querySelector('h2').innerText = jav_code_str + line_str + res.scene_title;
     } else {
         template.querySelector('h2').innerText = res.filename;
     }

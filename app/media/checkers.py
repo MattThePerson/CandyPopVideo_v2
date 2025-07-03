@@ -23,10 +23,18 @@ def hasTeaserSmall(video_hash: str, mediadir: str) -> bool:
     teaser_small_path = os.path.join( get_video_media_dir(mediadir, video_hash), 'teaser_small.mp4' )
     return os.path.exists(teaser_small_path)
 
-
 def hasTeaserLarge(video_hash: str, mediadir: str):
     teaser_large_path = os.path.join( get_video_media_dir(mediadir, video_hash), 'teaser_large.mp4' )
     return os.path.exists(teaser_large_path)
+
+
+def hasTeaserThumbsSmall(video_hash: str, mediadir: str):
+    videomediadir = get_video_media_dir(mediadir, video_hash)
+    return os.path.exists( videomediadir + '/teaser_thumbs_small.jpg' )
+
+def hasTeaserThumbsLarge(video_hash: str, mediadir: str):
+    videomediadir = get_video_media_dir(mediadir, video_hash)
+    return os.path.exists( videomediadir + '/teaser_thumbs_large.jpg' )
 
 
 def hasPreviewThumbs(video_hash: str, mediadir: str, small=True):

@@ -8,7 +8,9 @@ export class MyCard extends HTMLElement {
 
     connectedCallback() {
         // console.log("Custom element added to page.");
+        this.attachShadow({ mode: 'open' });
         this.render();
+        this.addEventListeners();
     }
 
     disconnectedCallback() {
@@ -27,32 +29,48 @@ export class MyCard extends HTMLElement {
         console.log(`Attribute ${name} has changed.`);
     }
 
+    /* EVENT LISTENERS */
+
+    addEventListeners() {
+        const $shadow = $(this.shadowRoot);
+        
+        $shadow.find('.thumb-container').on('mouseenter', cont => {
+            console.log('hovered');
+        });
+
+        /* click on collection */
+        $shadow.find('.collection').click(event => {
+            event.preventDefault();
+            window.location.href = '/pages/search/page.html?collection=' + this.getAttribute('collection');
+        })
+    }
+    
     /* RENDER */
 
     render() {
 
-        let scene_title = this.getAttribute('scene_title')
-        let performers_str = this.getAttribute('performers')
-        let studio = this.getAttribute('studio')
-        let line = this.getAttribute('line')
-        let date_released = this.getAttribute('date_released')
-        let scene_description = this.getAttribute('scene_description')
-        let collection = this.getAttribute('collection')
-        let jav_code = this.getAttribute('jav_code')
+        let scene_title = this.getAttribute('scene_title');
+        let performers_str = this.getAttribute('performers');
+        let studio = this.getAttribute('studio');
+        let line = this.getAttribute('line');
+        let date_released = this.getAttribute('date_released');
+        let scene_description = this.getAttribute('scene_description');
+        let collection = this.getAttribute('collection');
+        let jav_code = this.getAttribute('jav_code');
 
-        let duration = this.getAttribute('duration')
-        let resolution = this.getAttribute('resolution')
-        let fps = this.getAttribute('fps')
-        let bitrate = this.getAttribute('bitrate')
+        let duration = this.getAttribute('duration');
+        let resolution = this.getAttribute('resolution');
+        let fps = this.getAttribute('fps');
+        let bitrate = this.getAttribute('bitrate');
         
-        let video_hash = this.getAttribute('hash')
-        let date_added = this.getAttribute('date_added')
-        let tags_str = this.getAttribute('tags')
-        let filename = this.getAttribute('filename')
+        let video_hash = this.getAttribute('hash');
+        let date_added = this.getAttribute('date_added');
+        let tags_str = this.getAttribute('tags');
+        let filename = this.getAttribute('filename');
 
         duration = duration.startsWith("0:") ? duration.substring(2) : duration;
 
-        let date_released_fmt = date_released.replace(/-/g, '.')
+        let date_released_fmt = date_released.replace(/-/g, '.');
 
         // studios html
         const studios = [studio, line].filter(el => (el !== null && el !== 'null'));
@@ -76,11 +94,16 @@ export class MyCard extends HTMLElement {
             </a>`
         ).join('\n')
         
-        const shadow = this.attachShadow({ mode: 'open' });
-        shadow.innerHTML = /* html */`
+        
+        /* attribute affected variables */
+        const card_class = (this.getAttribute('highlighted')) ? "card highlighted" : "card";
+        const card_width = this.getAttribute('width') || "24rem";
+
+        
+        this.shadowRoot.innerHTML = /* html */`
         
             <!-- html ----------------------------------------------------------------------------->
-            <div class="card">
+            <div class="${card_class}">
 
                 <!-- image -->
                 <a class="thumb-container" href="/pages/video/page.html?hash=${video_hash}">
@@ -138,15 +161,22 @@ export class MyCard extends HTMLElement {
                 /* card */
                 .card {
                     border: 1px solid #88888819;
-                    width: 24rem;
+                    width: ${card_width};
                     padding: 0;
                     border-radius: 0.5rem;
                     outline: 0.5px solid #4441;
                     background: black;
                     display: block;
                 }
+                .card.highlighted {
+                    box-shadow: 0 0 10px yellow;
+                }
 
                 /* - IMAGE PART --------------------------------------------- */
+                a.thumb-container:hover .thumbnail {
+                    display: none;
+                }
+                
                 a.thumb-container {
                     position: relative;
                     display: flex;
@@ -184,18 +214,23 @@ export class MyCard extends HTMLElement {
                     .stats > div {
                         width: fit-content;
                     }
+
                     .collection {
-                        top: 3px;
+                        position: relative;
+                        top: 4px;
                         left: 7px;
                         font-family: "Exo 2";
                         font-weight: 500;
                         font-size: 13px;
-                        padding: 1px 4px;
+                        padding: 0 5px 1.5px 5px;
                         color: #fffd;
                         border: 1.8px solid #fffd;
-                        border-radius: 6px;
+                        border-radius: 7px;
                         background: #000b;
                     }
+                    .collection:hover { opacity: 0.8; }
+                    .collection:active { opacity: 1.0; }
+
                     .top-right {
                         top: 3px;
                         right: 4px;
@@ -215,19 +250,21 @@ export class MyCard extends HTMLElement {
                     
                     .resolution, .fps, .bitrate, .duration {
                         background: #0009;
-                        padding: 1px 4px;
+                        padding: 1px 4px 0px 4px;
                         color: white;
                         border-radius: 5px;
+                        font-size: 0.78rem;
                     }
                 }
 
                 /* - INFO PART ---------------------------------------------- */
                 .card-info-container {
-                    /* background: yellow; */
-                    padding: 0.25 2rem !important; /* does fuck all */
-                    /* width: 20rem; */
+                    /* padding: 0.25 2rem !important; */ /* does fuck all */
                     display: block;
                     box-sizing: border-box;
+                    height: 8rem;
+                    display: flex;
+                    flex-direction: column;
                 }
 
                 .details-bar, .title-bar, .year-studio-bar, .studios-bar, .actors-bar, .tags-bar, .left-side {
@@ -277,22 +314,38 @@ export class MyCard extends HTMLElement {
                 .year-studio-bar {
                     gap: 0.6rem;
                     color: #bbb;
+                    margin-left: 1.2rem;
                 }
 
                 .year {
                     font-weight: bold;
-                    margin-left: 0.8rem;
+                    margin-top: 2px;
                 }
                 
                 .studios-bar, .actors-bar {
-                    gap: 0.6rem;
+                    gap: 0.3rem;
                     color: #888;
                     font-size: 1rem;
+                    font-family: "Inter";
+                    font-weight: 400;
+                }
+                .studios-bar {
+                    font-weight: 500;
+                    color: #777;
+                }
+
+                /* add | between performers/studios */
+                .actors-bar > *:not(:last-child)::after,
+                .studios-bar > *:not(:last-child)::after {
+                    content: '|';
+                    font-size: 0.8rem;
                 }
 
                 .tags-bar {
-                    justify-content: flex-end;
                     margin: 0.5rem 0.5rem;
+                    margin-top: auto;
+                    justify-content: flex-end;
+                    gap: 3px;
                 }
 
                 /* a tags */
@@ -307,10 +360,10 @@ export class MyCard extends HTMLElement {
                     text-decoration: none;
                 }
                 .tags-bar a {
-                    font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    font-family: sans-serif;
                     font-size: 0.67rem;
-                    font-weight: normal;
-                    letter-spacing: 0.5px;
+                    font-weight: Bold;
+                    letter-spacing: 0px;
                     background: #151515;
                     border-radius: 5px;
                     padding: 1.5px 6px;

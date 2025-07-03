@@ -1,34 +1,43 @@
 
 import { injectComponents } from '../../shared/util/component.js'
 import { makeApiRequestGET } from '../../shared/util/request.js';
-import '../../shared/web_components/search_results/search_result_card_default.js'
+import '../../shared/web_components/search_result_cards/default_card.js'
 
 injectComponents();
 
 
-const related_videos_load_amount = 24;
+const related_videos_load_amount = 4 //24;
 let related_videos_loaded = 0;
 
 
-const load_related_videos = (video_hash, start_idx) => {
+const load_related_videos = (results_container, video_hash, start_idx) => {
     makeApiRequestGET('/api/query/get/similar-videos', [video_hash, start_idx + 1, related_videos_load_amount], search_results => {
-        generate_results_new(search_results);
+        generate_results_new(results_container, search_results);
     });
     return start_idx + related_videos_load_amount
 };
 
 
-makeApiRequestGET('/api/get/random-video-hash', [], (initial_response) => {
+/* API REQUEST */
+
+makeApiRequestGET('/api/get/random-spotlight-video-hash', [], (initial_response) => {
     
     console.log(initial_response);
-    initial_response.hash = '7740a7e3ab1c';
+    initial_response.hash = '75d4f90d52c9';
 
     makeApiRequestGET('/api/get/video-data', [initial_response.hash], (video_data) => {
 
         console.log(video_data);
+
+        /* show date */
+        let date = Date().split(' ').slice(0,4).join(' ');
+        document.querySelector('.target-video-section h3').innerText += ' ' + date;
         
+        /* add spotlight video */
         $('.target-video-container').html(/* html */`
             <search-result-card-default
+                highlighted = true
+                width = "32rem"
                 scene_title =       "${video_data.scene_title}"
                 performers =        "${video_data.performers}"
                 studio =            "${video_data.studio}"
@@ -48,32 +57,26 @@ makeApiRequestGET('/api/get/random-video-hash', [], (initial_response) => {
             ></search-result-card-default>
         `);
 
-        $('.target-video-container .card').css('outline', '2px solid red');
-
 
         // poster = ""
         // teaser (small) = ""
         // teaser thumbs (spritesheet) = ""
         
-        /* show date */
-        let date = Date().split(' ').slice(0,4).join(' ');
-        document.querySelector('.target-video-section h3').innerText += ' ' + date;
-        
         /* load related videos */
-        related_videos_loaded = load_related_videos(video_data.hash, related_videos_loaded);
+
+        const results_container = $('.related-videos-section')
+        related_videos_loaded = load_related_videos(results_container, video_data.hash, related_videos_loaded);
         document.getElementById('expand-results-button').addEventListener('click', () => {
-            related_videos_loaded = load_related_videos(video_data.hash, related_videos_loaded);
+            related_videos_loaded = load_related_videos(results_container, video_data.hash, related_videos_loaded);
         });
 
     });
 })
 
 
-
-function generate_results_new(results) {
-    // console.log('generating results:', results)
+function generate_results_new(resultsContainer, results) {
     
-    const videoResultsContainer = document.querySelector('#video-results-styler');
+    resultsContainer.css('visibility', 'visible');
     
     let html_content = '';
     results.search_results.forEach( (result) => {
@@ -96,10 +99,10 @@ function generate_results_new(results) {
                 date_added =        "${result.date_added}"
                 tags =              "${result.tags}"
                 filename =          "${result.filename}"
-                ></search-result-card-default>
+            ></search-result-card-default>
         `
     });
-    $('#video-results-styler').html(html_content)
+    resultsContainer.find('.video-cards-styler').append(html_content)
     
 
     // Configure page nav

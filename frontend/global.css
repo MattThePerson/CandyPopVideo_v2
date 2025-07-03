@@ -26,10 +26,6 @@
 
 /* FONTS */
 
-@font-face {
-    font-family: "Jaro";
-    src: url('static/fonts/Jaro-Regular.ttf');
-}
 
 @font-face {
     font-family: "Alba";
@@ -52,10 +48,22 @@
     src: url('../../static/fonts/Exo2/Exo2-VariableFont_wght.ttf');
 }
 
+/* CandyPop */
+@font-face {
+    font-family: "Jaro";
+    src: url('static/fonts/Jaro-Regular.ttf');
+}
+
 @font-face {
     font-family: "Quicksand";
     src: url('../../static/fonts/Quicksand/Quicksand-VariableFont_wght.ttf');
 }
+
+@font-face {
+    font-family: "Inter";
+    src: url('../../static/fonts/Inter/Inter-VariableFont_opsz,wght.ttf');
+}
+
 
 /* ALL & BODY */
 

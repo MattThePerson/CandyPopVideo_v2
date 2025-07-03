@@ -1,19 +1,19 @@
 import argparse
-from fastapi import WebSocket
-import yaml
+# from fastapi import WebSocket
 
-from app import db
-from app.schemas import VideoData, SearchQuery, TFIDFModel
-from config import PREVIEW_MEDIA_DIR
-from app.backend import generate, scan
-from app.backend.helpers import aprint
-from app.recommender.search import filterVideoObjects
-from app.recommender.tfidf import generate_tfidf_model
-
-GENERATE_MEDIA_OPTIONS = [ 'all', 'teasers', 'teasers_large', 'teaser_thumbs', 'preview_thumbs', 'seek_thumbs' ]
+GENERATE_MEDIA_OPTIONS = [ 'all', 'teasers', 'teasers_large', 'teaser_thumbs', 'teaser_thumbs_large', 'preview_thumbs', 'seek_thumbs' ]
 
 
-async def backend_manager(args: argparse.Namespace, ws: WebSocket|None=None):
+async def backend_manager(args: argparse.Namespace, ws=None):
+    import yaml
+
+    from app import db
+    from app.schemas import VideoData, SearchQuery, TFIDFModel
+    from config import PREVIEW_MEDIA_DIR
+    from app.backend import generate, scan
+    from app.backend.helpers import aprint
+    from app.recommender.search import filterVideoObjects
+    from app.recommender.tfidf import generate_tfidf_model
     """
     Backend manager for CandyPop Video. Can be used from CL or via websocket
         
@@ -62,7 +62,7 @@ async def backend_manager(args: argparse.Namespace, ws: WebSocket|None=None):
         succs, fails = {}, {}
         try:
             if opt == 'all' or opt == 'teasers':       
-                succ, fail = await generate.mass_generate_small_teasers( *alist, **kdict )
+                succ, fail = await generate.mass_generate_teasers_small( *alist, **kdict )
                 succs['teasers'] = succ
                 fails['teasers'] = fail
             if opt == 'all' or opt == 'preview_thumbs':
@@ -77,21 +77,25 @@ async def backend_manager(args: argparse.Namespace, ws: WebSocket|None=None):
             #     succ, fail = await generate.mass_generate_large_teasers( *alist, **kdict )
             #     succs['teasers_large'] = succ
             #     fails['teasers_large'] = fail
-            # if opt == 'all' or opt == 'teaser_thumbs': 
-            #     succ, fail = await generate.mass_generate_teaser_thumbs( *alist, **kdict )
-            #     succs['teaser_thumbs'] = succ
-            #     fails['teaser_thumbs'] = fail
+            if opt == 'all' or opt == 'teaser_thumbs': 
+                succ, fail = await generate.mass_generate_teaser_thumbs_small( *alist, **kdict )
+                succs['teaser_thumbs'] = succ
+                fails['teaser_thumbs'] = fail
+            if opt == 'all' or opt == 'teaser_thumbs_large': 
+                succ, fail = await generate.mass_generate_teaser_thumbs_large( *alist, **kdict )
+                succs['teaser_thumbs_large'] = succ
+                fails['teaser_thumbs_large'] = fail
         except KeyboardInterrupt:
             await aprint(ws, '\n... interrupting')
         
         await aprint(ws, '\n  WORK REPORT:\n')
-        await aprint(ws, 'TYPE              GENERATION COUNT')
+        await aprint(ws, 'TYPE                   GENERATION COUNT')
         succs['total'] = []
         fails['total'] = []
         for k, s in succs.items():
             f = fails[k]
             fails_str = ' ({:_} fails)'.format(len(f)) if f != [] else ''
-            await aprint(ws, '{:<15} : {:_}{}'.format(k, len(s), fails_str))
+            await aprint(ws, '{:<25} : {:_}{}'.format(k, len(s), fails_str))
             if k != 'total':
                 succs['total'].extend(s)
                 fails['total'].extend(f)
@@ -160,7 +164,7 @@ def create_argument_parser(non_exiting=False):
     
 
     # [3] Media generation
-    parser.add_argument('--generate-media', '-gm',                              help='opts=[all|teasers|teasers_large|teaser_thumbs|preview_thumbs|seek_thumbs]', choices=GENERATE_MEDIA_OPTIONS)
+    parser.add_argument('--generate-media', '-gm',                              help='opts=[all|teasers|teasers_large|teaser_thumbs|teaser_thumbs_large|preview_thumbs|seek_thumbs]', choices=GENERATE_MEDIA_OPTIONS)
     parser.add_argument('--redo-media-gen',        action='store_true',         help='[media_gen] redo media gen (replace old)')
     
     parser.add_argument('--performer',                                          help='[media_gen] ')
