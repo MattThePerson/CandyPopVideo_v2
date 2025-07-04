@@ -1,7 +1,7 @@
 
 import { injectComponents } from '../../shared/util/component.js'
 import { makeApiRequestGET, makeApiRequestPOST } from '../../shared/util/request.js';
-import { generate_results } from '../../shared/util/search.js';
+import { generate_results_OLD } from '../../shared/util/search_OLD.js';
 
 injectComponents();
 
@@ -121,6 +121,7 @@ async function loadThumbnails() {
 
 /* load subtitles */
 async function loadSRTasVTT(srtUrl, video_el) {
+    return;
     const response = await fetch(srtUrl);
     let srt = await response.text();
 
@@ -318,7 +319,7 @@ if (videoHash != null) {
         
         const load_related_videos = (start_idx) => {
             makeApiRequestGET('/api/query/get/similar-videos', [videodata.hash, start_idx + 1, related_videos_load_amount], search_results => {
-                generate_results(search_results);
+                generate_results_OLD(search_results);
             });
             return start_idx + related_videos_load_amount
         };

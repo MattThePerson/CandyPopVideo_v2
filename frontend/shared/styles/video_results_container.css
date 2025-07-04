@@ -1,5 +1,20 @@
 
 
+section.similar-videos-section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    margin: 1.5rem 0.5rem;
+
+    h2 {
+        margin-bottom: 1.9rem;
+        margin-left: 8%;
+        align-self: flex-start;
+    }
+}
+
 .video-cards-styler {
     display: flex;
     justify-content: center;
