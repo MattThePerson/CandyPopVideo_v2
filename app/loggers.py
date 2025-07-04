@@ -40,6 +40,13 @@ handler.setFormatter( logging.Formatter('%(asctime)s - %(name)s - %(levelname)s 
 LOGGER_HASHING_FAILED.addHandler(handler)
 
 # Configure hashing failed logger
+MEDIA_GEN = logging.getLogger('media-gen')
+MEDIA_GEN.setLevel(logging.INFO)
+handler = logging.FileHandler(f'{_logger_dir}/media_gen.log', mode='w')
+handler.setFormatter( logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s') )
+MEDIA_GEN.addHandler(handler)
+
+# Configure hashing failed logger
 MEDIA_GEN_FAILED = logging.getLogger('media-gen-failed')
 MEDIA_GEN_FAILED.setLevel(logging.ERROR)
 handler = logging.FileHandler(f'{_logger_dir}/media_gen_failed.log', mode='a')

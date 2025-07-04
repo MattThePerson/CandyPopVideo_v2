@@ -176,7 +176,7 @@ def create_argument_parser(non_exiting=False):
     parser.add_argument('--sortby',                                             help='[media_gen]')
     parser.add_argument('--date-added-from',                                    help='[media_gen]')
     parser.add_argument('--date-added-to',                                      help='[media_gen]')
-    parser.add_argument('--select-collection',                                  help='Select collection to')
+    parser.add_argument('--select-collection', '-sc',                           help='Select collection to')
     
 
     # 

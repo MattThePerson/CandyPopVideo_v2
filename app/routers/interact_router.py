@@ -96,5 +96,16 @@ def ROUTE_get_views(video_hash: str):
 
 # MARKERS
 
+@interact_router.post("/markers/update/{video_hash}")
+def ROUTE_add_markers(video_hash: str):
+    ...
+
+
+@interact_router.get("/markers/get/{video_hash}")
+def ROUTE_get_markers(video_hash: str):
+    ...
+
+
+
 
 
