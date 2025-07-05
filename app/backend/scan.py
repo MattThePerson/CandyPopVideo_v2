@@ -14,7 +14,12 @@ from .helpers import aprint
 
 #region main
 
-async def scanVideos(collections: dict[str, list], rehash_videos: bool=False, ws=None) -> None:
+async def scanVideos(
+        collections: dict[str, list],
+        rehash_videos: bool=False,
+        reparse_filenames: bool=False, # TODO: Apply
+        ws=None
+        ) -> None:
     """ Scan videos in directories and process. Steps: read videos from db, scan videos, process videos, save to db """
     include_folders, ignore_folders, collections_dict = _process_collection_dirs(collections)
     if include_folders is None:

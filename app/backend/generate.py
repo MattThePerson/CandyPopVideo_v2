@@ -191,3 +191,53 @@ async def mass_generate_teaser_thumbs_large(videos_list: list[VideoData], mediad
                 break
     await aprint(ws, '\nDone.')
     return succ, fails
+
+
+
+#region - CHECKERS -----------------------------------------------------------------------------------------------------
+
+
+
+async def checkPreviewMediaStatus(videos_list: list[VideoData], mediadir: str, selection: str, print_without: int|None=None, ws=None):
+    options = {
+        'preview_thumbs':       checkers.hasPreviewThumbs,
+        'seek_thumbs':          checkers.hasSeekThumbs,
+        'teasers':              checkers.hasTeaserSmall,
+        'teasers_large':        checkers.hasTeaserLarge,
+        'teaser_thumbs':        checkers.hasTeaserThumbsSmall,
+        'teaser_thumbs_large':  checkers.hasTeaserThumbsLarge,
+    }
+    # get & print status
+    await aprint(ws, '{:<20} | {:>6} | {:>8} | {:>8} | {}'.format('MEDIA TYPE', 'PERC', 'WITH', 'WITHOUT', 'TOTAL'))
+    with_media_all, without_media_all = [], []
+    for name, checker_func in options.items():
+        if selection == 'all' or selection == name:
+            with_media, without_media = [], []
+            for video_data in videos_list:
+                if checker_func(video_data.hash, mediadir):
+                    with_media.append((video_data.hash, video_data.path))
+                else:
+                    without_media.append((video_data.hash, video_data.path))
+            with_media_all.extend(with_media)
+            without_media_all.extend(without_media)
+            # print status
+            msg = _get_status_line(name, with_media, without_media)
+            await aprint(ws, msg)
+            if print_without and without_media != []:
+                await aprint(ws, '    videos without:', name)
+                for idx, (hash_, path) in enumerate(without_media):
+                    await aprint(ws, '{:>4} : [{}] "{}"'.format(idx, hash_, path))
+                    if idx+1 >= print_without:
+                        await aprint(ws, '  ...')
+                        break
+    msg = _get_status_line('all', with_media_all, without_media_all)
+    await aprint(ws, msg)
+    await aprint(ws, '')
+        
+
+def _get_status_line(name, with_, without):
+    yes, no = len(with_), len(without)
+    total = yes + no
+    perc = (yes / (total)) * 100
+    perc_str = '{:.1f}%'.format(perc)
+    return '{:<20} | {:>6} : {:>8_} : {:>8_} : {:>8_} |'.format(name, perc_str, yes, no, total)

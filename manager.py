@@ -9,11 +9,13 @@ async def backend_manager(args: argparse.Namespace, ws=None):
 
     from app import db
     from app.schemas import VideoData, SearchQuery, TFIDFModel
-    from config import PREVIEW_MEDIA_DIR
+    from config import PREVIEW_MEDIA_DIR, TFIDF_MODEL_PATH
     from app.backend import generate, scan
     from app.backend.helpers import aprint
     from app.recommender.search import filterVideoObjects
     from app.recommender.tfidf import generate_tfidf_model
+    from app.util.general import pickle_save
+        
     """
     Backend manager for CandyPop Video. Can be used from CL or via websocket
         
@@ -23,19 +25,14 @@ async def backend_manager(args: argparse.Namespace, ws=None):
     - showing status of media library
     """
     
-    if args.scan_libraries: # - SCAN ---------------------------------------------------------------
-        await aprint(ws, '[MAIN] Scanning videos ...')
-        with open('config.yaml', 'r') as f:
-            CONFIG = yaml.safe_load(f)
-        COLLECTIONS = CONFIG.get('collections')
-        await scan.scanVideos(COLLECTIONS, rehash_videos=args.rehash_videos, ws=ws)
+    # HELPERS
     
-    # load video objects
-    video_dicts = db.read_table_as_dict('videos')
-    videos_list = [ VideoData.from_dict(dct) for hsh, dct in video_dicts.items() if dct.get('is_linked') ]
-    
-    if args.generate_media: # - MEDIA ------------------------------------------------------------
-        # filter videos
+    def get_linked_videos():
+        video_dicts = db.read_table_as_dict('videos')
+        return [ VideoData.from_dict(dct) for hsh, dct in video_dicts.items() if dct.get('is_linked') ]
+
+
+    def filter_videos_with_args(videos_list: list[VideoData], args: argparse.Namespace) -> list[VideoData]:
         query = SearchQuery(
             search_string = "NULL_STRING",
             performer = args.performer,
@@ -52,7 +49,29 @@ async def backend_manager(args: argparse.Namespace, ws=None):
             limit = -1,
             startfrom = 0,
         )
-        filtered_videos = filterVideoObjects(videos_list, query)
+        return filterVideoObjects(videos_list, query)
+    
+
+    # HANDLE
+    
+    if args.scan_libraries: # - SCAN ---------------------------------------------------------------
+        await aprint(ws, '[MAIN] Scanning videos ...')
+        with open('config.yaml', 'r') as f:
+            CONFIG = yaml.safe_load(f)
+        COLLECTIONS = CONFIG.get('collections')
+        await scan.scanVideos(COLLECTIONS, rehash_videos=args.rehash_videos, reparse_filenames=args.reparse_filenames, ws=ws)
+        # generate tfidf model
+        await aprint(ws, 'Generating tfidf model for videos')
+        videos_list = get_linked_videos()
+        model: TFIDFModel = generate_tfidf_model(videos_list)
+        await aprint(ws, 'Saving model to:', TFIDF_MODEL_PATH)
+        pickle_save(model, TFIDF_MODEL_PATH)
+    
+
+    if args.generate_media: # - MEDIA --------------------------------------------------------------
+        # filter videos
+        videos_list = get_linked_videos()
+        filtered_videos = filter_videos_with_args(videos_list, args)
         
         # call generators
         await aprint(ws, 'Generating media for {} videos'.format(len(filtered_videos)))
@@ -61,10 +80,6 @@ async def backend_manager(args: argparse.Namespace, ws=None):
         opt = args.generate_media
         succs, fails = {}, {}
         try:
-            if opt == 'all' or opt == 'teasers':       
-                succ, fail = await generate.mass_generate_teasers_small( *alist, **kdict )
-                succs['teasers'] = succ
-                fails['teasers'] = fail
             if opt == 'all' or opt == 'preview_thumbs':
                 succ, fail = await generate.mass_generate_preview_thumbs( *alist, **kdict )
                 succs['preview_thumbs'] = succ
@@ -73,10 +88,14 @@ async def backend_manager(args: argparse.Namespace, ws=None):
                 succ, fail = await generate.mass_generate_seek_thumbs( *alist, **kdict )
                 succs['seek_thumbs'] = succ
                 fails['seek_thumbs'] = fail
-            # if opt == 'all' or opt == 'teasers_large': 
-            #     succ, fail = await generate.mass_generate_large_teasers( *alist, **kdict )
-            #     succs['teasers_large'] = succ
-            #     fails['teasers_large'] = fail
+            if opt == 'all' or opt == 'teasers':       
+                succ, fail = await generate.mass_generate_teasers_small( *alist, **kdict )
+                succs['teasers'] = succ
+                fails['teasers'] = fail
+            if opt == 'all' or opt == 'teasers_large': 
+                succ, fail = await generate.mass_generate_teasers_large( *alist, **kdict )
+                succs['teasers_large'] = succ
+                fails['teasers_large'] = fail
             if opt == 'all' or opt == 'teaser_thumbs': 
                 succ, fail = await generate.mass_generate_teaser_thumbs_small( *alist, **kdict )
                 succs['teaser_thumbs'] = succ
@@ -104,8 +123,7 @@ async def backend_manager(args: argparse.Namespace, ws=None):
 
     if args.generate_tfidf:
         await aprint(ws, 'Generating tfidf model for videos')
-        from config import TFIDF_MODEL_PATH
-        from app.util.general import pickle_save
+        videos_list = get_linked_videos()
         model: TFIDFModel = generate_tfidf_model(videos_list)
         await aprint(ws, 'Saving model to:', TFIDF_MODEL_PATH)
         pickle_save(model, TFIDF_MODEL_PATH)
@@ -116,15 +134,22 @@ async def backend_manager(args: argparse.Namespace, ws=None):
         ...
         
 
-    if args.status: # - STATUS -------------------------------------------------------------------
-        await aprint(ws, "Status:")
-        ...
+    if args.media_status: # - STATUS ---------------------------------------------------------------
+        await aprint(ws, "filtering videos ...")
+        videos_list = get_linked_videos()
+        filtered_videos = filter_videos_with_args(videos_list, args)
+        await aprint(ws, "Video Filters:")
+        await aprint(ws, '{:<20} : {}'.format("performer", args.performer))
+        await aprint(ws, '{:<20} : {}'.format("studio", args.studio))
+        await aprint(ws, '{:<20} : {}'.format("filters", args.filters))
+        await aprint(ws, '{:<20} : {}'.format("select_collection", args.select_collection))
+        await aprint(ws, f"\nPREVIEW MEDIA STATUS FOR {len(videos_list)} VIDEOS:")
+        await generate.checkPreviewMediaStatus(filtered_videos, PREVIEW_MEDIA_DIR, args.media_status, print_without=args.print_without)
+        
 
-    # if not args.status and not args.generate_media and not args.scan_libraries:
-    #     await aprint(ws, 'No arguments passed')
 
 
-
+#region - ARGUMENT PARSER ----------------------------------------------------------------------------------------------
 
 # Inheriting class that doesnt call sys.exit()
 class NoExitArgumentParser(argparse.ArgumentParser):
@@ -148,19 +173,21 @@ def create_argument_parser(non_exiting=False):
         parser = argparse.ArgumentParser()
 
     # [1] Status
-    parser.add_argument('--status',                 action='store_true',        help='')
+    parser.add_argument('--media-status',                                       help='[check] Get generation status of preview media', choices=GENERATE_MEDIA_OPTIONS)
+    parser.add_argument('--print-without', nargs='?', const=10, default=0,       help='[check] Print paths of videos without', type=int)
     # parser.add_argument('--media',                  action='store_true',        help='')
     parser.add_argument('--cull-unlinked-media',    action='store_true',        help='')
 
     # [2] Library scanning
     parser.add_argument('--scan-libraries', '-sl',  action='store_true',        help='')
     parser.add_argument('--rehash-videos',          action='store_true',        help='[scan]')
+    parser.add_argument('--reparse-filenames',          action='store_true',    help='[scan]')
     parser.add_argument('--reread-json-metadata',   action='store_true',        help='[scan]')
     parser.add_argument('--generate-tfidf',            action='store_true',        help='')
     parser.add_argument('--generate-embeddings',       action='store_true',        help='')
 
-    parser.add_argument('--paths-filters',                                      help='[scan]') # if called, non scanning wont flip is_linked flag
-    parser.add_argument('--paths-exclude-filters',                              help='[scan]') # if called, non scanning wont flip is_linked flag
+    # parser.add_argument('--paths-filters',                                      help='[scan]') # if called, non scanning wont flip is_linked flag
+    # parser.add_argument('--paths-exclude-filters',                              help='[scan]') # if called, non scanning wont flip is_linked flag
     
 
     # [3] Media generation
