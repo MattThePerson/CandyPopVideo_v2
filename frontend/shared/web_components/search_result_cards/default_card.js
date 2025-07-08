@@ -4,13 +4,29 @@ export class MyCard extends HTMLElement {
 
     constructor() {
         super();
-    }
+        this.useVideoTeasers = (this.getAttribute('use_video_teasers') == 'true')
+        this.video_hash = this.getAttribute('video_hash');
 
-    connectedCallback() {
-        // console.log("Custom element added to page.");
-        this.attachShadow({ mode: 'open' });
-        this.render();
-        this.addEventListeners();
+        this.scene_title = this.getAttribute('scene_title');
+        this.performers_str = this.getAttribute('performers');
+        this.studio = this.getAttribute('studio');
+        this.line = this.getAttribute('line');
+        this.date_released = this.getAttribute('date_released');
+        this.scene_description = this.getAttribute('scene_description');
+        this.collection = this.getAttribute('collection');
+        this.jav_code = this.getAttribute('jav_code');
+
+        this.duration = this.getAttribute('duration');
+        this.resolution = this.getAttribute('resolution');
+        this.fps = this.getAttribute('fps');
+        this.bitrate = this.getAttribute('bitrate');
+
+        this.date_added = this.getAttribute('date_added');
+        this.tags_str = this.getAttribute('tags');
+        this.filename = this.getAttribute('filename');
+
+        this.card_class = (this.getAttribute('highlighted') == 'true') ? "card highlighted" : "card";
+        this.card_width = this.getAttribute('width') || "24rem";
     }
 
     disconnectedCallback() {
@@ -29,51 +45,77 @@ export class MyCard extends HTMLElement {
         console.log(`Attribute ${name} has changed.`);
     }
 
+    connectedCallback() {
+        // console.log("Custom element added to page.");
+        
+        this.attachShadow({ mode: 'open' });
+        this.render();
+        this.hydrate();
+        this.addEventListeners();
+    }
+
+
+    /* HYDRATE */
+
+    hydrate() {
+        const $shadow = $(this.shadowRoot);
+        
+        /* get teasers */
+        if (this.useVideoTeasers) { // teaser video
+            const teaser_el = $shadow.find('video.teaser-video');
+            teaser_el.addClass('teaser-media');
+            $.get('/media/ensure/teaser-small/'+this.video_hash, (data, status) => {
+                if (status === 'success') {
+                    teaser_el.attr('src', `/static/preview-media/0x${this.video_hash}/teaser_small.mp4`)
+                    teaser_el.one('loadedmetadata', () => {
+                        teaser_el.addClass('loaded');
+                        $shadow.find('.spinner').hide()
+                    });
+                }
+            });
+
+        } else { // teaser thumbs
+            const teaser_el = $shadow.find('img.teaser-thumbs');
+            teaser_el.addClass('teaser-media');
+            $.get('/media/ensure/teaser-thumbs-small/'+this.video_hash, (data, status) => {
+                if (status === 'success') {
+                    teaser_el.addClass('loaded');
+                    const spritesheet_src = `/static/preview-media/0x${this.video_hash}/teaser_thumbs_small.jpg`
+                    const thumbnail_container = $shadow.find('.thumb-container');
+                    this.configure_teaser_thumb_spritesheet(spritesheet_src, teaser_el.get(0), thumbnail_container.get(0), () => {
+                        $shadow.find('.spinner').hide()
+                    });
+                }
+            });
+            
+        }
+    }
+    
+
     /* EVENT LISTENERS */
 
     addEventListeners() {
         const $shadow = $(this.shadowRoot);
-        
-        $shadow.find('.thumb-container').on('mouseenter', cont => {
-            console.log('hovered');
-        });
 
         /* click on collection */
         $shadow.find('.collection').click(event => {
             event.preventDefault();
             window.location.href = '/pages/search/page.html?collection=' + this.getAttribute('collection');
-        })
+        });
+
     }
     
+
     /* RENDER */
 
     render() {
 
-        let scene_title = this.getAttribute('scene_title');
-        let performers_str = this.getAttribute('performers');
-        let studio = this.getAttribute('studio');
-        let line = this.getAttribute('line');
-        let date_released = this.getAttribute('date_released');
-        let scene_description = this.getAttribute('scene_description');
-        let collection = this.getAttribute('collection');
-        let jav_code = this.getAttribute('jav_code');
+        this.duration = this.duration.startsWith("0:") ? this.duration.substring(2) : this.duration;
 
-        let duration = this.getAttribute('duration');
-        let resolution = this.getAttribute('resolution');
-        let fps = this.getAttribute('fps');
-        let bitrate = this.getAttribute('bitrate');
-        
-        let video_hash = this.getAttribute('hash');
-        let date_added = this.getAttribute('date_added');
-        let tags_str = this.getAttribute('tags');
-        let filename = this.getAttribute('filename');
-
-        duration = duration.startsWith("0:") ? duration.substring(2) : duration;
-
-        let date_released_fmt = date_released.replace(/-/g, '.');
+        const date_released_fmt = this.date_released.replace(/-/g, '.');
 
         // studios html
-        const studios = [studio, line].filter(el => (el !== null && el !== 'null'));
+        const studios = [this.studio, this.line].filter(el => (el !== null && el !== 'null'));
         const studios_html = studios.map(x =>
             `<a href="/pages/search/page.html?studio=${x}">
                 ${x}
@@ -81,44 +123,39 @@ export class MyCard extends HTMLElement {
         ).join('\n')
         
         // performers html
-        const performers_html = performers_str.split(',').filter(x => x !== '').map(x =>
+        const performers_html = this.performers_str.split(',').filter(x => x !== '').map(x =>
             `<a href="/pages/search/page.html?performer=${x}">
                 ${x}
             </a>`
         ).join('\n')
         
         // tags html
-        const tags_html = tags_str.split(',').filter(x => x !== '').map(x =>
+        const tags_html = this.tags_str.split(',').filter(x => x !== '').map(x =>
             `<a href="/pages/search/page.html?include_terms=${x}">
                 ${x}
             </a>`
         ).join('\n')
         
         
-        /* attribute affected variables */
-        const card_class = (this.getAttribute('highlighted')) ? "card highlighted" : "card";
-        const card_width = this.getAttribute('width') || "24rem";
-
-        
         this.shadowRoot.innerHTML = /* html */`
         
             <!-- html ----------------------------------------------------------------------------->
-            <div class="${card_class}">
+            <div class="${this.card_class}">
 
                 <!-- image -->
-                <a class="thumb-container" href="/pages/video/page.html?hash=${video_hash}">
-                    <img class="thumbnail" src="/media/get/poster/${video_hash}?t=${Date.now()}" alt="">
-                    <img class="teaser-thumbs" src="" alt="">
-                    <video preload="none" muted loop></video>
-                    <span class="loader-2"></span>
+                <a class="thumb-container" href="/pages/video/page.html?hash=${this.video_hash}">
+                    <img class="thumbnail" src="/media/get/poster/${this.video_hash}?t=${Date.now()}" alt="">
+                    <img class="teaser-thumbs" alt="">
+                    <video class="teaser-video" preload="none" muted loop autoplay></video>
+                    <span class="spinner loader-2"></span>
                     <div class="stats">
-                        <div class="collection">${collection}</div>
+                        <div class="collection">${this.collection}</div>
                         <div class="top-right">
-                            <div class="resolution">${resolution}p</div>
-                            <div class="bitrate">${Math.round(bitrate/100)/10}mb</div>
-                            <div class="fps" style="display: none;">${fps}</div>
+                            <div class="resolution">${this.resolution}p</div>
+                            <div class="bitrate">${Math.round(this.bitrate/100)/10}mb</div>
+                            <div class="fps" style="display: none;">${this.fps}</div>
                         </div>
-                        <div class="duration">${duration}</div>
+                        <div class="duration">${this.duration}</div>
                     </div>
                 </a>
 
@@ -129,12 +166,12 @@ export class MyCard extends HTMLElement {
                             <span class="views">9 views</span>
                             <span class="likes">3 likes</span>
                         </div>
-                        <div>${this.format_date_added(date_added)} ago</div>
+                        <div>${this.format_date_added(this.date_added)} ago</div>
                     </div>
                     <div class="title-bar">
                         <button class="is-fav-button"></button>
                         <a href="">
-                            <h2>${scene_title}</h2>
+                            <h2>${this.scene_title}</h2>
                         </a>
                     </div>
                     <div class="studio-actors-container">
@@ -161,7 +198,7 @@ export class MyCard extends HTMLElement {
                 /* card */
                 .card {
                     border: 1px solid #88888819;
-                    width: ${card_width};
+                    width: ${this.card_width};
                     padding: 0;
                     border-radius: 0.5rem;
                     outline: 0.5px solid #4441;
@@ -172,11 +209,15 @@ export class MyCard extends HTMLElement {
                     box-shadow: 0 0 10px yellow;
                 }
 
-                /* - IMAGE PART --------------------------------------------- */
-                a.thumb-container:hover .thumbnail {
+                /* - THUMBNAIL HOVER ---------------------------------------- */
+                a.thumb-container:hover img.thumbnail {
                     display: none;
                 }
+                a.thumb-container:hover .teaser-media.loaded {
+                    display: block;
+                }
                 
+                /* - IMAGE PART --------------------------------------------- */
                 a.thumb-container {
                     position: relative;
                     display: flex;
@@ -190,10 +231,15 @@ export class MyCard extends HTMLElement {
                     height: auto;
                     object-fit: contain;
                     overflow: hidden;
+                    user-select: none;
 
                     img.thumbnail {
                         height: 100%;
-                        display: block;
+                        display: hide;
+                    }
+                    img.teaser-thumbs {
+                        height: 100%;
+                        display: hide;
                     }
                     video {
                         display: none;
@@ -262,7 +308,7 @@ export class MyCard extends HTMLElement {
                     /* padding: 0.25 2rem !important; */ /* does fuck all */
                     display: block;
                     box-sizing: border-box;
-                    height: 8rem;
+                    min-height: 8rem;
                     display: flex;
                     flex-direction: column;
                 }
@@ -443,6 +489,93 @@ export class MyCard extends HTMLElement {
             ms *= mult[i];
         }
     }
+
+    /* configure_teaser_thumb_spritesheet */
+    configure_teaser_thumb_spritesheet(spritesheet_src, thumbnail_container, parent_container, loaded_callback=null) {
+    
+        const vtt_src = spritesheet_src.replace('.jpg', '.vtt');
+        
+        // First, load and parse the VTT file to get the sprite information
+        fetch(vtt_src)
+            .then(response => response.text())
+            .then(vttText => {
+                // console.log('got vtt text');
+
+                // Parse the VTT file to extract sprite coordinates
+                const sprites = this.parseVTT(vttText);
+                if (sprites.length === 0) {
+                    throw new Error('No sprites parsed from vtt file:', vtt_src);
+                };
+                
+                // Set up the spritesheet as the background for the thumbnail container
+                thumbnail_container.style.backgroundImage = `url("${spritesheet_src}")`;
+                thumbnail_container.style.backgroundRepeat = 'no-repeat';
+                
+                // load image to get spritesheet height
+                const img = new Image();
+                img.src = spritesheet_src;
+
+                img.onload = () => {
+                    const thumbAspectRatio = sprites[0].w / sprites[0].h;
+                    const thumbContainerHeight = parent_container.clientHeight; // parents height because of possible display: none;
+                    thumbnail_container.style.width = (thumbAspectRatio * thumbContainerHeight) + 'px';
+
+                    // determine background image scale factor
+                    const scaleFactor = (thumbContainerHeight / sprites[0].h);
+                    thumbnail_container.style.backgroundSize = (img.naturalWidth * scaleFactor) + 'px ' + (img.naturalHeight * scaleFactor) + 'px';
+
+                    // Calculate how many thumbnails we have
+                    const thumbCount = sprites.length;
+                    
+                    // Handle mouse movement to update the thumbnail
+                    parent_container.addEventListener('mousemove', (e) => {
+                        // Calculate the percentage of mouse position within the parent container
+                        const rect = parent_container.getBoundingClientRect();
+                        const xPos = e.clientX - rect.left;
+                        
+                        const perc = Math.max(0, Math.min(1, xPos / rect.width));
+                        const thumbIndex = Math.floor(perc * (thumbCount));
+                        
+                        const sprite = sprites[thumbIndex];
+                        thumbnail_container.style.backgroundPosition = `-${sprite.x*scaleFactor}px -${sprite.y*scaleFactor}px`;
+                    });
+                    
+                    if (loaded_callback) {
+                        loaded_callback();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error loading thumbnails:', error);
+            });
+    }
+
+    // Helper function to parse VTT files containing sprite metadata
+    parseVTT(vttText) {
+        const sprites = [];
+        const lines = vttText.split('\n');
+        
+        // The VTT format we're expecting has entries like:
+        // 00:00:00.000 --> 00:00:00.000
+        // xywh=0,0,160,90
+        
+        for (let i = 0; i < lines.length; i++) {
+            if (lines[i].includes('xywh=')) {
+                const coords = lines[i].split('xywh=')[1].split(',');
+                if (coords.length === 4) {
+                    sprites.push({
+                        x: parseInt(coords[0]),
+                        y: parseInt(coords[1]),
+                        w: parseInt(coords[2]),
+                        h: parseInt(coords[3])
+                    });
+                }
+            }
+        }
+        
+        return sprites;
+    }
+    
 }
 customElements.define('search-result-card-default', MyCard);
 

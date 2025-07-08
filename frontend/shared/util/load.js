@@ -10,6 +10,9 @@ export function generate_results(results, results_container, card_type="search-r
     results.search_results.forEach( (result) => {
         html_content += /* html */`
             <search-result-card-default
+                highlighted = false
+                use_video_teasers = false
+                video_hash =        "${result.hash}"
                 scene_title =       "${result.scene_title}"
                 performers =        "${result.performers}"
                 studio =            "${result.studio}"
@@ -23,7 +26,6 @@ export function generate_results(results, results_container, card_type="search-r
                 resolution =        "${result.resolution}"
                 fps =               "${result.fps}"
                 bitrate =           "${result.bitrate}"
-                hash =              "${result.hash}"
                 date_added =        "${result.date_added}"
                 tags =              "${result.tags}"
                 filename =          "${result.filename}"

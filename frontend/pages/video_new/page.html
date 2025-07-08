@@ -26,17 +26,25 @@
     <main>
 
 
-        <!-- PLAYER SECTION -->
+        <!-- PLAYER SECTION --------------------------------------------------->
         <section class="player-section">
 
             <div class="video-preview-container">
                 <div class="media-wrapper">
-                    <img class="poster" src="" alt="">
+                    <img class="poster hidden" src="" alt="">
                     <video class="hidden" muted autoplay loop src=""></video>
-                    <img class="teaser hidden" src="" alt="">
+                    <img class="teaser" src="" alt="">
                 </div>
                 <button class="toggle-teaser-mode-button">toggle</button>
                 <button class="play-button">play</button>
+                <div class="info-container">
+                    <div class="scene_title"></div>
+                    <div class="performers-container"></div>
+                    <div class="year-studios-bar">
+                        <div class="date_released"></div>
+                        <div class="studios-container"></div>
+                    </div>
+                </div>
             </div>
 
             <div id="player-container"></div>
@@ -44,24 +52,48 @@
         </section>
 
 
-        <!-- ABOUT SECTION -->
+        <!-- ABOUT SECTION ---------------------------------------------------->
         <section class="video-about-section">
 
+            <!-- left side -->
+            <div class="left-side-container">
+                <div class="title-attributes-bar">
+                    <button class="favourite-button">o</button>
+                    <h1 class="scene_title"></h1>
+                    <div class="attributes-container">
+                        <div class="duration"></div>
+                        <div class="resolution"></div>
+                        <div class="bitrate"></div>
+                        <div class="fps"></div>
+                    </div>
+                </div>
+                <div class="year-studio-bar">
+                    <div class="collection"></div>
+                    <div class="date_released"></div>
+                    <div class="studios-container"></div>
+                </div>
+                <div class="performer-cards-bar"></div>
+            </div>
+
+            <!-- right side -->
+            <div class="right-side-container">
+                
+            </div>
         </section>
 
 
-        <!-- RELATED VIDEOS SECTION -->
+        <!-- RELATED VIDEOS SECTION ------------------------------------------->
         <section class="related-videos-section">
 
         </section>
 
 
-        <!-- SIMILAR VIDEOS SECTION -->
-        <!-- <section class="similar-videos-section" style="visibility: hidden">
+        <!-- SIMILAR VIDEOS SECTION ------------------------------------------->
+        <section class="similar-videos-section" style="visibility: hidden">
             <h2>Recommended videos:</h2>
             <div class="video-cards-styler" class="grid-view"></div>
             <button id="expand-results-button">LOAD MORE RESULTS</button>
-        </section> -->
+        </section>
 
     
     <div class="MyComponent" component="Footer"></div>

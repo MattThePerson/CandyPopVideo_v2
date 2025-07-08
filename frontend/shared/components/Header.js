@@ -29,6 +29,28 @@ export function Header(){
         }
     });
 
+    const useVideoTeasers = (localStorage.getItem('use_video_teasers') == 'true');
+    console.log(useVideoTeasers);
+    if (useVideoTeasers) {
+        $('#teaser-mode-video').addClass('selected');
+    } else {
+        $('#teaser-mode-image').addClass('selected');
+    }
+    $('#teaser-mode-video').on('click', () => {
+        if (!useVideoTeasers) {
+            localStorage.setItem('use_video_teasers', 'true');
+            location.reload();
+        }
+    });
+    $('#teaser-mode-image').on('click', () => {
+        if (useVideoTeasers) {
+            localStorage.setItem('use_video_teasers', 'false');
+            location.reload();
+        }
+    });
+
+    
+
 </script>
 
 
@@ -86,8 +108,8 @@ export function Header(){
                     <section class="teaser-mode">
                         <h3>teaser mode</h3>
                         <div class="selector">
-                            <button id="teaser-mode-video" class="selected">video</button>
                             <button id="teaser-mode-image">image</button>
+                            <button id="teaser-mode-video">video</button>
                         </div>
                     </section>
                     <section class="card-style">

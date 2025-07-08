@@ -93,3 +93,12 @@ section.player-section {
 .video-preview-container .play-button:hover  { box-shadow: 0 0 9px #fff7; }
 .video-preview-container .play-button:active { opacity: 0.8; }
 
+
+/* info container */
+
+section.player-section .info-container {
+    position: absolute;
+    top: 2rem;
+    left: 3rem;
+    background: #4aa3;
+}

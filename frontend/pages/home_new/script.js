@@ -7,14 +7,12 @@ import '../../shared/web_components/search_result_cards/default_card.js'
 injectComponents();
 
 
-const related_videos_load_amount = 4 //24;
-let related_videos_loaded = 0;
 
-const load_related_videos = (results_container, video_hash, start_idx) => {
-    makeApiRequestGET('/api/query/get/similar-videos', [video_hash, start_idx + 1, related_videos_load_amount], search_results => {
+const load_similar_videos = (results_container, video_hash, start_idx, load_amount) => {
+    makeApiRequestGET('/api/query/get/similar-videos', [video_hash, start_idx + 1, load_amount], search_results => {
         generate_results(search_results, results_container);
     });
-    return start_idx + related_videos_load_amount
+    return start_idx + load_amount;
 };
 
 
@@ -23,7 +21,7 @@ const load_related_videos = (results_container, video_hash, start_idx) => {
 makeApiRequestGET('/api/get/random-spotlight-video-hash', [], (initial_response) => {
     
     console.log(initial_response);
-    initial_response.hash = '55c83646f03a';
+    initial_response.hash = 'ee46c8bd8efc' // '00c1f7c43d27';
 
     makeApiRequestGET('/api/get/video-data', [initial_response.hash], (video_data) => {
 
@@ -38,6 +36,8 @@ makeApiRequestGET('/api/get/random-spotlight-video-hash', [], (initial_response)
             <search-result-card-default
                 highlighted = true
                 width = "32rem"
+                use_video_teasers = true
+                video_hash =        "${video_data.hash}"
                 scene_title =       "${video_data.scene_title}"
                 performers =        "${video_data.performers}"
                 studio =            "${video_data.studio}"
@@ -50,7 +50,6 @@ makeApiRequestGET('/api/get/random-spotlight-video-hash', [], (initial_response)
                 resolution =        "${video_data.resolution}"
                 fps =               "${video_data.fps}"
                 bitrate =           "${video_data.bitrate}"
-                hash =              "${video_data.hash}"
                 date_added =        "${video_data.date_added}"
                 tags =              "${video_data.tags}"
                 filename =          "${video_data.filename}"
@@ -64,10 +63,13 @@ makeApiRequestGET('/api/get/random-spotlight-video-hash', [], (initial_response)
         
         /* load related videos */
 
+        const similar_videos_load_amount = 8 //24;
+        let similar_videos_loaded = 0;
+        
         const results_container = $('.similar-videos-section')
-        related_videos_loaded = load_related_videos(results_container, video_data.hash, related_videos_loaded);
+        similar_videos_loaded = load_similar_videos(results_container, video_data.hash, similar_videos_loaded, similar_videos_load_amount);
         document.getElementById('expand-results-button').addEventListener('click', () => {
-            related_videos_loaded = load_related_videos(results_container, video_data.hash, related_videos_loaded);
+            similar_videos_loaded = load_similar_videos(results_container, video_data.hash, similar_videos_loaded, similar_videos_load_amount);
         });
 
     });

@@ -40,6 +40,81 @@ function load_similar_videos(results_container, video_hash, start_idx, load_amou
 };
 
 
+function hydrate_preview_info(selector, data) {
+
+    const container = $(selector);
+
+    container.find('.scene_title').text(data.scene_title);
+    container.find('.date_released').text(data.date_released);
+    
+    /* append studios */
+    for (let x of [data.studio, data.line]) {
+        if (x) {
+            container.find('.studios-container').append(`
+                <a class="studio" href="/pages/search/page.html?studio=${x}">
+                    ${x}
+                </a>
+            `);
+        }
+    }
+
+    for (let x of data.performers) {
+        container.find('.performers-container').append(/* html */`
+            <a class="performer" href="/pages/search/page.html?performer=${x}">
+                ${x}
+            </a>
+        `);
+        
+    };
+}
+
+
+function hydrate_about_section(selector, data) {
+
+    const section = $(selector);
+
+    /* left side */
+    section.find('.scene_title').text( data.scene_title )
+    section.find('.resolution').text( data.resolution )
+    section.find('.bitrate').text( data.bitrate )
+    section.find('.fps').text( data.fps )
+    section.find('.duration').text( data.duration )
+    section.find('.collection').text( data.collection )
+    section.find('.date_released').text( data.date_released )
+    
+    /* append studios */
+    for (let x of [data.studio, data.line]) {
+        if (x) {
+            section.find('.studios-container').append(`
+                <div class="studio">${x}</div>
+            `);
+        }
+    }
+
+    data.performers.forEach(name => {
+        const card_id = 'performer-card_' + name.toLowerCase().replace(/ /g, '-');
+        section.find('.performer-cards-bar').append(get_performer_card(name, card_id));
+        // makeApiRequestGET('/api/get/performer-data', [name], perf_data => {
+        //     // TODO: get performer age ITS
+        //     $('#' + card_id).find('age').text(perf_data.age + ' y/o ITS');
+        //     $('#' + card_id).find('scene_count').text(perf_data.scene_count + ' scenes');
+        // });
+    });
+    
+    
+}
+
+function get_performer_card(name, card_id) {
+    return /* html */`
+        <div id="${card_id}" class="performer-card">
+            <img src="" alt="">
+            <h3 class="name">${name}</h3>
+            <div class="age">29 y/o ITS</div>
+            <div class="scene-count">69 scenes</div>
+        </div>
+    `;
+}
+
 
 //region - EVENT LISTENERS ---------------------------------------------------------------------------------------------
 
@@ -66,6 +141,8 @@ makeApiRequestGET('/api/get/video-data', [video_hash], videodata => {
 
     console.log('videodata:', videodata);
     
+    document.title = videodata.performers.join(', ') + ' in ' + videodata.scene_title;
+
     /* - Initialize preview pane -------------------------------------------- */
 
     const preview_container = $('.video-preview-container');
@@ -81,17 +158,19 @@ makeApiRequestGET('/api/get/video-data', [video_hash], videodata => {
         })
     });
 
-    // makeApiRequestGET('/media/ensure/teaser-thumbs-large', [video_hash], () => {
-    //     const teaser_thumbs = preview_container.find('img.teaser').get(0);
-    //     const teaser_thumbs_src = `/static/preview-media/0x${video_hash}/teaser_thumbs_large.jpg`;
-    //     configure_teaser_thumb_spritesheet(teaser_thumbs_src, teaser_thumbs, preview_container.get(0));
-    // });
+    hydrate_preview_info('.video-preview-container .info-container', videodata);
+
+    makeApiRequestGET('/media/ensure/teaser-thumbs-large', [video_hash], () => {
+        const teaser_thumbs = preview_container.find('img.teaser').get(0);
+        const teaser_thumbs_src = `/static/preview-media/0x${video_hash}/teaser_thumbs_large.jpg`;
+        configure_teaser_thumb_spritesheet(teaser_thumbs_src, teaser_thumbs, preview_container.get(0));
+    });
 
     /* toggle teaser mode */
     $('.toggle-teaser-mode-button').on('click', (e) => {
         e.stopPropagation();
-        preview_container.find('video').toggleClass('hidden')
-        preview_container.find('img.poster').toggleClass('hidden')
+        preview_container.find('video').toggleClass('hidden');
+        preview_container.find('img.teaser').toggleClass('hidden');
     });
 
     /* play */
@@ -100,24 +179,32 @@ makeApiRequestGET('/api/get/video-data', [video_hash], videodata => {
         // toggle preview and video panels ...
     });
 
+
     /* - Initialize video player -------------------------------------------- */
 
-    const player = new PassionPlayer({
-        player_id: 'video-container',
-        src: '/media/get/video/' + video_hash,
-        title: videodata.scene_title,
-        styles: '/shared/libraries/PassionPlayer.css',
-        markers_get: '/api/interact/markers/get/' + video_hash,
-        markers_post: '/api/interact/markers/update/' + video_hash,
-    });
+    console.log('initializing player ...')
     
+    // const player = new PassionPlayer({
+    //     player_id: 'video-container',
+    //     src: '/media/get/video/' + video_hash,
+    //     title: videodata.scene_title,
+    //     styles: '/shared/libraries/PassionPlayer.css',
+    //     markers_get: '/api/interact/markers/get/' + video_hash,
+    //     markers_post: '/api/interact/markers/update/' + video_hash,
+    // });
+    
+
     /* - Hydrate about section ---------------------------------------------- */
+
+    hydrate_about_section('.video-about-section', videodata);
 
 
     /* - Load related videos ------------------------------------------------ */
 
 
-    /* - Load recommended videos -------------------------------------------- */
+    
+    /* - Load similar videos -------------------------------------------- */
+
     const similar_videos_load_amount = 8;
     let similar_videos_loaded = 0;
     const similar_videos_section = $('.similar-videos-section');
