@@ -20,6 +20,7 @@ async def scanVideos(
         reparse_filenames: bool=False,
         redo_video_attributes: bool=False,
         reread_json_metadata: bool=False,
+        path_filters: str|None=None,
         ws=None
         ) -> None:
     """ Scan videos in directories and process. Steps: read videos from db, scan videos, process videos, save to db """
@@ -31,6 +32,14 @@ async def scanVideos(
     video_paths = _getVideoPathsFromFolders(include_folders, ignore_folders, include_extensions=VIDEO_EXTENSIONS)
     await aprint(ws, "Found {} videos in {} folders and {} collections".format(len(video_paths), len(include_folders), len(collections_dict)))
     
+    # filter paths
+    if path_filters:
+        path_filters_list = [ f.lower().strip() for f in path_filters.split(',') ]
+        await aprint(ws, 'Filtering video paths with filters:', path_filters_list)
+        for fil in path_filters_list:
+            video_paths = [ pth for pth in video_paths if fil in pth.lower() ]
+        await aprint(ws, 'Left with {} videos'.format(len(video_paths)))
+        
     # Load videos from db
     existing_dicts = db.read_table_as_dict('videos')
     existing_video_objects = { hsh: VideoData.from_dict(dct) for hsh, dct in existing_dicts.items() }
@@ -44,7 +53,7 @@ async def scanVideos(
                                                             redo_video_attributes=redo_video_attributes, reread_json_metadata=reread_json_metadata)
     if len(video_objects) > 0:
         await aprint(ws, "Successfully loaded {} videos in {:.1f}s ({:.2f} ms/vid)\n".format( len(video_objects), (time.time()-start), (time.time()-start)*1000/len(video_objects) ))
-    combined_video_objects = combine_loaded_and_existing_videos(video_objects, existing_video_objects)
+    combined_video_objects = combine_loaded_and_existing_videos(video_objects, existing_video_objects, unloaded_as_unlinked=(path_filters is None))
     combined_video_dicts = { hsh: vd.to_dict()  for hsh, vd in combined_video_objects.items() }
     db.write_dict_of_objects_to_db(combined_video_dicts, 'videos')
 

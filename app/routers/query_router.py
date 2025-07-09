@@ -61,7 +61,7 @@ def ROUTE_get_similar_videos(video_hash: str, start_from: int, limit: int):
 
 
 # GET SIMILAR PERFORMERS
-@query_router.get('/get/similar-performers/{performer}')
+@query_router.get('/get/similar-actors/{performer}')
 def ROUTE_get_similar_performers(performer: str):
     raise HTTPException(status_code=501, detail='Not implemented')
     print(f'Getting similar performers to: "{performer}"')

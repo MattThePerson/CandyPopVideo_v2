@@ -205,7 +205,7 @@ def ROUTER_ensure_teaser_thumbs_large(video_hash: str):
 @media_router.get("/get/subtitles/{video_hash}")
 def ROUTER_get_subtitles(video_hash: str, check: bool=False):
     video_object = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') )
-    id_ = video_object.jav_code or video_object.source_id
+    id_ = video_object.dvd_code or video_object.source_id
     if id_ is None:
         return Response('No usable id for video', 204)
         # raise HTTPException(status_code=404, detail="No usable id for video")

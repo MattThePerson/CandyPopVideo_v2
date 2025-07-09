@@ -1,9 +1,9 @@
 
 
 query = {
-    query_type: 'performers',    //  str = [ performers | studios ]
+    query_type: 'actors',    //  str = [ actors | studios ]
     query_string: null,          //  str|None
-    use_sort_performers: false,  //  bool
+    use_primary: false,          //  bool
     filter_performer: null,      //  str|None
     filter_studio: null,         //  str|None
     filter_collection: null,     //  str|None

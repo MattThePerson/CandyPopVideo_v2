@@ -29,23 +29,26 @@ class VideoData:
     path_relative:  Optional[str] = None
     
     # scene attributes
+    title:              Optional[str] = None
     scene_title:        Optional[str] = None
+    movie_series:       Optional[str] = None
     studio:             Optional[str] = None
     line:               Optional[str] = None
     date_released:      Optional[str] = None
-    scene_description:  Optional[str] = None
-    jav_code:           Optional[str] = None
-    # data18_url:         Optional[str] = None
+    description:        Optional[str] = None
+    dvd_code:           Optional[str] = None
+    # d18_url:            Optional[str] = None
     # date_released_d18:  Optional[str] = None
-    performers:             list[str] = field(default_factory=list)
-    sort_performers:        list[str] = field(default_factory=list)
-    mention_performers:     list[str] = field(default_factory=list)
+    actors:                 list[str] = field(default_factory=list)
+    primary_actors:         list[str] = field(default_factory=list)
+    secondary_actors:       list[str] = field(default_factory=list)
     
     # meta
     tags:               list[str] = field(default_factory=list)
     tags_from_filename: list[str] = field(default_factory=list)
     tags_from_path:     list[str] = field(default_factory=list)
     tags_from_json:     list[str] = field(default_factory=list)
+    genres:             list[str] = field(default_factory=list)
     # tags_from_d18:      list[str] = field(default_factory=list)
     metadata:                dict = field(default_factory=dict)
     
@@ -60,6 +63,6 @@ class VideoData:
         if strict:
             return cls(**data)  # Will fail if extra attributes exist
         else:
-            valid_keys = {field.name for field in cls.__dataclass_fields__.values()}
-            filtered_data = {k: v for k, v in data.items() if k in valid_keys}
+            valid_keys = { field.name for field in cls.__dataclass_fields__.values() }
+            filtered_data = { k: v for k, v in data.items() if k in valid_keys }
             return cls(**filtered_data)

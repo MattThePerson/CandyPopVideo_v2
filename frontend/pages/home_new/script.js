@@ -21,7 +21,7 @@ const load_similar_videos = (results_container, video_hash, start_idx, load_amou
 makeApiRequestGET('/api/get/random-spotlight-video-hash', [], (initial_response) => {
     
     console.log(initial_response);
-    initial_response.hash = 'b213a0d3edbe' // '00c1f7c43d27';
+    initial_response.hash = 'e83b80cdb129'; // 'b213a0d3edbe' // '00c1f7c43d27';
 
     makeApiRequestGET('/api/get/video-data', [initial_response.hash], (video_data) => {
 
@@ -38,14 +38,14 @@ makeApiRequestGET('/api/get/random-spotlight-video-hash', [], (initial_response)
                 use_video_teasers = true
                 width = "32rem"
                 video_hash =        "${video_data.hash}"
-                scene_title =       "${video_data.scene_title}"
-                performers =        "${video_data.performers}"
+                title =             "${video_data.title}"
+                actors =            "${video_data.actors}"
                 studio =            "${video_data.studio}"
                 line =              "${video_data.line}"
                 date_released =     "${video_data.date_released}"
-                scene_description = "${video_data.scene_description}"
+                description =       "${video_data.description}"
                 collection =        "${video_data.collection}"
-                jav_code =          "${video_data.jav_code}"
+                dvd_code =          "${video_data.dvd_code}"
                 duration =          "${video_data.duration}"
                 resolution =        "${video_data.resolution}"
                 fps =               "${video_data.fps}"

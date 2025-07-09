@@ -36,7 +36,7 @@ def searchVideosFunction(videos_list: list[VideoData], search_query: SearchQuery
         videos_list = _sortVideos(videos_list, q.sortby)
 
     # return
-    word_cloud = _generate_word_cloud(videos_list, q.studio, q.performer, q.collection, q.include_terms)
+    word_cloud = _generate_word_cloud(videos_list, q.studio, q.actor, q.collection, q.include_terms)
     limited_results = videos_list[ q.startfrom: q.startfrom+q.limit ]
     videos_filtered_count = len(videos_list)
     return limited_results, videos_filtered_count, word_cloud
@@ -66,7 +66,7 @@ def filterVideoObjects(filtered: list[VideoData], search_query: SearchQuery):
     q = search_query
     
     # if q.only_favourites:     filtered = [ vid for vid in filtered if ( _favourites.is_favourite(vid.hash, metadata) ) ]
-    if q.performer:           filtered = [ vid for vid in filtered if ( _actor_in_video(q.performer, vid) ) ]
+    if q.actor:           filtered = [ vid for vid in filtered if ( _actor_in_video(q.actor, vid) ) ]
     if q.studio:              filtered = [ vid for vid in filtered if ( ( vid.studio and vid.studio.lower() in q.studio.lower() ) ) ]
     if q.collection:          filtered = [ vid for vid in filtered if ( (vid.collection and q.collection.lower() in vid.collection.lower()) ) ]
 
@@ -88,7 +88,7 @@ def _sortVideos(videos_list: list[VideoData], sortby_option: str) -> list[VideoD
     # sort by scene title
     videos_list.sort(
         reverse=False,
-        key=lambda video: (None, video.scene_title),
+        key=lambda video: (None, video.title),
     )
     
     if sortby_option.startswith('random'):
@@ -133,14 +133,13 @@ def get_word_cloud(videos: list[VideoData], exclude_terms=[]) -> list[tuple[str,
     word_cloud_dict: dict[str, int] = {}
     for vid in videos:
         tokens = []
-        title = vid.scene_title
+        title = vid.title
         parts_title = []
         if title:
             parts_title = get_preprocessed_text(title)
             parts_title.extend( get_bigrams(parts_title) )
         tokens.extend(parts_title)
-        tokens.extend(vid.performers)
-        tokens.extend(vid.mention_performers)
+        tokens.extend(vid.actors)
         tokens.extend(vid.tags)
         tokens.extend(vid.tags_from_path)
         if vid.studio: tokens.append(vid.studio)
@@ -177,9 +176,9 @@ def get_bigrams(parts):
 
 def _actor_in_video(actor: str, vid: VideoData):
         actor = actor.lower()
-        if vid.performers != None:
-            for perf in vid.performers:
-                if actor == perf.lower():
+        if vid.actors is not None:
+            for act in vid.actors:
+                if actor == act.lower():
                     return True
         return False
 

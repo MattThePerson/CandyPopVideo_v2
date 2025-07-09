@@ -11,13 +11,13 @@ def get_catalogue(videos_list: list[VideoData], query: CatalogueQuery) -> dict[s
     q = query
     
     # apply sort performers choice
-    if q.use_sort_performers:
-        get_video_performers = get_video_sort_performers
+    if q.use_primary_actors:
+        get_video_performers = get_video_primary_actors
     else:
-        get_video_performers = get_video_performers_all
+        get_video_performers = get_video_actors_all
 
     # filter
-    if q.filter_performer:    videos_list = [ vd for vd in videos_list if q.filter_performer in  get_video_performers(vd) ]
+    if q.filter_actor:    videos_list = [ vd for vd in videos_list if q.filter_actor in  get_video_performers(vd) ]
     if q.filter_studio:       videos_list = [ vd for vd in videos_list if q.filter_studio in     get_video_studios(vd) ]
     if q.filter_collection:   videos_list = [ vd for vd in videos_list if q.filter_collection in get_video_collection(vd) ]
     if q.filter_tag:          videos_list = [ vd for vd in videos_list if q.filter_tag in        get_video_tags(vd) ]
@@ -50,11 +50,11 @@ def _get_item_counts(videos_list: list[VideoData], selector_func) -> list[tuple[
     return [ (item, count) for item, count in item_counts.items() ]
 
 
-def get_video_performers_all(vd: VideoData) -> list[str]:
-    return vd.performers
+def get_video_actors_all(vd: VideoData) -> list[str]:
+    return vd.actors
 
-def get_video_sort_performers(vd: VideoData) -> list[str]:
-    return vd.sort_performers
+def get_video_primary_actors(vd: VideoData) -> list[str]:
+    return vd.primary_actors
 
 def get_video_studios(vd: VideoData) -> list[str]:
     return [ x for x in [vd.studio, vd.line] if x is not None ]

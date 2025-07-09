@@ -9,6 +9,7 @@ class MyCard extends HTMLElement {
     async connectedCallback() {
         this.attachShadow({ mode: 'open' });
         
+        /* fetch get styles */
         const response = await fetch('/shared/web_components/search_panel.css');
         const css = await response.text()
         this.render(css);
@@ -102,15 +103,15 @@ class MyCard extends HTMLElement {
                                 </div>
                                 <div class="column">
                                     <div class="holder">
-                                        <h4>tags</h4>
-                                        <input type="text">
-                                    </div>
-                                    <div class="holder">
                                         <h4>include</h4>
                                         <input type="text">
                                     </div>
                                     <div class="holder">
                                         <h4>exclude</h4>
+                                        <input type="text">
+                                    </div>
+                                    <div class="holder">
+                                        <h4>tags</h4>
                                         <input type="text">
                                     </div>
                                 </div>
@@ -151,14 +152,15 @@ class MyCard extends HTMLElement {
                     <!-- bottom bar -->
                     <div class="bottom-bar">
                         <div class="left-side">
-                            <button class="hide-extension">hide</button>
+                            <!-- <button class="hide-extension">hide</button> -->
                             <button class="date-added-dist">date added dist</button>
                             <button class="date-released-dist">date released dist</button>
                             <button class="word-cloud">word cloud</button>
-                            <button class="word-cloud">similar performers</button>
+                            <button class="similar-performers">similar performers</button>
+                            <button class="similar-studios">similar studios</button>
                         </div>
                         <div class="right-side">
-                            <button class="placeholder">placeholder</button>
+                            <button class="random-video">random video</button>
                         </div>
                     </div>
                     

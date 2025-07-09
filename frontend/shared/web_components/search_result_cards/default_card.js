@@ -7,14 +7,14 @@ export class MyCard extends HTMLElement {
         this.useVideoTeasers = (this.getAttribute('use_video_teasers') == 'true')
         this.video_hash = this.getAttribute('video_hash');
 
-        this.scene_title = this.getAttribute('scene_title');
-        this.performers_str = this.getAttribute('performers');
+        this.title = this.getAttribute('title');
+        this.actors_str = this.getAttribute('actors');
         this.studio = this.getAttribute('studio');
         this.line = this.getAttribute('line');
         this.date_released = this.getAttribute('date_released');
         this.scene_description = this.getAttribute('scene_description');
         this.collection = this.getAttribute('collection');
-        this.jav_code = this.getAttribute('jav_code');
+        this.dvd_code = this.getAttribute('dvd_code');
 
         this.duration = this.getAttribute('duration');
         this.resolution = this.getAttribute('resolution');
@@ -155,23 +155,27 @@ export class MyCard extends HTMLElement {
             </a>`
         ).join('\n')
         
-        // performers html
-        const performers_html = this.performers_str.split(',').filter(x => x !== '').map(x =>
-            `<a href="/pages/search/page.html?performer=${x}">
+        // actors html
+        const actors_html = this.actors_str.split(',').filter(x => x !== '').map((x, idx) =>
+            `
+            ${ (idx === 0) ? "" : "<span></span>" }
+            <a href="/pages/search/page.html?actor=${x}">
                 ${x}
             </a>`
         ).join('\n')
         
         // tags html
-        const tags_html = this.tags_str.split(',').filter(x => x !== '').map(x =>
-            `<a href="/pages/search/page.html?include_terms=${x}">
+        const tags_html = this.tags_str.split(',').filter(x => x !== '').map((x, idx) =>
+            `
+            ${ (idx === 0) ? "" : "<span>|</span>" }
+            <a href="/pages/search/page.html?include_terms=${x}">
                 ${x}
             </a>`
         ).join('\n')
 
         // title
-        let title = this.scene_title;
-        if (this.jav_code !== 'null') title = `[${this.jav_code}] ` + title;
+        let title = this.title;
+        if (this.dvd_code !== 'null') title = `[${this.dvd_code}] ` + title;
         if (title.length > 80) title = title.slice(0, 78) + '...';
         
         const year_el_style = (date_released_fmt !== 'null') ? '' : 'display: none;';
@@ -271,7 +275,7 @@ export class MyCard extends HTMLElement {
                                     all: unset;
                                     height: 1.3rem;
                                     min-width: 1.2rem;
-                                    margin: 0.2rem 0.6rem;
+                                    margin: 0.1rem 0.6rem;
                                     padding: 0.2rem;
                                     cursor: pointer;
                                 }
@@ -302,7 +306,7 @@ export class MyCard extends HTMLElement {
                             </div>
                         </div>
                         <div class="actors-bar">
-                            ${performers_html}
+                            ${actors_html}
                         </div>
                     </div>
                     <div class="tags-bar">
@@ -473,22 +477,26 @@ export class MyCard extends HTMLElement {
                 }
                 
                 .studios-bar, .actors-bar {
+                    font-family: 'Inria Serif';
+                    font-weight: bold;
                     gap: 0.3rem;
                     color: #888;
                     font-size: 1rem;
-                    font-family: "Inter";
-                    font-weight: 400;
+                    /* font-weight: 400; */
                 }
                 .studios-bar {
                     font-weight: 500;
                     color: #777;
+                    font-family: "Inter";
                 }
 
-                /* add | between performers/studios */
-                .actors-bar > *:not(:last-child)::after,
-                .studios-bar > *:not(:last-child)::after {
-                    content: '|';
-                    font-size: 0.8rem;
+                /* separator */
+                .studios-bar span,
+                .actors-bar span {
+                    height: 0.8rem;
+                    width: 2px;
+                    background: #888;
+                    margin: 0 2px;
                 }
 
                 .tags-bar {

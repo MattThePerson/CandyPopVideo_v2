@@ -4,7 +4,7 @@ import time
 from pathlib import Path
 from dataclasses import fields
 
-from handymatt import StringParser
+from handymatt import StringParser, json_metadata
 from handymatt_media import video_analyser
 from handymatt_media.metadata import video_metadata
 
@@ -58,12 +58,17 @@ def process_videos(
                 # add data parsed from filename / path
                 video_data = _add_filename_parsed_data(video_data, parser)
                 # organize tags
-                video_data = _organize_video_data_tags(video_data)
+                video_data = _get_tags_from_path(video_data)
             
             if not video_found_in_existing_videos or reread_json_metadata:
                 # get additional metadata from json files
-                ...
-                
+                id_ = video_data.dvd_code or video_data.source_id
+                if id_ is not None:
+                    metadata = json_metadata.get_metadata(id_, video_data.path)
+                    if metadata != {}:
+                        video_data = _add_metadata_to_video_data(video_data, metadata)
+            
+            video_data.tags = list(set( video_data.tags_from_filename + video_data.tags_from_path + video_data.tags_from_json ))
             
             videos_dict[video_hash] = video_data
     print()
@@ -72,11 +77,12 @@ def process_videos(
 
 
 # 
-def combine_loaded_and_existing_videos(loaded: dict[str, VideoData], existing: dict[str, VideoData]) -> dict[str, VideoData]:
+def combine_loaded_and_existing_videos(loaded: dict[str, VideoData], existing: dict[str, VideoData], unloaded_as_unlinked: bool=True) -> dict[str, VideoData]:
     """ Combines existing and loaded videos ensuring that videos that we're not loaded get flagged as not being linked """
     combined = {}
     for pid, obj in existing.items():
-        obj.is_linked = False
+        if unloaded_as_unlinked:
+            obj.is_linked = False
         combined[pid] = obj
     for pid, obj in loaded.items():
         obj.is_linked = True
@@ -198,7 +204,7 @@ def _add_filename_parsed_data(video_data: VideoData, parser: StringParser):
 
     path_obj = Path(video_data.path)
     filename_info_dict = _parse_filename(path_obj.stem, parser)
-    if len(filename_info_dict) == 1:  # matched only title, using dirname as sort_performers
+    if len(filename_info_dict) == 1:  # matched only title, using dirname as primary_actors
         fn = "{} - {}".format(path_obj.parent.name, path_obj.stem)
         filename_info_dict = _parse_filename(fn, parser)
 
@@ -210,15 +216,15 @@ def _add_filename_parsed_data(video_data: VideoData, parser: StringParser):
 def _add_filename_info_to_scene_data(vd: VideoData, info: dict[str, str]):
 
     # scene attributes
-    vd.scene_title =    info.get('scene_title')
+    vd.title =    info.get('title')
     vd.studio =         info.get('studio')
     vd.line =           info.get('line')
-    vd.jav_code =       info.get('jav_code')
+    vd.dvd_code =       info.get('dvd_code')
     vd.source_id =      info.get('source_id')
     
-    vd.sort_performers =    [ p for p in info.get('sort_performers', '').split(', ') if p != '' ]
-    vd.mention_performers = [ p for p in info.get('mention_performers', '').split(', ') if p != '' ]
-    vd.performers = _get_ordered_set( vd.sort_performers + vd.mention_performers )
+    vd.primary_actors =    [ p for p in info.get('primary_actors', '').split(', ') if p != '' ]
+    vd.secondary_actors = [ p for p in info.get('secondary_actors', '').split(', ') if p != '' ]
+    vd.actors = _get_ordered_set( vd.primary_actors + vd.secondary_actors )
     
     # use year if no date_released
     date_released = None
@@ -233,41 +239,31 @@ def _add_filename_info_to_scene_data(vd: VideoData, info: dict[str, str]):
     return vd
 
 
-def _organize_video_data_tags(video_data: VideoData):
+def _get_tags_from_path(video_data: VideoData):
     """ Organize tags. Assumes all other attributes are in order. """
     if video_data.path_relative:
         parent_names = video_data.path_relative.replace(video_data.filename, '')
         tags_from_path = [ t.replace('_', '') for t in parent_names.split('/') if t != '' ]
-        ignore_tags = video_data.performers + [ video_data.studio, video_data.line ]
+        ignore_tags = video_data.actors + [ video_data.studio, video_data.line ]
         video_data.tags_from_path = [ t for t in tags_from_path if t not in ignore_tags ]
     
-    video_data.tags = list(set( video_data.tags_from_filename + video_data.tags_from_path + video_data.tags_from_json ))
     return video_data
 
 
-def _filter_scene_info(info: dict) -> dict:
-    # use year if no date_released
-    if info.get('date_released'):
-        info['date_released'] = str(info['date_released'])
-    elif 'year' in info:
-        info['date_released'] = info['year']
-        del info['year']
+def _add_metadata_to_video_data(video_data: VideoData, metadata: dict) -> VideoData:
     
+    if 'tags' in metadata:
+        metadata['tags_from_json'] = metadata['tags']
+        del metadata['tags']
     
-    # add tags from filename
-    if 'tags' in info:
-        info['tags_from_filename'] = info['tags']
-        del info['tags']
+    valid_keys = { field.name for field in video_data.__dataclass_fields__.values() }
+    filtered_data = { k: v for k, v in metadata.items() if k in valid_keys }
     
-    # combine performers
-    if 'sort_performers' in info:
-        info['sort_performers'] = info['sort_performers'].split(", ")
-    if 'mention_performers' in info:
-        info['mention_performers'] = info['mention_performers'].split(', ')
-    performers = info.get('sort_performers', []) + info.get('mention_performers', [])
-    info['performers'] = _get_ordered_set(performers)
+    for k, v in metadata.items():
+        setattr(video_data, k, v)
     
-    return info
+    return video_data
+
 
 
 def _parse_filename(filename: str, parser: StringParser):

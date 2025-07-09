@@ -130,12 +130,12 @@ def _dot_similarity(target_vect: csr_matrix, matrix: csr_matrix):
 
 def _extract_tokens_from_video_object(video: VideoData, stopwords=[], stemmer=None) -> list[tuple[str]]:
     tokens: list[tuple[str]] = []
-    tokens.extend( _extract_tokens_from_string( video.scene_title,          stopwords=stopwords, stemmer=stemmer) )
+    tokens.extend( _extract_tokens_from_string( video.title,          stopwords=stopwords, stemmer=stemmer) )
     tokens.extend( _extract_tokens_from_string( video.studio,               stopwords=stopwords, stemmer=stemmer) )
     tokens.extend( _extract_tokens_from_string( video.line,                 stopwords=stopwords, stemmer=stemmer) )
-    tokens.extend( _extract_tokens_from_string( video.scene_description,    stopwords=stopwords, stemmer=stemmer) )
+    tokens.extend( _extract_tokens_from_string( video.description,    stopwords=stopwords, stemmer=stemmer) )
     tokens.extend( _extract_tokens_from_string( video.collection ) )
-    for name in video.performers:
+    for name in video.actors:
         tokens.extend( _extract_tokens_from_string(name, stopwords=stopwords, stemmer=stemmer) )
     for tag in video.tags:
         tokens.extend( _extract_tokens_from_string(tag, stopwords=stopwords, stemmer=stemmer) )

@@ -164,7 +164,7 @@ document.querySelector('#search-page-info .page-number').innerText = 'Page ' + (
 /* construct query */
 const query = {
     search_string: null,    // str,
-    performer: null,        // str,
+    actor: null,        // str,
     studio: null,           // str,
     collection: null,       // str,
     include_terms: [],    // list[str],

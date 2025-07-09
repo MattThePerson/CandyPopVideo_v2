@@ -273,10 +273,10 @@ if (videoHash != null) {
         setPlayerTime();
     
         // add scene data to page
-        document.title = videodata.sort_performers.join(', ') + ' - ' + videodata.scene_title;
+        document.title = videodata.primary_actors.join(', ') + ' - ' + videodata.title;
         const header = document.querySelector(".video-header");
         header.querySelector('.title').innerText = videodata.title;
-        header.querySelector('.actor').innerText = videodata.actor;
+        header.querySelector('.actors').innerText = videodata.actors;
         header.querySelector('.studio').innerText = videodata.studio;
         header.querySelector('.collection').innerText = videodata.collection;
         header.querySelector('.year').innerText = videodata.date || null;

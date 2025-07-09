@@ -35,7 +35,7 @@ async def backend_manager(args: argparse.Namespace, ws=None):
     def filter_videos_with_args(videos_list: list[VideoData], args: argparse.Namespace) -> list[VideoData]:
         query = SearchQuery(
             search_string = "NULL_STRING",
-            performer = args.performer,
+            actor = args.actor,
             studio = args.studio,
             collection = args.select_collection,
             include_terms = [ x.strip() for x in args.filters.split(',') ]          if args.filters         else [],
@@ -59,11 +59,13 @@ async def backend_manager(args: argparse.Namespace, ws=None):
         with open('config.yaml', 'r') as f:
             CONFIG = yaml.safe_load(f)
         COLLECTIONS = CONFIG.get('collections')
-        await scan.scanVideos(COLLECTIONS,
+        await scan.scanVideos(
+            COLLECTIONS,
             rehash_videos=args.rehash_videos,
             redo_video_attributes=args.redo_video_attributes,
             reparse_filenames=args.reparse_filenames,
             reread_json_metadata=args.reread_json_metadata,
+            path_filters=args.path_filters,
             ws=ws
         )
         # generate tfidf model
@@ -178,6 +180,8 @@ def create_argument_parser(non_exiting=False):
     else:
         parser = argparse.ArgumentParser()
 
+
+    
     # [1] Status
     parser.add_argument('--media-status',                                       help='[check] Get generation status of preview media', choices=GENERATE_MEDIA_OPTIONS)
     parser.add_argument('--print-without', nargs='?', const=10, default=0,       help='[check] Print paths of videos without', type=int)
@@ -193,8 +197,8 @@ def create_argument_parser(non_exiting=False):
     parser.add_argument('--generate-tfidf',            action='store_true',        help='')
     parser.add_argument('--generate-embeddings',       action='store_true',        help='')
 
-    # parser.add_argument('--paths-filters',                                      help='[scan]') # if called, non scanning wont flip is_linked flag
-    # parser.add_argument('--paths-exclude-filters',                              help='[scan]') # if called, non scanning wont flip is_linked flag
+    parser.add_argument('--path-filters',                                      help='[scan]') # if called, non scanning wont flip is_linked flag
+    # parser.add_argument('--path-exclude-filters',                              help='[scan]') # if called, non scanning wont flip is_linked flag
     
 
     # [3] Media generation
@@ -211,7 +215,7 @@ def create_argument_parser(non_exiting=False):
     parser.add_argument('--date-added-from',                                    help='[media_gen]')
     parser.add_argument('--date-added-to',                                      help='[media_gen]')
     parser.add_argument('--select-collection', '-sc',                           help='Select collection to')
-    
+
 
     # 
     # parser.add_argument('--verbose',               action='store_true',         help='')

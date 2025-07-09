@@ -81,7 +81,7 @@ function make_search_result_item(res, videoResultTemplate) {
     if (duration.startsWith("0:")) {
         duration = duration.substring(2);
     }
-    if (res.scene_title)  {
+    if (res.title)  {
         let mention_performers = '';
         // if (res['mention_performer'])
         //     mention_performers = ' (' + res['mention_performer'] + ')'
@@ -91,7 +91,7 @@ function make_search_result_item(res, videoResultTemplate) {
         let jave_code_str = '';
         if (res['jave_code'])
             jave_code_str = '[' + res['jave_code'] + '] '
-        template.querySelector('h2').innerText = jave_code_str + line_str + res.scene_title;
+        template.querySelector('h2').innerText = jave_code_str + line_str + res.title;
     } else {
         template.querySelector('h2').innerText = res.filename;
     }

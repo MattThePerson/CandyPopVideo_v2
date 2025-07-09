@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 class SearchQuery(BaseModel):
     search_string:      str|None
-    performer:          str|None
+    actor:              str|None
     studio:             str|None
     collection:         str|None
     include_terms:      list[str]
@@ -21,9 +21,9 @@ class SearchQuery(BaseModel):
 class CatalogueQuery(BaseModel):
     query_type:          str  # performers | studios
     query_string:        str|None = None
-    use_sort_performers: bool = False
+    use_primary_actors:  bool = False
     
-    filter_performer:   str|None = None
+    filter_actor:       str|None = None
     filter_studio:      str|None = None
     filter_collection:  str|None = None
     filter_tag:         str|None = None

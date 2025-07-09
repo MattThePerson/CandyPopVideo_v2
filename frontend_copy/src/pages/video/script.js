@@ -301,7 +301,7 @@ if (videoHash != null) {
         setPlayerTime();
     
         // add scene data to page
-        document.title = videodata.sort_performers.join(', ') + ' - ' + videodata.scene_title;
+        document.title = videodata.primary_actors.join(', ') + ' - ' + videodata.title;
         const header = document.querySelector(".video-header");
         header.querySelector('.title').innerText = videodata.title;
         header.querySelector('.actor').innerText = videodata.actor;

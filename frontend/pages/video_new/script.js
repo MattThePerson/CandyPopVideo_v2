@@ -44,7 +44,7 @@ function hydrate_preview_info(selector, data) {
 
     const container = $(selector);
 
-    container.find('.scene_title').text(data.scene_title);
+    container.find('.title').text(data.title);
     container.find('.date_released').text(data.date_released);
     
     /* append studios */
@@ -58,9 +58,9 @@ function hydrate_preview_info(selector, data) {
         }
     }
 
-    for (let x of data.performers) {
-        container.find('.performers-container').append(/* html */`
-            <a class="performer" href="/pages/search/page.html?performer=${x}">
+    for (let x of data.actors) {
+        container.find('.actors-container').append(/* html */`
+            <a class="actor" href="/pages/search/page.html?actor=${x}">
                 ${x}
             </a>
         `);
@@ -74,7 +74,7 @@ function hydrate_about_section(selector, data) {
     const section = $(selector);
 
     /* left side */
-    section.find('.scene_title').text( data.scene_title )
+    section.find('.title').text( data.title )
     section.find('.resolution').text( data.resolution )
     section.find('.bitrate').text( data.bitrate )
     section.find('.fps').text( data.fps )
@@ -91,11 +91,11 @@ function hydrate_about_section(selector, data) {
         }
     }
 
-    data.performers.forEach(name => {
-        const card_id = 'performer-card_' + name.toLowerCase().replace(/ /g, '-');
-        section.find('.performer-cards-bar').append(get_performer_card(name, card_id));
-        // makeApiRequestGET('/api/get/performer-data', [name], perf_data => {
-        //     // TODO: get performer age ITS
+    data.actors.forEach(name => {
+        const card_id = 'actor-card_' + name.toLowerCase().replace(/ /g, '-');
+        section.find('.actor-cards-bar').append(get_actor_card(name, card_id));
+        // makeApiRequestGET('/api/get/actor-data', [name], perf_data => {
+        //     // TODO: get actor age ITS
         //     $('#' + card_id).find('age').text(perf_data.age + ' y/o ITS');
         //     $('#' + card_id).find('scene_count').text(perf_data.scene_count + ' scenes');
         // });
@@ -104,9 +104,9 @@ function hydrate_about_section(selector, data) {
     
 }
 
-function get_performer_card(name, card_id) {
+function get_actor_card(name, card_id) {
     return /* html */`
-        <div id="${card_id}" class="performer-card">
+        <div id="${card_id}" class="actor-card">
             <img src="" alt="">
             <h3 class="name">${name}</h3>
             <div class="age">29 y/o ITS</div>
@@ -141,7 +141,7 @@ makeApiRequestGET('/api/get/video-data', [video_hash], videodata => {
 
     console.log('videodata:', videodata);
     
-    document.title = videodata.performers.join(', ') + ' in ' + videodata.scene_title;
+    document.title = videodata.actors.join(', ') + ' in ' + videodata.title;
 
     /* - Initialize preview pane -------------------------------------------- */
 
@@ -187,7 +187,7 @@ makeApiRequestGET('/api/get/video-data', [video_hash], videodata => {
     // const player = new PassionPlayer({
     //     player_id: 'video-container',
     //     src: '/media/get/video/' + video_hash,
-    //     title: videodata.scene_title,
+    //     title: videodata.title,
     //     styles: '/shared/libraries/PassionPlayer.css',
     //     markers_get: '/api/interact/markers/get/' + video_hash,
     //     markers_post: '/api/interact/markers/update/' + video_hash,
