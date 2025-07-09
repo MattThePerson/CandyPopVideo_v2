@@ -34,7 +34,7 @@ def ROUTE_add_favourite(video_hash: str):
     video_interactions.favourited_date = datetime.now().strftime(DATETIME_FORMAT)
     print('Adding favourite!!')
     db.write_object_to_db(video_hash, video_interactions.to_dict(), 'interactions')
-    return { 'msg': 'we gucci' }
+    return { 'msg': 'favourite added' }
 
 
 @interact_router.post("/favourites/remove/{video_hash}")
@@ -45,7 +45,7 @@ def ROUTE_remove_favourite(video_hash: str):
     video_interactions.is_favourite = False
     # video_interactions.favourited_date = datetime.now().strftime(DATETIME_FORMAT)
     db.write_object_to_db(video_hash, video_interactions.to_dict(), 'interactions')
-    return { 'msg': 'we gucci' }
+    return { 'msg': 'favourite removed' }
 
 
 @interact_router.get("/favourites/check/{video_hash}")

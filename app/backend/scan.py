@@ -17,7 +17,9 @@ from .helpers import aprint
 async def scanVideos(
         collections: dict[str, list],
         rehash_videos: bool=False,
-        reparse_filenames: bool=False, # TODO: Apply
+        reparse_filenames: bool=False,
+        redo_video_attributes: bool=False,
+        reread_json_metadata: bool=False,
         ws=None
         ) -> None:
     """ Scan videos in directories and process. Steps: read videos from db, scan videos, process videos, save to db """
@@ -37,7 +39,9 @@ async def scanVideos(
     # 
     await aprint(ws, "[PROCESS] Loading/Generating video objects")
     start = time.time()
-    video_objects: dict[str, VideoData] = process_videos(video_paths, existing_video_objects, collections_dict, SCENE_FILENAME_FORMATS, rehash_videos=rehash_videos)
+    video_objects: dict[str, VideoData] = process_videos(video_paths, existing_video_objects, collections_dict, SCENE_FILENAME_FORMATS,
+                                                            rehash_videos=rehash_videos, reparse_filenames=reparse_filenames,
+                                                            redo_video_attributes=redo_video_attributes, reread_json_metadata=reread_json_metadata)
     if len(video_objects) > 0:
         await aprint(ws, "Successfully loaded {} videos in {:.1f}s ({:.2f} ms/vid)\n".format( len(video_objects), (time.time()-start), (time.time()-start)*1000/len(video_objects) ))
     combined_video_objects = combine_loaded_and_existing_videos(video_objects, existing_video_objects)
@@ -55,9 +59,9 @@ def _process_collection_dirs(collections: dict[str, list]):
 
     for name, folders in collections.items():
         if folders:
-            ig_fol = [ convert_to_wsl_path(x) for x in folders if x.startswith('!') ]
+            ig_fol = [ x.replace('!','').strip() for x in folders if x.startswith('!') ]
             ignore_folders.extend(ig_fol)
-            inc_fol = [ convert_to_wsl_path(x) for x in folders if x not in ig_fol ]
+            inc_fol = [ x for x in folders if x not in ig_fol ]
             include_folders.extend(inc_fol)
             for f in inc_fol:
                 folder_collection[f] = name

@@ -8,7 +8,7 @@ from handymatt import StringParser
 from handymatt_media import video_analyser
 from handymatt_media.metadata import video_metadata
 
-from ..loggers import LOGGER_HASHING_FAILED, LOGGER_COLLISIONS
+from ..loggers import LOGGER_HASHING_FAILED, LOGGER_COLLISIONS, LOADING_FAILED
 from ..schemas.video_data import VideoData
 from .metadata import set_NTFS_ADS_tag, get_NTFS_ADS_tag
 
@@ -21,7 +21,9 @@ def process_videos(
     collections_dict: dict[str, str],
     scene_filename_formats: list[str],
     rehash_videos = False,
-    # readd_video_attributes = False, # TODO: rename!
+    redo_video_attributes = False,
+    reparse_filenames = False,
+    reread_json_metadata = False,
 ) -> dict[str, VideoData]:
     """
     Given a list of video path and a dictionary of previously scanned video data objects,
@@ -40,24 +42,28 @@ def process_videos(
         print('\rprocessing videos ({:_}/{:_}) ({} fails) [{}] : {:<120} :'
             .format(idx+1, len(hash_path_map), len(fails), video_hash, Path(video_path).name[:118]), end='')
         video_data: VideoData|None = existing_videos.get(video_hash)
-        if video_data is None:
+        video_found_in_existing_videos = (video_data is not None)
+        if not video_found_in_existing_videos or redo_video_attributes:
             video_data = _get_new_video_data_object(video_hash, video_path)
 
         if video_data is None:
             fails.append((video_hash, video_path))
+        
         else:
             video_data.path = video_path                # update incase of path change
             video_data.filename = Path(video_path).name # update incase of path change
             video_data = _add_collection_attributes(video_data, collections_dict)
+
+            if not video_found_in_existing_videos or reparse_filenames:
+                # add data parsed from filename / path
+                video_data = _add_filename_parsed_data(video_data, parser)
+                # organize tags
+                video_data = _organize_video_data_tags(video_data)
             
-            # add data parsed from filename / path
-            video_data = _add_filename_parsed_data(video_data, parser)
-            
-            # read tags from json file and add them
-            ...
-            
-            # organize tags
-            video_data = _organize_video_data_tags(video_data)
+            if not video_found_in_existing_videos or reread_json_metadata:
+                # get additional metadata from json files
+                ...
+                
             
             videos_dict[video_hash] = video_data
     print()
@@ -114,7 +120,7 @@ def _get_video_hashes(
                     LOGGER_HASHING_FAILED.error('Error when updating filename embedded hash for: "{}"\n error: {}'.format(video_path, e))
         if video_hash:
             if video_hash in hash_path_map:
-                LOGGER_COLLISIONS.debug(f'hash [{video_hash}] shared by two videos:\n  1: {video_path}\n  2:{hash_path_map[video_hash]}')
+                LOGGER_COLLISIONS.debug(f'hash [{video_hash}] shared by two videos:\n  1: {video_path}\n  2: {hash_path_map[video_hash]}')
                 collisions.append(video_hash)
             else:
                 hash_path_map[video_hash] = video_path
@@ -138,7 +144,6 @@ def _get_new_video_data_object(video_hash: str, video_path: str) -> VideoData|No
     try:
         extracted_data = video_analyser.getVideoData(video_path)
     except Exception as e:
-        from ..loggers import LOADING_FAILED
         err_msg = 'getVideoData() failed for [{}] \"{}\"\nmsg: {}'.format(video_hash, video_path, e)
         print(err_msg)
         LOADING_FAILED.error(err_msg)
@@ -211,8 +216,8 @@ def _add_filename_info_to_scene_data(vd: VideoData, info: dict[str, str]):
     vd.jav_code =       info.get('jav_code')
     vd.source_id =      info.get('source_id')
     
-    vd.sort_performers =    info.get('sort_performers', '').split(', ')
-    vd.mention_performers = info.get('mention_performers', '').split(', ')
+    vd.sort_performers =    [ p for p in info.get('sort_performers', '').split(', ') if p != '' ]
+    vd.mention_performers = [ p for p in info.get('mention_performers', '').split(', ') if p != '' ]
     vd.performers = _get_ordered_set( vd.sort_performers + vd.mention_performers )
     
     # use year if no date_released

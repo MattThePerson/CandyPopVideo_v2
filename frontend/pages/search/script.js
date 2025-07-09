@@ -2,6 +2,7 @@
 import { injectComponents } from '../../shared/util/component.js'
 import { makeApiRequestGET, makeApiRequestPOST_JSON, makeApiRequestPOST } from '../../shared/util/request.js';
 import { generate_results_OLD } from '../../shared/util/search_OLD.js';
+import { generate_results } from '../../shared/util/load.js';
 
 
 injectComponents();
@@ -210,6 +211,7 @@ if (urlParams.size > 0) {
         // return;
         const use_custom_thumbnails = window.location.pathname.includes('listPage.html');
         generate_results_OLD(results, {generate_nav : true}, query);
+        generate_results(results, )
         
         if (query.actor) {
             console.log('Making performer panel');

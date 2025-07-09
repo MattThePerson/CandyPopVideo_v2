@@ -7,7 +7,7 @@ from handymatt.wsl_paths import convert_to_wsl_path
 from handymatt_media import media_generator
 
 from .. import db
-from config import PREVIEW_MEDIA_DIR, CUSTOM_THUMBS_DIR
+from config import PREVIEW_MEDIA_DIR, CUSTOM_THUMBS_DIR, SUBTITLE_FOLDERS
 from ..schemas import VideoData
 from ..media import generators, checkers
 
@@ -203,5 +203,19 @@ def ROUTER_ensure_teaser_thumbs_large(video_hash: str):
 
 # GET SUBTITLES
 @media_router.get("/get/subtitles/{video_hash}")
-def ROUTER_get_subtitles(video_hash: str):
-    return FileResponse(r'A:\Whispera\videos\JAV\.subtitles\JUL-617.srt')
+def ROUTER_get_subtitles(video_hash: str, check: bool=False):
+    video_object = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') )
+    id_ = video_object.jav_code or video_object.source_id
+    if id_ is None:
+        return Response('No usable id for video', 204)
+        # raise HTTPException(status_code=404, detail="No usable id for video")
+    for base_dir in SUBTITLE_FOLDERS:
+        srt_path = base_dir + f'/{id_}.srt'
+        if os.path.exists(srt_path):
+            if check:
+                return {'msg', 'all gucci'}
+            else:
+                return FileResponse(srt_path)
+    return Response('No subtitles found', 204)
+    # raise HTTPException(status_code=404, detail='No subtitles found')
+

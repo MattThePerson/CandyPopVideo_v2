@@ -89,6 +89,39 @@ export class MyCard extends HTMLElement {
             });
             
         }
+
+        /* check for subs */
+        $.get(`/media/get/subtitles/${this.video_hash}?check=true`, (data, status) => {
+            if (status === 'success') {
+                $shadow.find('.details-bar .has-subs').show();
+            }
+        });
+        
+        /* check favourite */
+        const is_fav_button = $shadow.find('button.is-fav-button');
+        $.get(`/api/interact/favourites/check/${this.video_hash}`, (data, status) => {
+            if (status === 'success') {
+                is_fav_button.addClass('loaded');
+                if (data.is_favourite) {
+                    is_fav_button.addClass('is-fav');
+                }
+                // add event listeners
+                is_fav_button.on('click', () => {
+                    let change_favourite_route;
+                    if (is_fav_button.hasClass('is-fav')) {
+                        change_favourite_route = `/api/interact/favourites/remove/${this.video_hash}`;
+                    } else {
+                        change_favourite_route = `/api/interact/favourites/add/${this.video_hash}`;
+                    }
+                    $.post(change_favourite_route, (data, status) => {
+                        if (status === 'success') {
+                            is_fav_button.toggleClass('is-fav');
+                        }
+                    });
+                });
+            }
+        });
+        
     }
     
 
@@ -135,7 +168,13 @@ export class MyCard extends HTMLElement {
                 ${x}
             </a>`
         ).join('\n')
+
+        // title
+        let title = this.scene_title;
+        if (this.jav_code !== 'null') title = `[${this.jav_code}] ` + title;
+        if (title.length > 80) title = title.slice(0, 78) + '...';
         
+        const year_el_style = (date_released_fmt !== 'null') ? '' : 'display: none;';
         
         this.shadowRoot.innerHTML = /* html */`
         
@@ -164,19 +203,100 @@ export class MyCard extends HTMLElement {
                     <div class="details-bar">
                         <div class="left-side">
                             <span class="views">9 views</span>
-                            <span class="likes">3 likes</span>
+                            <div class="likes">
+                                3
+                                <svg width="32px" height="32px" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M1.24264 8.24264L8 15L14.7574 8.24264C15.553 7.44699 16 6.36786 16 5.24264V5.05234C16 2.8143 14.1857 1 11.9477 1C10.7166 1 9.55233 1.55959 8.78331 2.52086L8 3.5L7.21669 2.52086C6.44767 1.55959 5.28338 1 4.05234 1C1.8143 1 0 2.8143 0 5.05234V5.24264C0 6.36786 0.44699 7.44699 1.24264 8.24264Z" fill="#000000"/>
+                                </svg>
+                            </div>
+                            <span class="rating">B+</span>
+                            <span style="display: none" class="has-subs">subs</span>
+                            <style>
+                                .details-bar {
+                                    font-size: 0.71rem;
+                                    justify-content: space-between;
+                                    color: #999;
+                                    padding: 0.25rem 0.7rem;
+                                }
+                                .left-side {
+                                    gap: 0.65rem;
+                                }
+                                .likes {
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 1.5px;
+                                    text-align: center;
+                                }
+                                .amount {
+                                    /* margin-bottom: 2px; */
+                                    background: purple;
+                                }
+                                .likes svg {
+                                    height: 10px;
+                                    width: auto;
+                                }
+                                .likes svg path {
+                                    fill: rgba(255, 0, 0, 0.774);
+                                }
+                                .rating {
+                                    font-family: 'Jaro';
+                                    font-size: 0.8rem;
+                                    color: #bb9;
+                                }
+                                .has-subs {
+                                    border: 1px solid grey;
+                                    border-radius: 4px;
+                                    padding: 0.5px 2px;
+                                    padding-top: 0;
+                                }
+                            </style>
                         </div>
                         <div>${this.format_date_added(this.date_added)} ago</div>
                     </div>
                     <div class="title-bar">
-                        <button class="is-fav-button"></button>
+                        <button class="is-fav-button">
+                            <svg class="off" width="32px" height="32px" viewBox="-4 0 30 30" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
+                                <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage"><g id="Icon-Set" sketch:type="MSLayerGroup" transform="translate(-417.000000, -151.000000)" fill="#000000">
+                                    <path d="M437,177 C437,178.104 436.104,179 435,179 L428,172 L421,179 C419.896,179 419,178.104 419,177 L419,155 C419,153.896 419.896,153 421,153 L435,153 C436.104,153 437,153.896 437,155 L437,177 L437,177 Z M435,151 L421,151 C418.791,151 417,152.791 417,155 L417,177 C417,179.209 418.791,181 421,181 L428,174 L435,181 C437.209,181 439,179.209 439,177 L439,155 C439,152.791 437.209,151 435,151 L435,151 Z" id="bookmark" sketch:type="MSShapeGroup"></path>
+                                </g></g>
+                            </svg>
+                            <svg class="on" width="32px" height="32px" viewBox="-4 0 30 30" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
+                                <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage"><g id="Icon-Set-Filled" sketch:type="MSLayerGroup" transform="translate(-419.000000, -153.000000)" fill="#000000">
+                                    <path d="M437,153 L423,153 C420.791,153 419,154.791 419,157 L419,179 C419,181.209 420.791,183 423,183 L430,176 L437,183 C439.209,183 441,181.209 441,179 L441,157 C441,154.791 439.209,153 437,153" id="bookmark" sketch:type="MSShapeGroup"></path>
+                                </g></g>
+                            </svg>
+
+                            <style>
+                                .is-fav-button {
+                                    all: unset;
+                                    height: 1.3rem;
+                                    min-width: 1.2rem;
+                                    margin: 0.2rem 0.6rem;
+                                    padding: 0.2rem;
+                                    cursor: pointer;
+                                }
+                                .is-fav-button svg {
+                                    display: none;
+                                    height: 100%;
+                                    width: auto;
+                                }
+                                .is-fav-button .off path { fill: rgba(245, 245, 220, 0.801); }
+                                .is-fav-button .on path  { fill: rgba(236, 195, 59, 0.801); }
+                                
+                                .is-fav-button.loaded.is-fav       svg.on  { display: block; }
+                                .is-fav-button.loaded:not(.is-fav) svg.off { display: block; }
+                                .is-fav-button:active svg {
+                                    opacity: 0.8;
+                                }
+                            </style>
+                        </button>
                         <a href="">
-                            <h2>${this.scene_title}</h2>
+                            <h2>${title}</h2>
                         </a>
                     </div>
                     <div class="studio-actors-container">
                         <div class="year-studio-bar">
-                            <div class="year">${date_released_fmt}</div>
+                            <div class="year" style="${year_el_style}">${date_released_fmt}</div>
                             <div class="studios-bar">
                                 ${studios_html}
                             </div>
@@ -318,33 +438,17 @@ export class MyCard extends HTMLElement {
                     align-items: center;
                 }
 
-                .details-bar {
-                    font-size: 0.71rem;
-                    justify-content: space-between;
-                    color: #999;
-                    padding: 0.25rem 0.7rem;
-
-                    .left-side {
-                        gap: 0.5rem;
-                    }
-                }
-
                 .title-bar {
                     padding: 0 1rem;
+                    align-items: start;
 
-                    .is-fav-button {
-                        height: 1.3rem;
-                        width: 1rem;;
-                        background: rgba(238, 232, 170, 0.671);
-                        border-radius: 10px;
-                    }
                     h2 {
                         font-family: "Quicksand";
                         color: #eee;
                         font-size: 1.3rem;
                         letter-spacing: -0.6px;
                         font-weight: 100px;
-                        margin: 0 0.6rem;
+                        margin: 0;
                         text-align: left;
                     }
                 }

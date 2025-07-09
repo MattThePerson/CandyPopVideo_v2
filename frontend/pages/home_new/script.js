@@ -21,7 +21,7 @@ const load_similar_videos = (results_container, video_hash, start_idx, load_amou
 makeApiRequestGET('/api/get/random-spotlight-video-hash', [], (initial_response) => {
     
     console.log(initial_response);
-    initial_response.hash = 'ee46c8bd8efc' // '00c1f7c43d27';
+    initial_response.hash = 'b213a0d3edbe' // '00c1f7c43d27';
 
     makeApiRequestGET('/api/get/video-data', [initial_response.hash], (video_data) => {
 
@@ -35,8 +35,8 @@ makeApiRequestGET('/api/get/random-spotlight-video-hash', [], (initial_response)
         $('.target-video-container').html(/* html */`
             <search-result-card-default
                 highlighted = true
-                width = "32rem"
                 use_video_teasers = true
+                width = "32rem"
                 video_hash =        "${video_data.hash}"
                 scene_title =       "${video_data.scene_title}"
                 performers =        "${video_data.performers}"

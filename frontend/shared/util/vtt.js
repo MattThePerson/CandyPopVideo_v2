@@ -1,5 +1,27 @@
 
 
+
+/* load subtitles */
+export async function loadSRTasVTT(srtUrl, callback) {
+    const response = await fetch(srtUrl);
+    if (response.status != 200) return;
+    let srt = await response.text();
+
+    // Basic .srt → .vtt conversion
+    let vtt = 'WEBVTT\n\n' + srt
+        .replace(/\r/g, '')
+        .replace(/(\d+)\n(\d{2}:\d{2}:\d{2}),(\d{3}) --> (\d{2}:\d{2}:\d{2}),(\d{3})/g,
+                '$1\n$2.$3 --> $4.$5');
+
+    const blob = new Blob([vtt], { type: 'text/vtt' });
+    const url = URL.createObjectURL(blob);
+
+    callback(url);
+
+}
+
+
+/* configure_teaser_thumb_spritesheet */
 export function configure_teaser_thumb_spritesheet(spritesheet_src, thumbnail_container, parent_container) {
     
     const vtt_src = spritesheet_src.replace('.jpg', '.vtt');

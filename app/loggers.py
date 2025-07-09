@@ -27,7 +27,7 @@ LOGGER_HASHING.addHandler(handler)
 
 # Configure hashing collisions logger
 LOGGER_COLLISIONS = logging.getLogger('hash-collision')
-LOGGER_COLLISIONS.setLevel(logging.INFO)
+LOGGER_COLLISIONS.setLevel(logging.DEBUG)
 handler = logging.FileHandler(f'{_logger_dir}/hashing_collisions.log', mode='a')
 handler.setFormatter( logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s') )
 LOGGER_COLLISIONS.addHandler(handler)

@@ -2,6 +2,8 @@
 import { injectComponents } from '../../shared/util/component.js'
 import { makeApiRequestGET, makeApiRequestPOST } from '../../shared/util/request.js';
 import { generate_results_OLD } from '../../shared/util/search_OLD.js';
+import { generate_results } from '../../shared/util/load.js';
+import { loadSRTasVTT } from '../../shared/util/vtt.js';
 
 injectComponents();
 
@@ -117,35 +119,6 @@ async function loadThumbnails() {
     });
 }
 
-
-
-/* load subtitles */
-async function loadSRTasVTT(srtUrl, video_el) {
-    return;
-    const response = await fetch(srtUrl);
-    let srt = await response.text();
-
-    // console.log(srt);
-    
-    // Basic .srt → .vtt conversion
-    let vtt = 'WEBVTT\n\n' + srt
-        .replace(/\r/g, '')
-        .replace(/(\d+)\n(\d{2}:\d{2}:\d{2}),(\d{3}) --> (\d{2}:\d{2}:\d{2}),(\d{3})/g,
-                '$1\n$2.$3 --> $4.$5');
-
-    const blob = new Blob([vtt], { type: 'text/vtt' });
-    const url = URL.createObjectURL(blob);
-
-    const track = document.createElement('track');
-    track.kind = 'subtitles';
-    track.label = 'English';
-    track.srclang = 'en';
-    track.src = url;
-    track.default = true;
-
-    video_el.appendChild(track);
-
-}
 
 // Fullscreen Progression Bar (Canvas) functions
 
@@ -320,6 +293,7 @@ if (videoHash != null) {
         const load_related_videos = (start_idx) => {
             makeApiRequestGET('/api/query/get/similar-videos', [videodata.hash, start_idx + 1, related_videos_load_amount], search_results => {
                 generate_results_OLD(search_results);
+                // generate_results(search_results, )
             });
             return start_idx + related_videos_load_amount
         };
@@ -333,7 +307,35 @@ if (videoHash != null) {
         makeApiRequestGET('/media/ensure/seek-thumbnails', [videoHash], loadThumbnails);
 
         const video_el = document.querySelector('#player video');
-        loadSRTasVTT(`/media/get/subtitles/${videoHash}`, video_el);
+        loadSRTasVTT(`/media/get/subtitles/${videoHash}`, (url) => {
+            const track = document.createElement('track');
+            track.kind = 'subtitles';
+            track.label = 'English';
+            track.srclang = 'en';
+            track.src = url;
+            track.default = true;
+
+            video_el.appendChild(track);
+
+            const has_subs_indicator = document.createElement('div');
+            has_subs_indicator.classList.add('has-subs-indicator');
+            has_subs_indicator.innerHTML = /* html */`
+                has subs
+                <!-- <div></div> -->
+                <style>
+                    .has-subs-indicator {
+                        position: absolute;
+                        bottom: -3rem;
+                        left: 1rem;
+                        background: red;
+                        padding: 0.5rem 1rem;
+                    }
+                </style>
+            `;
+
+            document.querySelector('#player').appendChild(has_subs_indicator);
+            
+        });
         
     });
 

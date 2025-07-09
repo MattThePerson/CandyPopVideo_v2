@@ -19,14 +19,15 @@
 - [frontend] Make list view search result component
 - [media] Handle JAV collection
 - [media] Handle PH collection
-- [media] Transcode non remuxable
 - [media] Convert entire collection to mp4
 - [media] Generate preview media for entire collection
+- [media] Transcode non remuxable
 - [backend/media] Figure out media gen errors
-- [backend] Add teaser thumbs
 - [backend] Get performer (and studio) embeddings working
 - [backend] Add method of seeing tf-idf tokens
-- [backend] Add preview media status
+- [backend] Review collection ignore/include folder step
+<!-- - [backend] Add teaser thumbs -->
+<!-- - [backend] Add preview media status -->
 <!-- - [backend] Find why no similar-videos for f5593d2a6f9a -->
 <!-- - [frontend] [new] get header looking like svelte header -->
 <!-- - Bring over favourites & make metadata db -->

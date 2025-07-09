@@ -10,7 +10,7 @@ def write_object_to_db(entry_id: str, data: dict, table: str):
     with sqlite3.connect(DB_PATH) as conn:
         _ensure_table_exists(conn, table)
         cur = conn.cursor()
-        cur.execute(f"INSERT INTO {table} (id, data) VALUES (?, ?)", (entry_id, json.dumps(data),))
+        cur.execute(f"INSERT OR REPLACE INTO {table} (id, data) VALUES (?, ?)", (entry_id, json.dumps(data),))
         conn.commit()
 
 

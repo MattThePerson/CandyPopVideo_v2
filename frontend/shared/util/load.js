@@ -12,6 +12,7 @@ export function generate_results(results, results_container, card_type="search-r
             <search-result-card-default
                 highlighted = false
                 use_video_teasers = false
+                widthh = 32rem
                 video_hash =        "${result.hash}"
                 scene_title =       "${result.scene_title}"
                 performers =        "${result.performers}"

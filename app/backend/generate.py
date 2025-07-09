@@ -200,11 +200,11 @@ async def mass_generate_teaser_thumbs_large(videos_list: list[VideoData], mediad
 
 async def checkPreviewMediaStatus(videos_list: list[VideoData], mediadir: str, selection: str, print_without: int|None=None, ws=None):
     options = {
+        'teaser_thumbs':        checkers.hasTeaserThumbsSmall,
+        'teasers':              checkers.hasTeaserSmall,
         'preview_thumbs':       checkers.hasPreviewThumbs,
         'seek_thumbs':          checkers.hasSeekThumbs,
-        'teasers':              checkers.hasTeaserSmall,
         'teasers_large':        checkers.hasTeaserLarge,
-        'teaser_thumbs':        checkers.hasTeaserThumbsSmall,
         'teaser_thumbs_large':  checkers.hasTeaserThumbsLarge,
     }
     # get & print status

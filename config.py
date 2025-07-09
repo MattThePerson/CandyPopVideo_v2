@@ -28,3 +28,5 @@ SCENE_FILENAME_FORMATS = CONFIG.get('scene_filename_formats')
 COLLECTIONS = CONFIG.get('collections')
 
 DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
+
+SUBTITLE_FOLDERS = CONFIG.get('subtitle_folders')

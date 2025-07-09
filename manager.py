@@ -59,7 +59,13 @@ async def backend_manager(args: argparse.Namespace, ws=None):
         with open('config.yaml', 'r') as f:
             CONFIG = yaml.safe_load(f)
         COLLECTIONS = CONFIG.get('collections')
-        await scan.scanVideos(COLLECTIONS, rehash_videos=args.rehash_videos, reparse_filenames=args.reparse_filenames, ws=ws)
+        await scan.scanVideos(COLLECTIONS,
+            rehash_videos=args.rehash_videos,
+            redo_video_attributes=args.redo_video_attributes,
+            reparse_filenames=args.reparse_filenames,
+            reread_json_metadata=args.reread_json_metadata,
+            ws=ws
+        )
         # generate tfidf model
         await aprint(ws, 'Generating tfidf model for videos')
         videos_list = get_linked_videos()
@@ -80,6 +86,14 @@ async def backend_manager(args: argparse.Namespace, ws=None):
         opt = args.generate_media
         succs, fails = {}, {}
         try:
+            if opt == 'all' or opt == 'teaser_thumbs': 
+                succ, fail = await generate.mass_generate_teaser_thumbs_small( *alist, **kdict )
+                succs['teaser_thumbs'] = succ
+                fails['teaser_thumbs'] = fail
+            if opt == 'all' or opt == 'teasers':       
+                succ, fail = await generate.mass_generate_teasers_small( *alist, **kdict )
+                succs['teasers'] = succ
+                fails['teasers'] = fail
             if opt == 'all' or opt == 'preview_thumbs':
                 succ, fail = await generate.mass_generate_preview_thumbs( *alist, **kdict )
                 succs['preview_thumbs'] = succ
@@ -88,18 +102,10 @@ async def backend_manager(args: argparse.Namespace, ws=None):
                 succ, fail = await generate.mass_generate_seek_thumbs( *alist, **kdict )
                 succs['seek_thumbs'] = succ
                 fails['seek_thumbs'] = fail
-            if opt == 'all' or opt == 'teasers':       
-                succ, fail = await generate.mass_generate_teasers_small( *alist, **kdict )
-                succs['teasers'] = succ
-                fails['teasers'] = fail
             if opt == 'all' or opt == 'teasers_large': 
                 succ, fail = await generate.mass_generate_teasers_large( *alist, **kdict )
                 succs['teasers_large'] = succ
                 fails['teasers_large'] = fail
-            if opt == 'all' or opt == 'teaser_thumbs': 
-                succ, fail = await generate.mass_generate_teaser_thumbs_small( *alist, **kdict )
-                succs['teaser_thumbs'] = succ
-                fails['teaser_thumbs'] = fail
             if opt == 'all' or opt == 'teaser_thumbs_large': 
                 succ, fail = await generate.mass_generate_teaser_thumbs_large( *alist, **kdict )
                 succs['teaser_thumbs_large'] = succ
@@ -143,7 +149,7 @@ async def backend_manager(args: argparse.Namespace, ws=None):
         await aprint(ws, '{:<20} : {}'.format("studio", args.studio))
         await aprint(ws, '{:<20} : {}'.format("filters", args.filters))
         await aprint(ws, '{:<20} : {}'.format("select_collection", args.select_collection))
-        await aprint(ws, f"\nPREVIEW MEDIA STATUS FOR {len(videos_list)} VIDEOS:")
+        await aprint(ws, f"\nPREVIEW MEDIA STATUS FOR {len(filtered_videos)} VIDEOS:")
         await generate.checkPreviewMediaStatus(filtered_videos, PREVIEW_MEDIA_DIR, args.media_status, print_without=args.print_without)
         
 
@@ -183,6 +189,7 @@ def create_argument_parser(non_exiting=False):
     parser.add_argument('--rehash-videos',          action='store_true',        help='[scan]')
     parser.add_argument('--reparse-filenames',          action='store_true',    help='[scan]')
     parser.add_argument('--reread-json-metadata',   action='store_true',        help='[scan]')
+    parser.add_argument('--redo-video-attributes',   action='store_true',       help='[scan]')
     parser.add_argument('--generate-tfidf',            action='store_true',        help='')
     parser.add_argument('--generate-embeddings',       action='store_true',        help='')
 
