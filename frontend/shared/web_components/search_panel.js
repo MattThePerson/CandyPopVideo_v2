@@ -156,8 +156,8 @@ class MyCard extends HTMLElement {
                             <button class="date-added-dist">date added dist</button>
                             <button class="date-released-dist">date released dist</button>
                             <button class="word-cloud">word cloud</button>
-                            <button class="similar-performers">similar performers</button>
-                            <button class="similar-studios">similar studios</button>
+                            <button class="disabled similar-performers">similar performers</button>
+                            <button class="disabled similar-studios">similar studios</button>
                         </div>
                         <div class="right-side">
                             <button class="random-video">random video</button>

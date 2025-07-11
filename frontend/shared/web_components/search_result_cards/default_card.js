@@ -149,8 +149,10 @@ export class MyCard extends HTMLElement {
 
         // studios html
         const studios = [this.studio, this.line].filter(el => (el !== null && el !== 'null'));
-        const studios_html = studios.map(x =>
-            `<a href="/pages/search/page.html?studio=${x}">
+        const studios_html = studios.map((x, idx) =>
+            `
+            ${ (idx === 0) ? "" : "<span></span>" }
+            <a href="/pages/search/page.html?studio=${x}">
                 ${x}
             </a>`
         ).join('\n')
@@ -166,15 +168,13 @@ export class MyCard extends HTMLElement {
         
         // tags html
         const tags_html = this.tags_str.split(',').filter(x => x !== '').map((x, idx) =>
-            `
-            ${ (idx === 0) ? "" : "<span>|</span>" }
-            <a href="/pages/search/page.html?include_terms=${x}">
+            `<a href="/pages/search/page.html?include_terms=${x}">
                 ${x}
             </a>`
         ).join('\n')
 
         // title
-        let title = this.title;
+        let title = this.title.replace(';', ':');
         if (this.dvd_code !== 'null') title = `[${this.dvd_code}] ` + title;
         if (title.length > 80) title = title.slice(0, 78) + '...';
         
@@ -443,7 +443,7 @@ export class MyCard extends HTMLElement {
                 }
 
                 .title-bar {
-                    padding: 0 1rem;
+                    padding: 0 4px;
                     align-items: start;
 
                     h2 {
@@ -474,6 +474,7 @@ export class MyCard extends HTMLElement {
                 .year {
                     font-weight: bold;
                     margin-top: 2px;
+                    margin-right: 0.2rem;
                 }
                 
                 .studios-bar, .actors-bar {
@@ -493,10 +494,12 @@ export class MyCard extends HTMLElement {
                 /* separator */
                 .studios-bar span,
                 .actors-bar span {
-                    height: 0.8rem;
-                    width: 2px;
+                    height: 4px;
+                    width: 4px;
                     background: #888;
                     margin: 0 2px;
+                    transform: rotate(45deg);
+                    user-select: none;
                 }
 
                 .tags-bar {

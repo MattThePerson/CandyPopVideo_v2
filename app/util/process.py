@@ -59,10 +59,12 @@ def process_videos(
                 video_data = _add_filename_parsed_data(video_data, parser)
                 # organize tags
                 video_data = _get_tags_from_path(video_data)
+                if video_data.title is None:
+                    print('\nTITLE IS NONE: [{}] "{}"'.format(video_hash, video_path))
             
             if not video_found_in_existing_videos or reread_json_metadata:
                 # get additional metadata from json files
-                id_ = video_data.dvd_code or video_data.source_id
+                id_ = video_data.dvd_code or video_data.source_id or Path(video_data.path).stem
                 if id_ is not None:
                     metadata = json_metadata.get_metadata(id_, video_data.path)
                     if metadata != {}:

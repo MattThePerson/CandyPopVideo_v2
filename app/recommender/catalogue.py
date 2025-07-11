@@ -17,7 +17,7 @@ def get_catalogue(videos_list: list[VideoData], query: CatalogueQuery) -> dict[s
         get_video_performers = get_video_actors_all
 
     # filter
-    if q.filter_actor:    videos_list = [ vd for vd in videos_list if q.filter_actor in  get_video_performers(vd) ]
+    if q.filter_actor:        videos_list = [ vd for vd in videos_list if q.filter_actor in  get_video_performers(vd) ]
     if q.filter_studio:       videos_list = [ vd for vd in videos_list if q.filter_studio in     get_video_studios(vd) ]
     if q.filter_collection:   videos_list = [ vd for vd in videos_list if q.filter_collection in get_video_collection(vd) ]
     if q.filter_tag:          videos_list = [ vd for vd in videos_list if q.filter_tag in        get_video_tags(vd) ]

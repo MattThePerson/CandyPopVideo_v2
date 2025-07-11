@@ -6,15 +6,13 @@ GENERATE_MEDIA_OPTIONS = [ 'all', 'teasers', 'teasers_large', 'teaser_thumbs', '
 
 async def backend_manager(args: argparse.Namespace, ws=None):
     import yaml
-
     from app import db
     from app.schemas import VideoData, SearchQuery, TFIDFModel
-    from config import PREVIEW_MEDIA_DIR, TFIDF_MODEL_PATH
-    from app.backend import generate, scan
-    from app.backend.helpers import aprint
-    from app.recommender.search import filterVideoObjects
-    from app.recommender.tfidf import generate_tfidf_model
     from app.util.general import pickle_save
+    from config import PREVIEW_MEDIA_DIR, TFIDF_MODEL_PATH
+    from app.backend.helpers import aprint
+
+    from app.recommender.search import filterVideoObjects
         
     """
     Backend manager for CandyPop Video. Can be used from CL or via websocket
@@ -55,6 +53,10 @@ async def backend_manager(args: argparse.Namespace, ws=None):
     # HANDLE
     
     if args.scan_libraries: # - SCAN ---------------------------------------------------------------
+        from app.recommender.tfidf import generate_tfidf_model
+        from app.backend import scan
+    
+    
         await aprint(ws, '[MAIN] Scanning videos ...')
         with open('config.yaml', 'r') as f:
             CONFIG = yaml.safe_load(f)
@@ -77,9 +79,14 @@ async def backend_manager(args: argparse.Namespace, ws=None):
     
 
     if args.generate_media: # - MEDIA --------------------------------------------------------------
+        from app.backend import generate
         # filter videos
         videos_list = get_linked_videos()
         filtered_videos = filter_videos_with_args(videos_list, args)
+
+        if args.randomize:
+            import random
+            random.shuffle(filtered_videos)
         
         # call generators
         await aprint(ws, 'Generating media for {} videos'.format(len(filtered_videos)))
@@ -130,6 +137,8 @@ async def backend_manager(args: argparse.Namespace, ws=None):
         
 
     if args.generate_tfidf:
+        from app.recommender.tfidf import generate_tfidf_model
+        
         await aprint(ws, 'Generating tfidf model for videos')
         videos_list = get_linked_videos()
         model: TFIDFModel = generate_tfidf_model(videos_list)
@@ -142,12 +151,13 @@ async def backend_manager(args: argparse.Namespace, ws=None):
         ...
         
 
-    if args.media_status: # - STATUS ---------------------------------------------------------------
+    if args.media_status: # - MEDIA STATUS ---------------------------------------------------------
+        from app.backend import generate
         await aprint(ws, "filtering videos ...")
         videos_list = get_linked_videos()
         filtered_videos = filter_videos_with_args(videos_list, args)
         await aprint(ws, "Video Filters:")
-        await aprint(ws, '{:<20} : {}'.format("performer", args.performer))
+        await aprint(ws, '{:<20} : {}'.format("performer", args.actor))
         await aprint(ws, '{:<20} : {}'.format("studio", args.studio))
         await aprint(ws, '{:<20} : {}'.format("filters", args.filters))
         await aprint(ws, '{:<20} : {}'.format("select_collection", args.select_collection))
@@ -155,6 +165,19 @@ async def backend_manager(args: argparse.Namespace, ws=None):
         await generate.checkPreviewMediaStatus(filtered_videos, PREVIEW_MEDIA_DIR, args.media_status, print_without=args.print_without)
         
 
+    elif args.status: # - STATUS -------------------------------------------------------------------
+        await aprint(ws, "STATUS OF LOADED VIDEOS:")
+        videos_list = get_linked_videos()
+        filtered_videos = filter_videos_with_args(videos_list, args)
+        colls = {}
+        for vd in filtered_videos:
+            colls[vd.collection] = colls.get(vd.collection, 0) + 1
+        print("collection    | videos")
+        collections = sorted(colls.keys(), reverse=True, key=lambda k: colls[k])
+        for c in collections:
+            print('{:>13} : {:_}'.format(c, colls[c]))
+        print('{:>13} : {:_}'.format('total', len(filtered_videos)))
+        
 
 
 #region - ARGUMENT PARSER ----------------------------------------------------------------------------------------------
@@ -184,7 +207,8 @@ def create_argument_parser(non_exiting=False):
     
     # [1] Status
     parser.add_argument('--media-status',                                       help='[check] Get generation status of preview media', choices=GENERATE_MEDIA_OPTIONS)
-    parser.add_argument('--print-without', nargs='?', const=10, default=0,       help='[check] Print paths of videos without', type=int)
+    parser.add_argument('--status', action='store_true',                        help='[check] Get amount of videos and collections')
+    parser.add_argument('--print-without', nargs='?', const=10, default=0,      help='[check] Print paths of videos without', type=int)
     # parser.add_argument('--media',                  action='store_true',        help='')
     parser.add_argument('--cull-unlinked-media',    action='store_true',        help='')
 
@@ -205,7 +229,7 @@ def create_argument_parser(non_exiting=False):
     parser.add_argument('--generate-media', '-gm',                              help='opts=[all|teasers|teasers_large|teaser_thumbs|teaser_thumbs_large|preview_thumbs|seek_thumbs]', choices=GENERATE_MEDIA_OPTIONS)
     parser.add_argument('--redo-media-gen',        action='store_true',         help='[media_gen] redo media gen (replace old)')
     
-    parser.add_argument('--performer',                                          help='[media_gen] ')
+    parser.add_argument('--actor',                                          help='[media_gen] ')
     parser.add_argument('--studio',                                             help='[media_gen] ')
     
     parser.add_argument('--filters', '-f',                                      help='[media_gen] for which videos to generate media for | separated by comma')
@@ -215,6 +239,7 @@ def create_argument_parser(non_exiting=False):
     parser.add_argument('--date-added-from',                                    help='[media_gen]')
     parser.add_argument('--date-added-to',                                      help='[media_gen]')
     parser.add_argument('--select-collection', '-sc',                           help='Select collection to')
+    parser.add_argument('--randomize', action='store_true',                     help='Select collection to')
 
 
     # 

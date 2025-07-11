@@ -44,6 +44,8 @@ function toggle_favourites_button_OFF(butt) {
 // LONG ASS FUNCTION
 async function loadThumbnails() {
 
+    console.log('loading seek thumbs');
+
     const videoElement = document.querySelector('#player video');
     const videoDuration = videodata_global.duration_seconds;
 
@@ -272,11 +274,13 @@ if (videoHash != null) {
         }
         setPlayerTime();
     
+        console.log('hey');
         // add scene data to page
         document.title = videodata.primary_actors.join(', ') + ' - ' + videodata.title;
         const header = document.querySelector(".video-header");
         header.querySelector('.title').innerText = videodata.title;
-        header.querySelector('.actors').innerText = videodata.actors;
+        console.log(header);
+        // header.querySelector('.actors').innerText = videodata.actors.join(', ');
         header.querySelector('.studio').innerText = videodata.studio;
         header.querySelector('.collection').innerText = videodata.collection;
         header.querySelector('.year').innerText = videodata.date || null;
@@ -285,6 +289,8 @@ if (videoHash != null) {
         header.querySelector('.bitrate').innerText = Math.round(videodata.bitrate/100)/10 + 'mb';
         header.querySelector('.fps').innerText = videodata.FPS + 'fps';
     
+        console.log('hey');
+        
         /* load related videos */
 
         const related_videos_load_amount = 8;
@@ -304,9 +310,11 @@ if (videoHash != null) {
         });
     
         /* request seek thumbnails */
+        console.log('requesting seek thumbs');
         makeApiRequestGET('/media/ensure/seek-thumbnails', [videoHash], loadThumbnails);
 
         const video_el = document.querySelector('#player video');
+        return;
         loadSRTasVTT(`/media/get/subtitles/${videoHash}`, (url) => {
             const track = document.createElement('track');
             track.kind = 'subtitles';

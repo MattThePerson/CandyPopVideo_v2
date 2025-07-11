@@ -86,9 +86,10 @@ def filterVideoObjects(filtered: list[VideoData], search_query: SearchQuery):
 # sort videos
 def _sortVideos(videos_list: list[VideoData], sortby_option: str) -> list[VideoData]:
     # sort by scene title
+    
     videos_list.sort(
         reverse=False,
-        key=lambda video: (None, video.title),
+        key=lambda video: (None, video.title or ''),
     )
     
     if sortby_option.startswith('random'):

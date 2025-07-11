@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 from argparse import Namespace
+import time
+import gc
 
 from handymatt_media import media_generator
 
@@ -132,7 +134,7 @@ async def mass_generate_teasers_large(videos_list: list[VideoData], mediadir: st
 
 
 
-async def mass_generate_teaser_thumbs_small(videos_list: list[VideoData], mediadir: str, redo=False, limit=None, ws=None):
+async def mass_generate_teaser_thumbs_small(videos_list: list[VideoData], mediadir: str, redo=False, limit=None, ws=None, delay=3):
     type_ = 'teaser_thumbs'
     succ, fails = [], []
     for i, video_data in enumerate(videos_list):
@@ -158,6 +160,8 @@ async def mass_generate_teaser_thumbs_small(videos_list: list[VideoData], mediad
                 succ.append(video_data.path)
             if limit and (len(succ) + len(fails)) >= limit:
                 break
+            time.sleep(delay)
+            gc.collect()
     await aprint(ws, '\nDone.')
     return succ, fails
 

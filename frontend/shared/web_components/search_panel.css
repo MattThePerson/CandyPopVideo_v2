@@ -215,8 +215,12 @@ input.search {
     text-wrap: nowrap;
     height: fit-content;
 }
-.bottom-bar button:hover { opacity: 0.8; }
-.bottom-bar button:active { border-color: white; }
+.bottom-bar button.disabled {
+    color: #777;
+    cursor:auto;
+}
+.bottom-bar button:not(.disabled):hover { opacity: 0.8; }
+.bottom-bar button:not(.disabled):active { border-color: white; }
 
 .bottom-bar .left-side,
 .bottom-bar .right-side {

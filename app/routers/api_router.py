@@ -1,12 +1,13 @@
 import random
 import time
+import os
 from datetime import datetime
-from fastapi import APIRouter, Response, Depends, HTTPException
+from fastapi import APIRouter, Response, HTTPException
 
-from handymatt.wsl_paths import convert_to_wsl_path, convert_to_windows_path
+# from handymatt.wsl_paths import convert_to_wsl_path, convert_to_windows_path
 
 from ..schemas import VideoData
-from ..media import generators
+# from ..media import generators
 from .. import db
 
 
@@ -113,5 +114,14 @@ def ROUTE_get_catalogue():
     if items:
         return jsonify(generateReponse(items)), 200
     return jsonify(), 500
+
+
+# GET CURATED COLLECTIONS
+@api_router.get("/get/curated-collections")
+def ROUTE_get_curated_collections():
+    curated_dir = 'frontend/curated'
+    dirs = os.listdir(curated_dir)
+    collections = [ (dir_, os.path.getctime(f'frontend/curated/{dir_}')) for dir_ in dirs ]
+    return { 'collections': collections }
 
 

@@ -6,7 +6,6 @@ from handymatt.wsl_paths import convert_to_wsl_path
 
 from .. import db
 from config import SCENE_FILENAME_FORMATS, VIDEO_EXTENSIONS
-from ..util.metadata_json import metadata_load # TODO: outsource to handymatt dep
 from ..util.process import process_videos, combine_loaded_and_existing_videos
 from ..schemas import VideoData
 from .helpers import aprint
@@ -24,6 +23,7 @@ async def scanVideos(
         ws=None
         ) -> None:
     """ Scan videos in directories and process. Steps: read videos from db, scan videos, process videos, save to db """
+    
     include_folders, ignore_folders, collections_dict = _process_collection_dirs(collections)
     if include_folders is None:
         await aprint(ws, "WARNING: No video folders read from config.yaml")
@@ -68,9 +68,9 @@ def _process_collection_dirs(collections: dict[str, list]):
 
     for name, folders in collections.items():
         if folders:
-            ig_fol = [ x.replace('!','').strip() for x in folders if x.startswith('!') ]
+            inc_fol = [ x for x in folders if not x.startswith('!') ]
+            ig_fol = [ x.replace('!','').strip() for x in folders if x not in inc_fol ]
             ignore_folders.extend(ig_fol)
-            inc_fol = [ x for x in folders if x not in ig_fol ]
             include_folders.extend(inc_fol)
             for f in inc_fol:
                 folder_collection[f] = name
@@ -96,6 +96,7 @@ def _getVideoPathsFromFolders(folders: list[str], ignore_folders: list[str] = []
     file_objects = [ obj for obj in file_objects if obj.is_file() and obj.suffix in include_extensions ]
     for igfol in ignore_folders:
         file_objects = [ obj for obj in file_objects if igfol not in str(obj) ]
+    file_objects = [p for p in file_objects if not any(part.startswith('.') for part in p.parts[:-1])]
     video_paths = sorted(set([str(obj) for obj in file_objects]))
     return video_paths
 
