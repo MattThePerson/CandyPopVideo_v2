@@ -314,7 +314,7 @@ if (videoHash != null) {
         makeApiRequestGET('/media/ensure/seek-thumbnails', [videoHash], loadThumbnails);
 
         const video_el = document.querySelector('#player video');
-        return;
+        // return;
         loadSRTasVTT(`/media/get/subtitles/${videoHash}`, (url) => {
             const track = document.createElement('track');
             track.kind = 'subtitles';

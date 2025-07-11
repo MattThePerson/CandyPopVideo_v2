@@ -7,13 +7,14 @@ GENERATE_MEDIA_OPTIONS = [ 'all', 'teasers', 'teasers_large', 'teaser_thumbs', '
 async def backend_manager(args: argparse.Namespace, ws=None):
     import yaml
     from app import db
+    import random
     from app.schemas import VideoData, SearchQuery, TFIDFModel
     from app.util.general import pickle_save
     from config import PREVIEW_MEDIA_DIR, TFIDF_MODEL_PATH
     from app.backend.helpers import aprint
 
     from app.recommender.search import filterVideoObjects
-        
+    
     """
     Backend manager for CandyPop Video. Can be used from CL or via websocket
         
@@ -79,17 +80,20 @@ async def backend_manager(args: argparse.Namespace, ws=None):
     
 
     if args.generate_media: # - MEDIA --------------------------------------------------------------
+        print('[LOAD] Importing warm imports')
         from app.backend import generate
         # filter videos
+        print('[GET] getting and filtering linked videos')
         videos_list = get_linked_videos()
         filtered_videos = filter_videos_with_args(videos_list, args)
 
         if args.randomize:
-            import random
             random.shuffle(filtered_videos)
+        else:
+            filtered_videos.sort(reverse=True, key=lambda vd: vd.date_added)
         
         # call generators
-        await aprint(ws, 'Generating media for {} videos'.format(len(filtered_videos)))
+        await aprint(ws, '[START] Generating media for {} videos'.format(len(filtered_videos)))
         alist = [ filtered_videos, PREVIEW_MEDIA_DIR ]
         kdict = { "redo": args.redo_media_gen, "limit": args.limit, "ws": ws }
         opt = args.generate_media
@@ -206,7 +210,7 @@ def create_argument_parser(non_exiting=False):
 
     
     # [1] Status
-    parser.add_argument('--media-status',                                       help='[check] Get generation status of preview media', choices=GENERATE_MEDIA_OPTIONS)
+    parser.add_argument('--media-status', '-ms',                                help='[check] Get generation status of preview media', choices=GENERATE_MEDIA_OPTIONS)
     parser.add_argument('--status', action='store_true',                        help='[check] Get amount of videos and collections')
     parser.add_argument('--print-without', nargs='?', const=10, default=0,      help='[check] Print paths of videos without', type=int)
     # parser.add_argument('--media',                  action='store_true',        help='')
@@ -234,12 +238,13 @@ def create_argument_parser(non_exiting=False):
     
     parser.add_argument('--filters', '-f',                                      help='[media_gen] for which videos to generate media for | separated by comma')
     parser.add_argument('--exclude-filters',                                    help='[media_gen] for which videos to generate media for | separated by comma')
-    parser.add_argument('--limit',                 type=int,                    help='[media_gen]')
+    parser.add_argument('--limit', '-l', type=int,                              help='[media_gen]')
     parser.add_argument('--sortby',                                             help='[media_gen]')
     parser.add_argument('--date-added-from',                                    help='[media_gen]')
     parser.add_argument('--date-added-to',                                      help='[media_gen]')
+    parser.add_argument('--last-videos-added', '-last', type=int,               help='[media_gen] Select last x videos that were added')
     parser.add_argument('--select-collection', '-sc',                           help='Select collection to')
-    parser.add_argument('--randomize', action='store_true',                     help='Select collection to')
+    parser.add_argument('--randomize', action='store_true',                     help='Randomize selected videos to avoid generating media for faulty videos first')
 
 
     # 

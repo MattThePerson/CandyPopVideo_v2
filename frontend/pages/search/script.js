@@ -211,7 +211,7 @@ if (urlParams.size > 0) {
         // return;
         const use_custom_thumbnails = window.location.pathname.includes('listPage.html');
         generate_results_OLD(results, {generate_nav : true}, query);
-        generate_results(results, )
+        // generate_results(results, )
         
         if (query.actor) {
             console.log('Making performer panel');

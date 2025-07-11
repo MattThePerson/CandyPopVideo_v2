@@ -21,7 +21,7 @@ const load_similar_videos = (results_container, video_hash, start_idx, load_amou
 makeApiRequestGET('/api/get/random-spotlight-video-hash', [], (initial_response) => {
     
     console.log(initial_response);
-    initial_response.hash = '6d2d814b7d13'; // 'b213a0d3edbe' // '00c1f7c43d27';
+    initial_response.hash = '121a23562d15'; // 'b213a0d3edbe' // '00c1f7c43d27';
 
     makeApiRequestGET('/api/get/video-data', [initial_response.hash], (video_data) => {
 

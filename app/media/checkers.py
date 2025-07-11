@@ -1,7 +1,6 @@
 import os
 from datetime import datetime
 
-from .helpers import get_video_media_dir
 
 def hasPoster(video_hash: str, mediadir: str) -> str|None:
     """ For given hash, returns poster relative path if exists """
@@ -58,4 +57,8 @@ def hasCustomThumb(video_hash: str, dir: str):
     return False
 
 
+
+def get_video_media_dir(mediadir: str, video_hash: str) -> str:
+    """ gets path to videos media directory {mediadir}/videos/0x{videohash}/"""
+    return f'{mediadir}/0x{video_hash}'
 

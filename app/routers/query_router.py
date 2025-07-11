@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 from .. import db
 from config import TFIDF_MODEL_PATH
 from ..recommender import search, similarity
+from ..recommender.catalogue import get_catalogue
 from ..schemas import SearchQuery, VideoData, VideoInteractions, CatalogueQuery
 from ..util.general import pickle_load
 
@@ -79,8 +80,6 @@ def ROUTE_get_similar_studio(studio: str):
     print(f'Getting similar studios to: "{studio}"')
     return jsonify(generateReponse(sims)), 200
 
-
-from ..recommender.catalogue import get_catalogue
 
 # 
 @query_router.post('/get/catalogue')

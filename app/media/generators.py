@@ -1,3 +1,4 @@
+# TODO: Determine if needs to be removed / refactored
 """ 
 Functions for handling confirming and generation of preview media
 Contents of videos mediadir:
@@ -16,7 +17,7 @@ import shlex
 
 from handymatt_media import media_generator
 
-from .helpers import get_video_media_dir
+from .checkers import get_video_media_dir
 
 
 

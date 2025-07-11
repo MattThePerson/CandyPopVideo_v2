@@ -1,12 +1,12 @@
 # command line: uvicorn main:app --workers 1 --port 8000
 # production: gunicorn -w 4 -k uvicorn.workers.UvicornWorker app:app
-from fastapi import FastAPI, Response, Request
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from contextlib import asynccontextmanager
 
 from config import PREVIEW_MEDIA_DIR
-from app.routers import api_router, media_router, query_router, dashboard_router, interact_router
+from app.routers import api_router, media_router, query_router, interact_router # dashboard_router
 
 
 
@@ -43,7 +43,7 @@ app.include_router(media_router,         prefix="/media")
 app.include_router(api_router,           prefix="/api")
 app.include_router(query_router,         prefix="/api/query")
 app.include_router(interact_router,      prefix="/api/interact")
-app.include_router(dashboard_router,     prefix="")
+# app.include_router(dashboard_router,     prefix="")
 
 # hello
 @app.get("/api/hello")
