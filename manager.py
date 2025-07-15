@@ -4,7 +4,7 @@ import argparse
 GENERATE_MEDIA_OPTIONS = [ 'all', 'teasers', 'teasers_large', 'teaser_thumbs', 'teaser_thumbs_large', 'preview_thumbs', 'seek_thumbs' ]
 
 
-async def backend_manager(args: argparse.Namespace, ws=None):
+def backend_manager(args: argparse.Namespace, ws=None):
     import yaml
     from app import db
     import random
@@ -58,11 +58,11 @@ async def backend_manager(args: argparse.Namespace, ws=None):
         from app.backend import scan
     
     
-        await aprint(ws, '[MAIN] Scanning videos ...')
+        print('[MAIN] Scanning videos ...')
         with open('config.yaml', 'r') as f:
             CONFIG = yaml.safe_load(f)
         COLLECTIONS = CONFIG.get('collections')
-        await scan.scanVideos(
+        scan.scanVideos(
             COLLECTIONS,
             rehash_videos=args.rehash_videos,
             redo_video_attributes=args.redo_video_attributes,
@@ -72,10 +72,10 @@ async def backend_manager(args: argparse.Namespace, ws=None):
             ws=ws
         )
         # generate tfidf model
-        await aprint(ws, 'Generating tfidf model for videos')
+        print('Generating tfidf model for videos')
         videos_list = get_linked_videos()
         model: TFIDFModel = generate_tfidf_model(videos_list)
-        await aprint(ws, 'Saving model to:', TFIDF_MODEL_PATH)
+        print('Saving model to:', TFIDF_MODEL_PATH)
         pickle_save(model, TFIDF_MODEL_PATH)
     
 
@@ -93,84 +93,84 @@ async def backend_manager(args: argparse.Namespace, ws=None):
             filtered_videos.sort(reverse=True, key=lambda vd: vd.date_added)
         
         # call generators
-        await aprint(ws, '[START] Generating media for {} videos'.format(len(filtered_videos)))
+        print('[START] Generating media for {} videos'.format(len(filtered_videos)))
         alist = [ filtered_videos, PREVIEW_MEDIA_DIR ]
         kdict = { "redo": args.redo_media_gen, "limit": args.limit, "ws": ws }
         opt = args.generate_media
         succs, fails = {}, {}
         try:
             if opt == 'all' or opt == 'teaser_thumbs': 
-                succ, fail = await generate.mass_generate_teaser_thumbs_small( *alist, **kdict )
+                succ, fail = generate.mass_generate_teaser_thumbs_small( *alist, **kdict )
                 succs['teaser_thumbs'] = succ
                 fails['teaser_thumbs'] = fail
             if opt == 'all' or opt == 'teasers':       
-                succ, fail = await generate.mass_generate_teasers_small( *alist, **kdict )
+                succ, fail = generate.mass_generate_teasers_small( *alist, **kdict )
                 succs['teasers'] = succ
                 fails['teasers'] = fail
             if opt == 'all' or opt == 'preview_thumbs':
-                succ, fail = await generate.mass_generate_preview_thumbs( *alist, **kdict )
+                succ, fail = generate.mass_generate_preview_thumbs( *alist, **kdict )
                 succs['preview_thumbs'] = succ
                 fails['preview_thumbs'] = fail
             if opt == 'all' or opt == 'seek_thumbs':   
-                succ, fail = await generate.mass_generate_seek_thumbs( *alist, **kdict )
+                succ, fail = generate.mass_generate_seek_thumbs( *alist, **kdict )
                 succs['seek_thumbs'] = succ
                 fails['seek_thumbs'] = fail
             if opt == 'all' or opt == 'teasers_large': 
-                succ, fail = await generate.mass_generate_teasers_large( *alist, **kdict )
+                succ, fail = generate.mass_generate_teasers_large( *alist, **kdict )
                 succs['teasers_large'] = succ
                 fails['teasers_large'] = fail
             if opt == 'all' or opt == 'teaser_thumbs_large': 
-                succ, fail = await generate.mass_generate_teaser_thumbs_large( *alist, **kdict )
+                succ, fail = generate.mass_generate_teaser_thumbs_large( *alist, **kdict )
                 succs['teaser_thumbs_large'] = succ
                 fails['teaser_thumbs_large'] = fail
         except KeyboardInterrupt:
-            await aprint(ws, '\n... interrupting')
+            print('\n... interrupting')
         
-        await aprint(ws, '\n  WORK REPORT:\n')
-        await aprint(ws, 'TYPE                   GENERATION COUNT')
+        print('\n  WORK REPORT:\n')
+        print('TYPE                   GENERATION COUNT')
         succs['total'] = []
         fails['total'] = []
         for k, s in succs.items():
             f = fails[k]
             fails_str = ' ({:_} fails)'.format(len(f)) if f != [] else ''
-            await aprint(ws, '{:<25} : {:_}{}'.format(k, len(s), fails_str))
+            print('{:<25} : {:_}{}'.format(k, len(s), fails_str))
             if k != 'total':
                 succs['total'].extend(s)
                 fails['total'].extend(f)
-        await aprint(ws, )
+        print()
         
 
     if args.generate_tfidf:
         from app.recommender.tfidf import generate_tfidf_model
         
-        await aprint(ws, 'Generating tfidf model for videos')
+        print('Generating tfidf model for videos')
         videos_list = get_linked_videos()
         model: TFIDFModel = generate_tfidf_model(videos_list)
-        await aprint(ws, 'Saving model to:', TFIDF_MODEL_PATH)
+        print('Saving model to:', TFIDF_MODEL_PATH)
         pickle_save(model, TFIDF_MODEL_PATH)
 
 
     if args.generate_embeddings:
-        await aprint(ws, 'Generating performer and studio embeddings from videos TF-IDF model')
+        print('Generating performer and studio embeddings from videos TF-IDF model')
         ...
         
 
     if args.media_status: # - MEDIA STATUS ---------------------------------------------------------
         from app.backend import generate
-        await aprint(ws, "filtering videos ...")
+        print("filtering videos ...")
         videos_list = get_linked_videos()
         filtered_videos = filter_videos_with_args(videos_list, args)
-        await aprint(ws, "Video Filters:")
-        await aprint(ws, '{:<20} : {}'.format("performer", args.actor))
-        await aprint(ws, '{:<20} : {}'.format("studio", args.studio))
-        await aprint(ws, '{:<20} : {}'.format("filters", args.filters))
-        await aprint(ws, '{:<20} : {}'.format("select_collection", args.select_collection))
-        await aprint(ws, f"\nPREVIEW MEDIA STATUS FOR {len(filtered_videos)} VIDEOS:")
-        await generate.checkPreviewMediaStatus(filtered_videos, PREVIEW_MEDIA_DIR, args.media_status, print_without=args.print_without)
+        print("Video Filters:")
+        print('{:<20} : {}'.format("performer", args.actor))
+        print('{:<20} : {}'.format("studio", args.studio))
+        print('{:<20} : {}'.format("filters", args.filters))
+        print('{:<20} : {}'.format("select_collection", args.select_collection))
+        print(f"\nPREVIEW MEDIA STATUS FOR {len(filtered_videos)} VIDEOS:")
+        generate.checkPreviewMediaStatus(filtered_videos, PREVIEW_MEDIA_DIR, args.media_status, print_without=args.print_without)
         
 
     elif args.status: # - STATUS -------------------------------------------------------------------
-        await aprint(ws, "STATUS OF LOADED VIDEOS:")
+        print("STATUS OF LOADED VIDEOS:")
         videos_list = get_linked_videos()
         filtered_videos = filter_videos_with_args(videos_list, args)
         colls = {}
@@ -256,13 +256,15 @@ def create_argument_parser(non_exiting=False):
 
 # START FROM CL
 if __name__ == '__main__':
-    import asyncio
-    
-    async def backend_manager_cl_entry():
-        parser = create_argument_parser()
-        args = parser.parse_args()
-        print()
-        await backend_manager(args)
-        print()
-    
-    asyncio.run(backend_manager_cl_entry())
+    # import asyncio
+    # async def backend_manager_cl_entry():
+    #     parser = create_argument_parser()
+    #     args = parser.parse_args()
+    #     print()
+    #     backend_manager(args)
+    #     print()
+    # asyncio.run(backend_manager_cl_entry())
+
+    parser = create_argument_parser()
+    args = parser.parse_args()
+    backend_manager(args)

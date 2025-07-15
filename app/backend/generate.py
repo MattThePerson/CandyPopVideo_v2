@@ -8,18 +8,18 @@ from handymatt_media import media_generator
 
 from ..schemas import VideoData
 from ..media import generators, checkers
-from ..media.helpers import get_video_media_dir
+# from ..media.helpers import get_video_media_dir
 from .helpers import aprint
 from ..loggers import MEDIA_GEN, MEDIA_GEN_FAILED
 
 
-async def mass_generate_preview_thumbs(videos_list: list[VideoData], mediadir: str, redo=False, limit=None, n_frames=30*10, ws=None):
+def mass_generate_preview_thumbs(videos_list: list[VideoData], mediadir: str, redo=False, limit=None, n_frames=30*10, ws=None):
     type_ = 'preview_thumbs'
     succ, fails = [], []
     for i, video_data in enumerate(videos_list):
         info_msg = "({:_}/{:_}) generating {} (succ: {:_} | fails {:_})  [{}]  : {:<120} :".format( i+1, len(videos_list), type_, len(succ), len(fails), video_data.hash, Path(video_data.path).name[:118] )
         MEDIA_GEN.info(info_msg)
-        await aprint(ws, "\r  {}".format(info_msg), end='')
+        print("\r  {}".format(info_msg), end='')
         if not checkers.hasPreviewThumbs(video_data.hash, mediadir) or redo:
             print()
             media_path = ""
@@ -39,24 +39,24 @@ async def mass_generate_preview_thumbs(videos_list: list[VideoData], mediadir: s
                 succ.append(video_data.path)
             if limit and (len(succ) + len(fails)) >= limit:
                 break
-    await aprint(ws, '\nDone.')
+    print('\nDone.')
     return succ, fails
 
 
 
-async def mass_generate_seek_thumbs(videos_list: list[VideoData], mediadir: str, redo=False, limit=None, ws=None):
+def mass_generate_seek_thumbs(videos_list: list[VideoData], mediadir: str, redo=False, limit=None, ws=None):
     type_ = 'seek_thumbs'
     succ, fails = [], []
     for i, video_data in enumerate(videos_list):
         info_msg = "({:_}/{:_}) generating {} (succ: {:_} | fails {:_})  [{}]  : {:<120} :".format( i+1, len(videos_list), type_, len(succ), len(fails), video_data.hash, Path(video_data.path).name[:118] )
         MEDIA_GEN.info(info_msg)
-        await aprint(ws, "\r  {}".format(info_msg), end='')
+        print("\r  {}".format(info_msg), end='')
         if not checkers.hasSeekThumbs(video_data.hash, mediadir) or redo:
             print()
             media_path = ""
             try:
                 # START GENERATOR
-                vid_media_dir = get_video_media_dir(mediadir, video_data.hash)
+                vid_media_dir = checkers.get_video_media_dir(mediadir, video_data.hash)
                 spritesheet_path, _ = media_generator.generateSeekThumbnails( video_data.path, vid_media_dir, n=400, height=300 )
                 media_path = spritesheet_path
                 # END GENERATOR
@@ -70,19 +70,19 @@ async def mass_generate_seek_thumbs(videos_list: list[VideoData], mediadir: str,
                 succ.append(video_data.path)
             if limit and (len(succ) + len(fails)) >= limit:
                 break
-    await aprint(ws, '\nDone.')
+    print('\nDone.')
     return succ, fails
 
 
 
 
-async def mass_generate_teasers_small(videos_list: list[VideoData], mediadir: str, redo=False, limit=None, ws=None):
+def mass_generate_teasers_small(videos_list: list[VideoData], mediadir: str, redo=False, limit=None, ws=None):
     type_ = 'small_teasers'
     succ, fails = [], []
     for i, video_data in enumerate(videos_list):
         info_msg = "({:_}/{:_}) generating {} (succ: {:_} | fails {:_})  [{}]  : {:<120} :".format( i+1, len(videos_list), type_, len(succ), len(fails), video_data.hash, Path(video_data.path).name[:118] )
         MEDIA_GEN.info(info_msg)
-        await aprint(ws, "\r  {}".format(info_msg), end='')
+        print("\r  {}".format(info_msg), end='')
         if not checkers.hasTeaserSmall(video_data.hash, mediadir) or redo:
             print()
             media_path = ""
@@ -100,18 +100,18 @@ async def mass_generate_teasers_small(videos_list: list[VideoData], mediadir: st
                 succ.append(video_data.path)
             if limit and (len(succ) + len(fails)) >= limit:
                 break
-    await aprint(ws, '\nDone.')
+    print('\nDone.')
     return succ, fails
 
 
 # TODO: Test!
-async def mass_generate_teasers_large(videos_list: list[VideoData], mediadir: str, redo=False, limit=None, ws=None):
+def mass_generate_teasers_large(videos_list: list[VideoData], mediadir: str, redo=False, limit=None, ws=None):
     type_ = 'large_teasers'
     succ, fails = [], []
     for i, video_data in enumerate(videos_list):
         info_msg = "({:_}/{:_}) generating {} (succ: {:_} | fails {:_})  [{}]  : {:<120} :".format( i+1, len(videos_list), type_, len(succ), len(fails), video_data.hash, Path(video_data.path).name[:118] )
         MEDIA_GEN.info(info_msg)
-        await aprint(ws, "\r  {}".format(info_msg), end='')
+        print("\r  {}".format(info_msg), end='')
         if not checkers.hasTeaserLarge(video_data.hash, mediadir) or redo:
             print()
             media_path = ""
@@ -129,24 +129,24 @@ async def mass_generate_teasers_large(videos_list: list[VideoData], mediadir: st
                 succ.append(video_data.path)
             if limit and (len(succ) + len(fails)) >= limit:
                 break
-    await aprint(ws, '\nDone.')
+    print('\nDone.')
     return succ, fails
 
 
 
-async def mass_generate_teaser_thumbs_small(videos_list: list[VideoData], mediadir: str, redo=False, limit=None, ws=None, delay=3):
+def mass_generate_teaser_thumbs_small(videos_list: list[VideoData], mediadir: str, redo=False, limit=None, ws=None, delay=3):
     type_ = 'teaser_thumbs'
     succ, fails = [], []
     for i, video_data in enumerate(videos_list):
         info_msg = "({:_}/{:_}) generating {} (succ: {:_} | fails {:_})  [{}]  : {:<120} :".format( i+1, len(videos_list), type_, len(succ), len(fails), video_data.hash, Path(video_data.path).name[:118] )
         MEDIA_GEN.info(info_msg)
-        await aprint(ws, "\r  {}".format(info_msg), end='')
+        print("\r  {}".format(info_msg), end='')
         if not checkers.hasTeaserThumbsSmall(video_data.hash, mediadir) or redo:
             print()
             media_path = ""
             try:
                 # START GENERATOR
-                vid_media_dir = get_video_media_dir(mediadir, video_data.hash)
+                vid_media_dir = checkers.get_video_media_dir(mediadir, video_data.hash)
                 spritesheet_path, _ = media_generator.generateSeekThumbnails( video_data.path, vid_media_dir, n=16, height=300, filename='teaser_thumbs_small' )
                 media_path = spritesheet_path
                 # END GENERATOR
@@ -162,24 +162,24 @@ async def mass_generate_teaser_thumbs_small(videos_list: list[VideoData], mediad
                 break
             time.sleep(delay)
             gc.collect()
-    await aprint(ws, '\nDone.')
+    print('\nDone.')
     return succ, fails
 
 
 
-async def mass_generate_teaser_thumbs_large(videos_list: list[VideoData], mediadir: str, redo=False, limit=None, ws=None):
+def mass_generate_teaser_thumbs_large(videos_list: list[VideoData], mediadir: str, redo=False, limit=None, ws=None):
     type_ = 'teaser_thumbs_large'
     succ, fails = [], []
     for i, video_data in enumerate(videos_list):
         info_msg = "({:_}/{:_}) generating {} (succ: {:_} | fails {:_})  [{}]  : {:<120} :".format( i+1, len(videos_list), type_, len(succ), len(fails), video_data.hash, Path(video_data.path).name[:118] )
         MEDIA_GEN.info(info_msg)
-        await aprint(ws, "\r  {}".format(info_msg), end='')
+        print("\r  {}".format(info_msg), end='')
         if not checkers.hasTeaserThumbsLarge(video_data.hash, mediadir) or redo:
             print()
             media_path = ""
             try:
                 # START GENERATOR
-                vid_media_dir = get_video_media_dir(mediadir, video_data.hash)
+                vid_media_dir = checkers.get_video_media_dir(mediadir, video_data.hash)
                 spritesheet_path, _ = media_generator.generateSeekThumbnails( video_data.path, vid_media_dir, n=30, height=900, filename='teaser_thumbs_large' )
                 media_path = spritesheet_path
                 # END GENERATOR
@@ -193,7 +193,7 @@ async def mass_generate_teaser_thumbs_large(videos_list: list[VideoData], mediad
                 succ.append(video_data.path)
             if limit and (len(succ) + len(fails)) >= limit:
                 break
-    await aprint(ws, '\nDone.')
+    print('\nDone.')
     return succ, fails
 
 
@@ -202,7 +202,7 @@ async def mass_generate_teaser_thumbs_large(videos_list: list[VideoData], mediad
 
 
 
-async def checkPreviewMediaStatus(videos_list: list[VideoData], mediadir: str, selection: str, print_without: int|None=None, ws=None):
+def checkPreviewMediaStatus(videos_list: list[VideoData], mediadir: str, selection: str, print_without: int|None=None, ws=None):
     options = {
         'teaser_thumbs':        checkers.hasTeaserThumbsSmall,
         'teasers':              checkers.hasTeaserSmall,
@@ -212,7 +212,7 @@ async def checkPreviewMediaStatus(videos_list: list[VideoData], mediadir: str, s
         'teaser_thumbs_large':  checkers.hasTeaserThumbsLarge,
     }
     # get & print status
-    await aprint(ws, '{:<20} | {:>6} | {:>8} | {:>8} | {}'.format('MEDIA TYPE', 'PERC', 'WITH', 'WITHOUT', 'TOTAL'))
+    print('{:<20} | {:>6} | {:>8} | {:>8} | {}'.format('MEDIA TYPE', 'PERC', 'WITH', 'WITHOUT', 'TOTAL'))
     with_media_all, without_media_all = [], []
     for name, checker_func in options.items():
         if selection == 'all' or selection == name:
@@ -226,17 +226,17 @@ async def checkPreviewMediaStatus(videos_list: list[VideoData], mediadir: str, s
             without_media_all.extend(without_media)
             # print status
             msg = _get_status_line(name, with_media, without_media)
-            await aprint(ws, msg)
+            print(msg)
             if print_without and without_media != []:
-                await aprint(ws, '    videos without:', name)
+                print('    videos without:', name)
                 for idx, (hash_, path) in enumerate(without_media):
-                    await aprint(ws, '{:>4} : [{}] "{}"'.format(idx, hash_, path))
+                    print('{:>4} : [{}] "{}"'.format(idx, hash_, path))
                     if idx+1 >= print_without:
-                        await aprint(ws, '  ...')
+                        print('  ...')
                         break
     msg = _get_status_line('all', with_media_all, without_media_all)
-    await aprint(ws, msg)
-    await aprint(ws, '')
+    print(msg)
+    print('')
         
 
 def _get_status_line(name, with_, without):

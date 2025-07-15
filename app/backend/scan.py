@@ -13,7 +13,7 @@ from .helpers import aprint
 
 #region main
 
-async def scanVideos(
+def scanVideos(
         collections: dict[str, list],
         rehash_videos: bool=False,
         reparse_filenames: bool=False,
@@ -26,33 +26,33 @@ async def scanVideos(
     
     include_folders, ignore_folders, collections_dict = _process_collection_dirs(collections)
     if include_folders is None:
-        await aprint(ws, "WARNING: No video folders read from config.yaml")
+        print("WARNING: No video folders read from config.yaml")
         return
-    await aprint(ws, '[SCAN] Scanning video paths from {} folders'.format(len(include_folders)))
+    print('[SCAN] Scanning video paths from {} folders'.format(len(include_folders)))
     video_paths = _getVideoPathsFromFolders(include_folders, ignore_folders, include_extensions=VIDEO_EXTENSIONS)
-    await aprint(ws, "Found {} videos in {} folders and {} collections".format(len(video_paths), len(include_folders), len(collections_dict)))
+    print("Found {} videos in {} folders and {} collections".format(len(video_paths), len(include_folders), len(collections_dict)))
     
     # filter paths
     if path_filters:
         path_filters_list = [ f.lower().strip() for f in path_filters.split(',') ]
-        await aprint(ws, 'Filtering video paths with filters:', path_filters_list)
+        print('Filtering video paths with filters:', path_filters_list)
         for fil in path_filters_list:
             video_paths = [ pth for pth in video_paths if fil in pth.lower() ]
-        await aprint(ws, 'Left with {} videos'.format(len(video_paths)))
+        print('Left with {} videos'.format(len(video_paths)))
         
     # Load videos from db
     existing_dicts = db.read_table_as_dict('videos')
     existing_video_objects = { hsh: VideoData.from_dict(dct) for hsh, dct in existing_dicts.items() }
-    await aprint(ws, 'Exising objects:', len(existing_video_objects))
+    print('Exising objects:', len(existing_video_objects))
 
     # 
-    await aprint(ws, "[PROCESS] Loading/Generating video objects")
+    print("[PROCESS] Loading/Generating video objects")
     start = time.time()
     video_objects: dict[str, VideoData] = process_videos(video_paths, existing_video_objects, collections_dict, SCENE_FILENAME_FORMATS,
                                                             rehash_videos=rehash_videos, reparse_filenames=reparse_filenames,
                                                             redo_video_attributes=redo_video_attributes, reread_json_metadata=reread_json_metadata)
     if len(video_objects) > 0:
-        await aprint(ws, "Successfully loaded {} videos in {:.1f}s ({:.2f} ms/vid)\n".format( len(video_objects), (time.time()-start), (time.time()-start)*1000/len(video_objects) ))
+        print("Successfully loaded {} videos in {:.1f}s ({:.2f} ms/vid)\n".format( len(video_objects), (time.time()-start), (time.time()-start)*1000/len(video_objects) ))
     combined_video_objects = combine_loaded_and_existing_videos(video_objects, existing_video_objects, unloaded_as_unlinked=(path_filters is None))
     combined_video_dicts = { hsh: vd.to_dict()  for hsh, vd in combined_video_objects.items() }
     db.write_dict_of_objects_to_db(combined_video_dicts, 'videos')
