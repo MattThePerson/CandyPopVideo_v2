@@ -98,33 +98,33 @@ def backend_manager(args: argparse.Namespace, ws=None):
         kdict = { "redo": args.redo_media_gen, "limit": args.limit, "ws": ws }
         opt = args.generate_media
         succs, fails = {}, {}
-        try:
-            if opt == 'all' or opt == 'teaser_thumbs': 
-                succ, fail = generate.mass_generate_teaser_thumbs_small( *alist, **kdict )
-                succs['teaser_thumbs'] = succ
-                fails['teaser_thumbs'] = fail
-            if opt == 'all' or opt == 'teasers':       
-                succ, fail = generate.mass_generate_teasers_small( *alist, **kdict )
-                succs['teasers'] = succ
-                fails['teasers'] = fail
-            if opt == 'all' or opt == 'preview_thumbs':
-                succ, fail = generate.mass_generate_preview_thumbs( *alist, **kdict )
-                succs['preview_thumbs'] = succ
-                fails['preview_thumbs'] = fail
-            if opt == 'all' or opt == 'seek_thumbs':   
-                succ, fail = generate.mass_generate_seek_thumbs( *alist, **kdict )
-                succs['seek_thumbs'] = succ
-                fails['seek_thumbs'] = fail
-            if opt == 'all' or opt == 'teasers_large': 
-                succ, fail = generate.mass_generate_teasers_large( *alist, **kdict )
-                succs['teasers_large'] = succ
-                fails['teasers_large'] = fail
-            if opt == 'all' or opt == 'teaser_thumbs_large': 
-                succ, fail = generate.mass_generate_teaser_thumbs_large( *alist, **kdict )
-                succs['teaser_thumbs_large'] = succ
-                fails['teaser_thumbs_large'] = fail
-        except KeyboardInterrupt:
-            print('\n... interrupting')
+        if opt == 'all' or opt == 'teaser_thumbs': 
+            succ, fail = generate.mass_generate_teaser_thumbs_small( *alist, **kdict )
+            succs['teaser_thumbs'] = succ
+            fails['teaser_thumbs'] = fail
+        if opt == 'all' or opt == 'teasers':       
+            succ, fail = generate.mass_generate_teasers_small( *alist, **kdict )
+            succs['teasers'] = succ
+            fails['teasers'] = fail
+        if opt == 'all' or opt == 'preview_thumbs':
+            succ, fail = generate.mass_generate_preview_thumbs( *alist, **kdict )
+            succs['preview_thumbs'] = succ
+            fails['preview_thumbs'] = fail
+        if opt == 'all' or opt == 'seek_thumbs':   
+            succ, fail = generate.mass_generate_seek_thumbs( *alist, **kdict )
+            succs['seek_thumbs'] = succ
+            fails['seek_thumbs'] = fail
+        if opt == 'all' or opt == 'teasers_large': 
+            succ, fail = generate.mass_generate_teasers_large( *alist, **kdict )
+            succs['teasers_large'] = succ
+            fails['teasers_large'] = fail
+        if opt == 'all' or opt == 'teaser_thumbs_large': 
+            succ, fail = generate.mass_generate_teaser_thumbs_large( *alist, **kdict )
+            succs['teaser_thumbs_large'] = succ
+            fails['teaser_thumbs_large'] = fail
+        # try:
+        # except KeyboardInterrupt:
+        #     print('\n... interrupting')
         
         print('\n  WORK REPORT:\n')
         print('TYPE                   GENERATION COUNT')
