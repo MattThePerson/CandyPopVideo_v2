@@ -1,0 +1,315 @@
+
+main {
+    padding-top: 0 !important;
+}
+
+/* styles brought over from html */
+
+body {
+    overflow-x: hidden;
+}
+
+#video-player-container {
+    display: flex;
+    justify-content: center;
+    background: rgb(26, 26, 26);
+    width: 100%;
+    height: fit-content;
+}
+#player {
+    width: 99vw;
+    height: 740px;
+    /* max-width: 1300px; */
+    /* max-height: 500px; */
+}
+#thumbnail-container {
+    position: absolute;
+    /* display: none; */
+    /* width: fit-content; */
+    /* height: fit-content; */
+    /* max-height: 300px; */
+    left: 0px;
+    top: 0px;
+    z-index: 9999;
+    /* border: 4px solid red; */
+}
+.seekthumbnail > img {
+    z-index: 9999999999999;
+    border: 1.75px solid rgb(238, 238, 238);
+    border-radius: 6px;
+    width: 100%;
+    height: 100%;
+}
+
+/* subtitles */
+video::cue {
+    background: none;
+    color: white;
+    font-size: 2.7rem;
+    text-shadow: 1px 1px 4px black;
+}
+
+
+/* root */
+
+:root {
+    --video-container-height: calc(40vw + 100px);
+}
+
+
+.page-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* VIDEO PLAYER SECTION */
+
+.video-container { /* full width container */
+    width: 100%;
+    background: black;
+    display: flex;
+    justify-content: flex-end;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--soft-white);
+}
+
+.show-video-display-button {
+    position: absolute;
+}
+
+.icon-camera path {
+    fill: rgba(200, 200, 200, 0.5);
+}
+.icon-camera {
+    position: absolute;
+    width: calc(20px + 0.9%);
+    z-index: 289;
+    transform: translate(-20px, 15px);
+    right: 18px;
+}
+
+.video-header {
+    padding: 0.6rem 5%;
+    display: flex;
+    justify-content: space-around;
+    background: rgb(8, 8, 8);
+    border-top:     1px solid rgba(128, 128, 128, 0.5);
+    border-bottom:  1px solid rgba(128, 128, 128, 0.39);
+
+    span {
+        display: flex;
+        gap: 1rem;
+    }
+
+    h1 {
+        font-size: 26px;
+        font-weight: 300;
+        color: rgba(255, 255, 255, 0.897);
+    }
+
+    .row-0 {
+        /* justify-content: flex-end; */
+        padding-left: 5%;
+        gap: 3.5rem;
+    }
+    .row-2 {
+        align-items: center;
+    }
+
+
+    #add-favourite-button {
+        background: orange;
+        color: black;
+        /* width: fit-content; */
+        padding: 3px 6px;
+        border-radius: 5px;
+        border: 1px solid rgba(0, 0, 0, 0.514);
+        /* max-width: 5rem; */
+        font-family: Arial, Helvetica, sans-serif;
+        font-weight: bold;
+        /* font-style: bold; */
+    }
+    #add-favourite-button:hover {
+        cursor: pointer;
+        opacity: 0.85;
+    }
+    #add-favourite-button:active {
+        opacity: 0.6;
+    }
+
+    .vid-info-list li {
+        color: rgba(255, 255, 255, 0.733);
+        padding: 0 1rem;
+    }
+
+}
+
+
+
+/* FANCY PREVIEW SECTION */
+
+.video-box { /* 16/9 AR, holds .video-player */
+    /* aspect-ratio: 16/9; */
+    height: var(--video-container-height);
+    max-height: 840px;
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.video-player { /* holds video, same AR as video */
+    position: relative;
+    height: 100%;
+}
+
+.background-video {
+    height: 100%;
+    filter: saturate(108%) contrast(108%) blur(0.5px) brightness(80%);
+}
+
+.video-player-shadow {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    box-shadow: inset 4em -4em 5em var(--darkest);
+    border: 1px solid black;
+    transform: translate(-1px, 0px);
+}
+
+.video-player-shadow-dark {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    box-shadow: inset 10em -10em 14em var(--darkest);
+}
+
+.info-box {
+    height: 100%;
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 600px;
+    height: auto;
+    margin-left: 3%;
+    left: 0; 
+    transform: translate(0, calc(var(--video-container-height) - 100%));
+    padding: 30px;
+    
+    /* border: 1px solid white;
+    border-radius: 15px;
+    background: linear-graiend(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+    backdrop-filter: blur(10px); */
+}
+
+@media only screen and (max-width: 1080px) {
+    .background-video {
+        width: 100%;
+    }
+    .video-player-shadow, .video-player-shadow-dark {
+        box-shadow: inset 3em -5em 7em var(--darkest);
+    }
+}
+
+/* ABOUT CONTAINER */
+
+.about-container {
+    min-height: 400px;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: space-around;
+}
+.about-container * {
+    font-family: "Exo 2";
+    font-weight: 300;
+    font-size: 17px;
+}
+.about-container h1 {
+    font-size: 26px;
+    margin-bottom: 1.5em;
+}
+.about-container > div {
+    box-sizing: border-box;
+    min-width: 550px;
+    display: flex;
+    margin: 3vh 0;
+    margin-bottom: 4em;
+    padding: 0 5vh;
+    flex-direction: column;
+    align-items: center;
+}
+.about-container > div:nth-child(1) {
+    border-right: 1px solid var(--soft-white);
+    width: 50%;
+}
+.about-container > div:nth-child(2) {
+    width: auto;
+}
+
+.info-container {
+    display: flex;
+}
+
+.table-container {
+    display: flex;
+}
+.table-container caption {
+    margin-bottom: 0.75em;
+}
+.table-container table {
+    margin: 0em 2em;
+    text-align: left;
+    text-align: top;
+    vertical-align: middle;
+}
+.table-container th {
+    min-width: 150px;
+}
+
+@media only screen and (max-width: 1250px) {
+    .about-container {
+        flex-direction: column;
+        align-items: center;
+    }
+    .about-container > div:nth-child(1) {
+        box-sizing: border-box;
+        padding-bottom: 3em;
+        border: None;
+        border-bottom: 1px solid var(--soft-white);
+        width: 80%;
+        margin-bottom: 0;
+    }
+}
+
+
+/* RELATED VIDEOS SECTION */
+
+#video-results-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100rem;
+    max-width: 90%;
+}
+
+
+/* VIDEO FILTERS */
+
+.filter-vixen-dark {
+    filter: 
+            contrast(1.5)
+            brightness(0.64)
+            hue-rotate(5deg)
+            saturate(145%)
+            ;
+}
+
+.blurry {
+    filter: blur(1px);
+}

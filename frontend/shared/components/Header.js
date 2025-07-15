@@ -73,7 +73,6 @@ export function Header(){
         <span>
             <span class="page-links">
                 <a class="page-link" href="/pages/home/page.html"        >home</a>
-                <a class="page-link" href="/pages/home_new/page.html"    >home(new)</a>
                 <a class="page-link" href="/pages/search/page.html"      >search</a>
                 <a class="page-link" href="/pages/search_new/page.html"  >search(new)</a>
                 <a class="page-link" href="/pages/catalogue/page.html"   >catalogue</a>

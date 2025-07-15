@@ -35,7 +35,7 @@ export function configure_teaser_thumb_spritesheet(spritesheet_src, thumbnail_co
             // Parse the VTT file to extract sprite coordinates
             const sprites = parseVTT(vttText);
             if (sprites.length === 0) {
-                throw new Error('No sprites parsed from vtt file:', vtt_src);
+                throw new Error(`No sprites parsed from vtt file: ${vtt_src}`);
             };
             
             // Set up the spritesheet as the background for the thumbnail container

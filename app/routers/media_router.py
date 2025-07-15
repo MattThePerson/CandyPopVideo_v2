@@ -134,7 +134,7 @@ def confirm_seek_thumbnails(video_hash: str):
         return Response('No video with that hash', 404)
     # generate thumbs
     print(f'Generating seek thumbnails for : "{video_data.path}"')
-    raise HTTPException(status_code=503, detail='Temporarily disabled')
+    # raise HTTPException(status_code=503, detail='Temporarily disabled')
     try:
         _ = media_generator.generateSeekThumbnails(video_data.path, vid_media_dir, n=400)
     except Exception as e:
