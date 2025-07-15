@@ -16,7 +16,6 @@
 
     <link rel="stylesheet" href="/shared/styles/searchResults.css">
     <script defer src="/shared/libraries/wordcloud2.min.js"></script>
-    <link rel="stylesheet" href="/shared/styles/video_results_container.css">
     
     
     
@@ -50,8 +49,7 @@
                 </style>
             </div>
 
-
-            <!-- SEARCH PANEL --------------------------------------------------------------------->
+            <!-- SEARCH PANEL -->
             <div id="pre-panel-buttons">
                 <!-- <button id="hide-panel-button">show/hide panel</button> -->
                 <button id="open-link-page-button">open in list page</button>
@@ -221,14 +219,57 @@
                 });
             </script>
 
+            <!-- VIDEO RESULTS -->
+            <!-- <div id="video-results-container" class="alternative-view"></div> -->
+            <div id="video-results-container" class="default-view"></div>
 
 
-            <!-- VIDEO RESULTS -------------------------------------------------------------------->
-            <!-- <div id="video-results-container" class="default-view"></div> -->
-            <section class="similar-videos-section" style="visibility: hidden">
-                <div class="video-cards-styler" class="grid-view"></div>
-            </section>
-            
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link
+                href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap"
+                rel="stylesheet">
+
+            <link rel="preconnect" href="https://fonts.googleapis.com">
+            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+            <link href="https://fonts.googleapis.com/css2?family=PT+Sans+Narrow:wght@400;700&display=swap" rel="stylesheet">
+
+            <template id="video-result-template">
+                <div class="video-result-item">
+                    <a class="thumb-container" href="">
+                        <!-- <img src="media/default-thumbnail.png" alt=""> -->
+                        <img class="thumbnail" src="" alt="">
+                        <video preload="none" muted loop></video>
+                        <div class="spinner"></div>
+                        <div class="stats">
+                            <div class="res-and-duration">
+                                <div class="resolution">1080p</div>
+                                <div class="fps" style="display: none;">30fps</div>
+                                <div class="bitrate">3.1mb</div>
+                            </div>
+                            <!-- <div class="bitrate">3100 kbps</div> -->
+                        </div>
+                        <div class="duration">19:69</div>
+                        <div class="collection-and-favourite-contianer">
+                            <div class="collection">Default</div>
+                            <div class="favourite">FAV</div>
+                        </div>
+                    </a>
+                    <div class="actor-studio-bar">
+                        <div class="actors"></div>
+                        <a class="studio" href=""></a>
+                        <a class="year" href=""></a>
+                        <div></div>
+                    </div>
+                    <a class="title-container" href="">
+                        <h2>This is just a temporary title</h2>
+                    </a>
+                    <div class="lower-bar">
+                        <div class="added-tag">Added 3 hours ago</div>
+                        <div class="tags-bar"></div>
+                    </div>
+                </div>
+            </template>
 
             <!-- PAGE NAV -->
             <div id="page-nav-container">

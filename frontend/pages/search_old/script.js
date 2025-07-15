@@ -1,11 +1,8 @@
-// @ts-ignore
-const $ = window.$;
 
 import { injectComponents } from '../../shared/util/component.js'
-import { makeApiRequestGET, makeApiRequestPOST_JSON } from '../../shared/util/request.js';
-// import { generate_results_OLD } from '../../shared/util/search_OLD.js';
+import { makeApiRequestGET, makeApiRequestPOST_JSON, makeApiRequestPOST } from '../../shared/util/request.js';
+import { generate_results_OLD } from '../../shared/util/search_OLD.js';
 import { generate_results } from '../../shared/util/load.js';
-import { configure_page_nav } from './page_nav.js';
 
 
 injectComponents();
@@ -15,7 +12,6 @@ injectComponents();
 
 const searchPanel = document.getElementById('search-panel');
 const searchButton = document.getElementById('search-button');
-/** @type {HTMLInputElement} */
 const onlyFavsCheckbox = document.querySelector('input.only_favourites');
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -23,10 +19,6 @@ const urlParams = new URLSearchParams(window.location.search);
 
 //region - FUNCTION ----------------------------------------------------------------------------------------------------
 
-
-/**
- * @param {HTMLElement} searchPanel
- */
 function initiate_search(searchPanel) {
     let params = new URLSearchParams();
     const urlparams_sortby = urlParams.get('sortby');
@@ -48,7 +40,7 @@ function initiate_search(searchPanel) {
         }
     });
     if (onlyFavsCheckbox.checked) {
-        params.set('only_favourites', 'true');
+        params.set('only_favourites', true);
     }
     if (params.size > 0) {
         window.location.href = window.location.pathname + '?' + params.toString();
@@ -59,7 +51,7 @@ function initiate_search(searchPanel) {
 
 function get_search_page_title(urlParams) {
     let arr = [];
-    for (let param of ['query', 'actor', 'studio', 'collection']) {
+    for (let param of ['query', 'performer', 'studio', 'collection']) {
         if (urlParams.get(param)) {
             arr.push(urlParams.get(param));
         }
@@ -85,28 +77,6 @@ function highlight_sort_button(sortBy) {
 }
 
 
-function make_performer_panel() {
-    console.log('Making performer panel');
-    makeApiRequestGET('/api/query/get/similar-performers', [query.actor], (performers) => {
-        if (performers) {
-            console.log('similar performers:', performers);
-            const modelStudioPanel = document.getElementById('model-studio-panel');
-            modelStudioPanel.style.display = 'flex';
-            $('.focus-performer').text(query.actor);
-            for (let i = 1; i < 12; i++) {
-            // for (let perf_data of performers) {
-                const perf_data = performers[i];
-                const newEl = document.createElement('a');
-                newEl.href = '/pages/search/page.html?' + (new URLSearchParams({'performer': perf_data.name})).toString();
-                newEl.innerText = perf_data.name;
-                modelStudioPanel.querySelector('.similar-container').appendChild(newEl);
-            }
-        }
-    });
-}
-
-
-
 
 //region - EVENT LISTENERS ---------------------------------------------------------------------------------------------
 
@@ -115,18 +85,15 @@ searchButton.addEventListener('click', arg => {
 });
 
 document.querySelectorAll('#search-panel .search-input').forEach(inputElement => {
-    inputElement.addEventListener('keydown', (/** @type {KeyboardEvent} */ event) => {
+    inputElement.addEventListener('keydown', function(event) {
         if (event.key === 'Enter') {
             initiate_search(searchPanel);
         }
     });
 });
 
-
-// update sortby buttons
-/** @type {*} */
-const button_groups = searchPanel.querySelectorAll('.sort-panel .button-group');
-for (let button_group of button_groups) {
+// sortby buttons
+for (let button_group of searchPanel.querySelectorAll('.sort-panel .button-group')) {
     let sort_type = button_group.id.replace('-button-group', '');
     let main = button_group.querySelector('.main');
     let asc = button_group.querySelector('.asc');
@@ -182,8 +149,7 @@ document.title = get_search_page_title(params);
 
 params.forEach((value, key) => {
     try {
-        const selector = `.${key}-input input`;
-        $(selector).val(params.get(key));
+        searchPanel.querySelector(`.${key}-input input`).value = params.get(key);
     } catch {
         console.log('No such element: ', `.${key}-input input`);
     }
@@ -192,26 +158,25 @@ params.forEach((value, key) => {
 
 /* add page number */
 const pageNumber = parseInt(params.get('page')) || 1;
-// document.querySelector('#search-page-info .page-number').innerText = 'Page ' + pageNumber;
-$('#search-page-info .page-number').text('Page ' + pageNumber)
+document.querySelector('#search-page-info .page-number').innerText = 'Page ' + (pageNumber);
 
 
 /* construct query */
 const query = {
     search_string: null,    // str,
-    actor: null,            // str,
+    actor: null,        // str,
     studio: null,           // str,
     collection: null,       // str,
-    include_terms: null,      // list[str],
-    exclude_terms: null,      // list[str],
+    include_terms: [],    // list[str],
+    exclude_terms: [],    // list[str],
     date_added_from: null,      // str,
     date_added_to: null,        // str,
     date_released_from: null,   // str,
     date_released_to: null,     // str,
-    only_favourites: false,     // bool,
-    sortby: null,               // str|None,
-    limit: null,                // int,
-    startfrom: -1,              // int,
+    only_favourites: false,      // bool,
+    sortby: null,                // str|None,
+    limit: -1,                 // int,
+    startfrom: -1,        // int,
 }
 
 
@@ -228,12 +193,10 @@ query.startfrom =   query.limit * (pageNumber-1);
 if (typeof query.include_terms === 'string') query.include_terms = query.include_terms.split(',').map(w => w.trim());
 if (typeof query.exclude_terms === 'string') query.exclude_terms = query.exclude_terms.split(',').map(w => w.trim());
 
-if (query.include_terms === null)  query.include_terms = [];
-if (query.exclude_terms === null)  query.exclude_terms = [];
-
 console.log('Query: ', query)
 
 /* make ui changes based on params (using query) */
+
 if (query.sortby) highlight_sort_button(query.sortby);
 else              highlight_sort_button('date-added-desc');
 
@@ -243,23 +206,32 @@ if (query.only_favourites)  onlyFavsCheckbox.checked = true;
 //region - BACKEND REQUEST ---------------------------------------------------------------------------------------------
 
 if (urlParams.size > 0) {
-    makeApiRequestPOST_JSON('/api/query/search-videos', query, (results) => {
+    makeApiRequestPOST_JSON('/api/query/search-videos', query, results => {
+        // console.log('search_results:', results);
+        // return;
+        const use_custom_thumbnails = window.location.pathname.includes('listPage.html');
+        generate_results_OLD(results, {generate_nav : true}, query);
+        // generate_results(results, )
         
-        console.log('search_results:', results);
-
-        // generate_results_OLD(results, {generate_nav : true}, query);
-
-        const results_container = $('.similar-videos-section');
-        generate_results(results, results_container);
-
-        /* Configure page nav */
-        configure_page_nav(results.videos_filtered_count, results.time_taken, query);
-        
-        /* similar performers */
         if (query.actor) {
-            make_performer_panel();
+            console.log('Making performer panel');
+            makeApiRequestGET('/api/query/get/similar-performers', [query.actor], performers => {
+                if (performers) {
+                    console.log('similar performers:', performers);
+                    const modelStudioPanel = document.getElementById('model-studio-panel');
+                    modelStudioPanel.style.display = 'flex';
+                    modelStudioPanel.querySelector('.focus-performer').innerText = query.actor;
+                    for (let i = 1; i < 12; i++) {
+                    // for (let perf_data of performers) {
+                        const perf_data = performers[i];
+                        const newEl = document.createElement('a');
+                        newEl.href = '/pages/search/page.html?' + (new URLSearchParams({'performer': perf_data.name})).toString();
+                        newEl.innerText = perf_data.name;
+                        modelStudioPanel.querySelector('.similar-container').appendChild(newEl);
+                    }
+                }
+            });
         }
-
     });
 }
 

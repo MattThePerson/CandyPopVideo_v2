@@ -2,7 +2,7 @@
 import { injectComponents } from '../../shared/util/component.js'
 import { makeApiRequestGET } from '../../shared/util/request.js';
 import { generate_results } from '../../shared/util/load.js';
-import '../../shared/web_components/search_result_cards/default_card.js'
+// import '../../shared/web_components/search_result_cards/default_card.js'
 
 injectComponents();
 
@@ -66,7 +66,7 @@ makeApiRequestGET('/api/get/random-spotlight-video-hash', [], (initial_response)
         const similar_videos_load_amount = 8 //24;
         let similar_videos_loaded = 0;
         
-        const results_container = $('.similar-videos-section')
+        const results_container = $('.similar-videos-section');
         similar_videos_loaded = load_similar_videos(results_container, video_data.hash, similar_videos_loaded, similar_videos_load_amount);
         document.getElementById('expand-results-button').addEventListener('click', () => {
             similar_videos_loaded = load_similar_videos(results_container, video_data.hash, similar_videos_loaded, similar_videos_load_amount);
