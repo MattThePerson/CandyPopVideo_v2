@@ -87,18 +87,18 @@ function highlight_sort_button(sortBy) {
 
 function make_performer_panel() {
     console.log('Making performer panel');
-    makeApiRequestGET('/api/query/get/similar-performers', [query.actor], (performers) => {
-        if (performers) {
-            console.log('similar performers:', performers);
+    makeApiRequestGET('/api/query/get/similar-actors', [query.actor], (actors) => {
+        if (actors) {
+            console.log('similar actors:', actors);
             const modelStudioPanel = document.getElementById('model-studio-panel');
             modelStudioPanel.style.display = 'flex';
             $('.focus-performer').text(query.actor);
             for (let i = 1; i < 12; i++) {
             // for (let perf_data of performers) {
-                const perf_data = performers[i];
+                const actor_data = actors[i];
                 const newEl = document.createElement('a');
-                newEl.href = '/pages/search/page.html?' + (new URLSearchParams({'performer': perf_data.name})).toString();
-                newEl.innerText = perf_data.name;
+                newEl.href = '/pages/search/page.html?' + (new URLSearchParams({'performer': actor_data.name})).toString();
+                newEl.innerText = actor_data.name;
                 modelStudioPanel.querySelector('.similar-container').appendChild(newEl);
             }
         }

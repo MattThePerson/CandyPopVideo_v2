@@ -1,10 +1,13 @@
+// @ts-ignore
+const $ = window.$;
+
 
 /* SearchResultCard */
 export class MyCard extends HTMLElement {
 
     constructor() {
         super();
-        this.useVideoTeasers = (this.getAttribute('use_video_teasers') == 'true')
+        this.USE_VIDEO_TEASERS = (this.getAttribute('use_video_teasers') == 'true')
         this.video_hash = this.getAttribute('video_hash');
 
         this.title = this.getAttribute('title');
@@ -19,7 +22,7 @@ export class MyCard extends HTMLElement {
         this.duration = this.getAttribute('duration');
         this.resolution = this.getAttribute('resolution');
         this.fps = this.getAttribute('fps');
-        this.bitrate = this.getAttribute('bitrate');
+        this.bitrate = parseInt(this.getAttribute('bitrate'));
 
         this.date_added = this.getAttribute('date_added');
         this.tags_str = this.getAttribute('tags');
@@ -61,33 +64,32 @@ export class MyCard extends HTMLElement {
         const $shadow = $(this.shadowRoot);
         
         /* get teasers */
-        if (this.useVideoTeasers) { // teaser video
+        if (this.USE_VIDEO_TEASERS) { // teaser video
             const teaser_el = $shadow.find('video.teaser-video');
             teaser_el.addClass('teaser-media');
-            $.get('/media/ensure/teaser-small/'+this.video_hash, (data, status) => {
-                if (status === 'success') {
-                    teaser_el.attr('src', `/static/preview-media/0x${this.video_hash}/teaser_small.mp4`)
-                    teaser_el.one('loadedmetadata', () => {
-                        teaser_el.addClass('loaded');
-                        $shadow.find('.spinner').hide()
-                    });
-                }
+            teaser_el.attr('src', `/static/preview-media/0x${this.video_hash}/teaser_small.mp4`)
+            teaser_el.one('loadedmetadata', () => {
+                teaser_el.addClass('loaded');
+                $shadow.find('.spinner').hide()
             });
+
+            // $.get('/media/ensure/teaser-small/'+this.video_hash, (data, status) => {
+            //     if (status === 'success') {
+            //     }
+            // });
 
         } else { // teaser thumbs
             const teaser_el = $shadow.find('img.teaser-thumbs');
             teaser_el.addClass('teaser-media');
-            $.get('/media/ensure/teaser-thumbs-small/'+this.video_hash, (data, status) => {
-                if (status === 'success') {
+            this.configure_teaser_thumb_spritesheet(
+                `/static/preview-media/0x${this.video_hash}/teaser_thumbs_small.jpg`,
+                teaser_el.get(0),
+                $shadow.find('.thumb-container').get(0),
+                () => {
                     teaser_el.addClass('loaded');
-                    const spritesheet_src = `/static/preview-media/0x${this.video_hash}/teaser_thumbs_small.jpg`
-                    const thumbnail_container = $shadow.find('.thumb-container');
-                    this.configure_teaser_thumb_spritesheet(spritesheet_src, teaser_el.get(0), thumbnail_container.get(0), () => {
-                        $shadow.find('.spinner').hide()
-                    });
-                }
+                    $shadow.find('.spinner').hide()
             });
-            
+
         }
 
         /* check for subs */
@@ -135,6 +137,30 @@ export class MyCard extends HTMLElement {
             event.preventDefault();
             window.location.href = '/pages/search/page.html?collection=' + this.getAttribute('collection');
         });
+
+        /* first time hover */
+        $shadow.find('.thumb-container').one('mouseenter', () => {
+            console.log('ensuring teaser media');
+            if (this.USE_VIDEO_TEASERS) {
+
+                // ...
+            } else {
+                $.get('/media/ensure/teaser-thumbs-small/'+this.video_hash, (data, status) => {
+                    if (status === 'success') {
+                        // console.log('teaser_thumbs ensured!');
+                        this.configure_teaser_thumb_spritesheet(
+                            `/static/preview-media/0x${this.video_hash}/teaser_thumbs_small.jpg?t=${Date.now()}`,
+                            $shadow.find('img.teaser-thumbs').get(0),
+                            $shadow.find('.thumb-container').get(0),
+                            () => {
+                                $shadow.find('img.teaser-thumbs').addClass('loaded');
+                                $shadow.find('.spinner').hide()
+                        });
+                    }
+                });
+            }
+
+        })
 
     }
     
@@ -588,7 +614,7 @@ export class MyCard extends HTMLElement {
     /* HELPERS */
 
     format_date_added(date_added) {
-        let diff_ms = (new Date()) - (new Date(date_added.replace(' ', 'T')));
+        let diff_ms = (new Date()).getTime() - (new Date(date_added.replace(' ', 'T'))).getTime();
         let string = ['second', 'minute', 'hour', 'day', 'week', 'month', 'year'];
         let mult =  [60, 60, 24, 7, 4.345, 12, 10];
         let limit = [60, 60, 24, 7, 3*4.345, 12*3, 10];
@@ -619,10 +645,11 @@ export class MyCard extends HTMLElement {
                 // Parse the VTT file to extract sprite coordinates
                 const sprites = this.parseVTT(vttText);
                 if (sprites.length === 0) {
-                    throw new Error('No sprites parsed from vtt file:', vtt_src);
+                    throw new Error(`No sprites parsed from vtt file: ${vtt_src}`);
                 };
                 
                 // Set up the spritesheet as the background for the thumbnail container
+                
                 thumbnail_container.style.backgroundImage = `url("${spritesheet_src}")`;
                 thumbnail_container.style.backgroundRepeat = 'no-repeat';
                 
@@ -661,7 +688,7 @@ export class MyCard extends HTMLElement {
                 }
             })
             .catch(error => {
-                console.error('Error loading thumbnails:', error);
+                console.warn('Error loading thumbnails:', error);
             });
     }
 

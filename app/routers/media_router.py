@@ -5,7 +5,7 @@ from fastapi import APIRouter, Response, HTTPException
 from fastapi.responses import FileResponse
 from pathlib import Path
 
-# from handymatt_media import media_generator
+from handymatt_media import media_generator
 
 from config import PREVIEW_MEDIA_DIR, SUBTITLE_FOLDERS
 from .. import db
@@ -84,17 +84,6 @@ def ROUTER_get_poster_large(video_hash: str):
 @media_router.get("/ensure/preview-thumbnails/{video_hash}")
 def confirm_preview_thumbnails(video_hash: str):
     raise HTTPException(status_code=501, detail='Not implemented')
-    return jsonify(generateReponse("Not implemented")), 404
-    r = videos_dict.get(hash)
-    if not r:
-        print("Could not find video with hash:", hash)
-        return jsonify("No video with that hash"), 404
-    if not bf.media_hasPoster(hash, MEDIADIR):
-        print("Generating early poster for:", r['filename'])
-        ret = bf.media_generatePosterSimple(r['path'], hash, MEDIADIR, r['duration_seconds'])
-        if not ret:
-            return jsonify(generateReponse("Failed to generate poster")), 400
-    return jsonify(generateReponse()), 200
 
 
 # ENSURE SEEK THUMBNAIL
@@ -166,7 +155,7 @@ def ROUTER_ensure_teaser_thumbs_small(video_hash: str):
     vid_media_dir = checkers.get_video_media_dir(PREVIEW_MEDIA_DIR, video_hash)
     media_path = vid_media_dir + '/teaser_thumbs_small.jpg'
     if not os.path.exists( media_path ):
-        raise HTTPException(status_code=503, detail='Temporarily disabled')
+        # raise HTTPException(status_code=503, detail='Temporarily disabled')
         try:
             _ = media_generator.generateSeekThumbnails( video_data.path, vid_media_dir, n=16, height=300, filename='teaser_thumbs_small' )
         except Exception as e:
