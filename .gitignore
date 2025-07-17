@@ -26,6 +26,7 @@ TODO.md
 curatedCollections/
 data/
 holdPages/
+frontend_svelte/
 
 *.png
 *.jpg

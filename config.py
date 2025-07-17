@@ -13,7 +13,8 @@ APP_DATA_DIR = convert_to_wsl_path(CONFIG.get('app_data_dir'))
 DB_PATH =           APP_DATA_DIR + '/app.db'
 TFIDF_MODEL_PATH =  APP_DATA_DIR + '/tdidf.pkl'
 PREVIEW_MEDIA_DIR = APP_DATA_DIR + '/media/preview'
-CUSTOM_THUMBS_DIR = APP_DATA_DIR + '/media/custom_thumbs'
+ACTOR_INFO_DIR = APP_DATA_DIR + '/actors'
+# CUSTOM_THUMBS_DIR = APP_DATA_DIR + '/media/custom_thumbs'
 os.makedirs(APP_DATA_DIR, exist_ok=True)
 
 # GIFS

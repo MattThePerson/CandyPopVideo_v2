@@ -7,6 +7,7 @@ from fastapi import APIRouter, Response, HTTPException
 # from handymatt.wsl_paths import convert_to_wsl_path, convert_to_windows_path
 
 from ..schemas import VideoData
+from ..APIs import actor_api
 # from ..media import generators
 from .. import db
 
@@ -124,4 +125,33 @@ def ROUTE_get_curated_collections():
     collections = [ (dir_, os.path.getctime(f'frontend/curated/{dir_}')) for dir_ in dirs ]
     return { 'collections': collections }
 
+
+# GET MOVIE
+@api_router.get("/get/movie/{movie_title}")
+def ROUTE_get_movie(movie_title: str):
+    video_dicts = db.read_table_as_dict('videos')
+    video_objects_list = [ VideoData.from_dict(vd) for vd in video_dicts.values() if vd.get('is_linked') ]
+    movie_videos = [ vd for vd in video_objects_list if vd.movie_title and vd.movie_title.lower() == movie_title.lower() ]
+    return movie_videos
+    
+
+# GET MOVIE SERIES
+@api_router.get("/get/movie-series/{movie_series}")
+def ROUTE_get_movie_series(movie_series: str):
+    video_dicts = db.read_table_as_dict('videos')
+    video_objects_list = [ VideoData.from_dict(vd) for vd in video_dicts.values() if vd.get('is_linked') ]
+    movie_videos = [ vd for vd in video_objects_list if vd.movie_series and vd.movie_series.lower() == movie_series.lower() ]
+    movie_videos.sort(key=lambda vd: vd.title or '')
+    return movie_videos
+
+
+# GET ACTOR
+@api_router.get("/get/actor/{name}")
+def ROUTE_get_actor(name: str):
+    info = actor_api.get_actor_info(name)
+    if info is None:
+        info = actor_api.fetch_actor_info(name)
+        if info is None:
+            return Response(status_code=204)
+    return info
 

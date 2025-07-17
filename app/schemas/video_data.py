@@ -31,7 +31,10 @@ class VideoData:
     # scene attributes
     title:              Optional[str] = None
     scene_title:        Optional[str] = None
+    scene_number:       Optional[int] = None
+    movie_title:        Optional[str] = None
     movie_series:       Optional[str] = None
+    
     studio:             Optional[str] = None
     line:               Optional[str] = None
     date_released:      Optional[str] = None
@@ -39,6 +42,7 @@ class VideoData:
     dvd_code:           Optional[str] = None
     # d18_url:            Optional[str] = None
     # date_released_d18:  Optional[str] = None
+    
     actors:                 list[str] = field(default_factory=list)
     primary_actors:         list[str] = field(default_factory=list)
     secondary_actors:       list[str] = field(default_factory=list)

@@ -57,6 +57,8 @@ def process_videos(
             if not video_found_in_existing_videos or reparse_filenames:
                 # add data parsed from filename / path
                 video_data = _add_filename_parsed_data(video_data, parser)
+                # add extracted movie title and series
+                video_data = _add_extracted_movie_series(video_data)
                 # organize tags
                 video_data = _get_tags_from_path(video_data)
                 if video_data.title is None:
@@ -273,6 +275,111 @@ def _parse_filename(filename: str, parser: StringParser):
     if info is None:
         raise TypeError('String parser returned `None` for filename: "{}"'.format(filename))
     return info
+
+
+
+#region - GET MOVIE METHODS --------------------------------------------------------------------------------------------
+
+
+def _add_extracted_movie_series(video_data: VideoData) -> VideoData:
+    """  """
+    title = video_data.title
+    if title:
+        movie, scene, scene_idx, series = _get_movie(title)
+        if movie is not None:
+            video_data.movie_title = movie
+            video_data.scene_title = scene
+            video_data.scene_number = scene_idx
+            video_data.movie_series = series
+    
+    return video_data
+
+
+def _get_movie(title):
+    movie, scene, scene_idx, series = None, None, None, None
+    
+    words = title.lower().split(' ')
+    
+    for sc_delim in ['scene', 'part', 'episode']:
+        if sc_delim in words:
+            part_idx = words.index(sc_delim)
+            if part_idx > 0 and len(words) > part_idx+1:
+                part_word = _remove_chars(words[part_idx+1], ':;,꞉')
+                scene_idx = _extract_number_from_term(part_word)
+                if scene_idx is not None:
+                    movie, scene  = _extract_movie_and_scene_titles(title.split(' '), part_idx)
+            break
+    
+    if movie is None and scene is None:
+        delim = ' - '
+        if delim in title:
+            parts = title.split(delim)
+            movie = delim.join(parts[:-1])
+            scene = parts[-1]
+
+    if movie:
+        series = _get_movie_series_from_movie(movie)
+    
+    return movie, scene, scene_idx, series
+
+
+def _extract_movie_and_scene_titles(words, delim_idx):
+    scene = ' '.join(words[delim_idx:])
+    movie = ' '.join(words[:delim_idx])
+    if movie[-1] in ':;꞉':
+        movie = movie[:-1]
+    elif movie.endswith(' -'):
+        movie = movie[:-2]
+    return movie, scene
+
+def _get_movie_series_from_movie(title):
+    title_words = title.split(' ')
+    if len(title_words) > 1:
+        movie_idx = _extract_number_from_term(title_words[-1])
+        if movie_idx is not None:
+            title_words = title_words[:-1]
+            if title_words[-1].lower().replace('.', '') in ['vol', 'volume']:
+                title_words = title_words[:-1]
+            if title_words != []:
+                return ' '.join(title_words)
+    return None
+
+
+def _remove_chars(string, chars):
+    for c in chars:
+        string = string.replace(c, '')
+    return string
+
+
+def _extract_number_from_term(x):
+
+    if x.isnumeric():
+        return x
+        
+    number_words = 'one,two,three,four,five,six,seven,eight,nine,ten'.split(',')
+    if x.lower() in number_words:
+        return number_words.index(x.lower()) + 1
+    
+    return _roman_to_int(x)
+
+
+def _roman_to_int(s):
+    roman_map = {'I': 1, 'V': 5, 'X': 10, 'L': 50,
+                'C': 100, 'D': 500, 'M': 1000}
+    prev = 0
+    total = 0
+
+    for c in reversed(s.upper()):
+        if c not in roman_map:
+            return None
+        val = roman_map[c]
+        if val < prev:
+            total -= val
+        else:
+            total += val
+            prev = val
+
+    return total
 
 
 #region - HELPERS ------------------------------------------------------------------------------------------------------

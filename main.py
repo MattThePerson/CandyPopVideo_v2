@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from contextlib import asynccontextmanager
 
-from config import PREVIEW_MEDIA_DIR
+from config import PREVIEW_MEDIA_DIR, ACTOR_INFO_DIR
 from app.routers import api_router, media_router, query_router, interact_router # dashboard_router
 
 
@@ -57,6 +57,7 @@ def get_port(request: Request):
 
 # static folder: preview media
 app.mount("/static/preview-media", StaticFiles(directory=PREVIEW_MEDIA_DIR), name="preview-media")
+app.mount("/static/actor-store", StaticFiles(directory=ACTOR_INFO_DIR), name="actor-store")
 
 
 app.mount("/", StaticFiles(directory="frontend", html=True), name="")
