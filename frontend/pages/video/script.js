@@ -1,10 +1,8 @@
-// @ts-ignore
-const $ = window.$;
-
 import { injectComponents } from '../../shared/util/component.js'
 import { makeApiRequestGET, makeApiRequestPOST } from '../../shared/util/request.js';
 import { generate_results } from '../../shared/util/load.js';
 import { load_video_player } from './player_old.js';
+import { load_related_videos } from './related_videos.js';
 
 injectComponents();
 
@@ -32,8 +30,13 @@ if (urlParams.get('autoplay'))
 
 
 function hydrate_info_section(section, video_data) {
+    
     section.find('.title-bar h1').text( video_data.title );
     section.find('.year').text( video_data.date_released );
+
+    
+    section.find('.collection').text( video_data.collection );
+    section.find('.collection').attr('href', `/pages/search/page.html?collection=${video_data.collection}`)
 
     // add studios
     const studios_cont = section.find('.studios-container');
@@ -49,20 +52,32 @@ function hydrate_info_section(section, video_data) {
     // add actors
     const actors_cont = section.find('.actors-container');
     video_data.actors.forEach((actor, idx) => {
+        const actor_id = 'actor_link-' + actor.replace(/ /g, '_');
         if (idx !== 0) actors_cont.append('<div></div>');
         actors_cont.append(/* html */`
-            <a href="/pages/search/page.html?actor=${actor}">${actor}</a>
+            <a id="${actor_id}" href="/pages/search/page.html?actor=${actor}">${actor}</a>
         `);
+
+        /* request */
+        $.get('/api/get/actor/'+actor, (data, status, response) => {
+            if (response.status === 200) {
+                const age_its = get_year_difference_between_dates(data.date_of_birth, video_data.date_released);
+                if (age_its) {
+                    document.getElementById(actor_id).innerText += ` (${age_its} y/o ITS)`
+                }
+            }
+        })
     })
+
+
     
     
     /* event listeners */
 
     /* check favourite */
     const is_fav_button = section.find('button.is-fav-button');
-    console.log(is_fav_button);
     $.get(`/api/interact/favourites/check/${videoHash}`, (data, status) => {
-        console.log(status);
+        // console.log(status);
         if (status === 'success') {
             is_fav_button.addClass('loaded');
             if (data.is_favourite) {
@@ -108,6 +123,18 @@ function toggle_favourites_button_OFF(butt) {
 }
 
 
+function get_year_difference_between_dates(date1, date2) {
+    if (date1 === null || date2 === null) {
+        return null;
+    }
+    const a = Date.parse(date1);
+    const b = Date.parse(date2);
+    if (isNaN(a) || isNaN(b)) {
+        return null;
+    }
+    return Math.floor((b-a) / (1000 * 60 * 60 * 24 * 365))
+}
+
 
 //region - GLOBAL VARIABLES --------------------------------------------------------------------------------------------
 
@@ -139,7 +166,8 @@ if (videoHash != null) {
     
 
         /* load recommended videos */
-        // ...
+        const related_videos_section = $('section.related-videos-section');
+        load_related_videos(videodata, related_videos_section);
 
         
         /* load similar videos */
@@ -158,7 +186,7 @@ if (videoHash != null) {
         document.getElementById('expand-results-button').addEventListener('click', () => {
             similar_videos_loaded = load_similar_videos(results_container, videoHash, similar_videos_loaded, similar_videos_load_amount);
         });
-        
+
         
     });
 

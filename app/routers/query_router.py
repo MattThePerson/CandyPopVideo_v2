@@ -20,7 +20,7 @@ def ROUTE_search_videos(query: SearchQuery):
     video_interactions = { hsh: VideoInteractions.from_dict(vd) for hsh, vd in db.read_table_as_dict('interactions').items() }
     tfidf_model = pickle_load(TFIDF_MODEL_PATH)
     start = time.time()
-    search_results_tuple = search.searchVideosFunction(
+    search_results_tuple = search.searchVideos(
         video_objects_list,
         query,
         video_interactions,

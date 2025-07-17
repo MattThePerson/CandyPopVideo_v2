@@ -2,5 +2,8 @@
   "dependencies": {
     "express": "^5.1.0",
     "http-proxy-middleware": "^3.0.5"
+  },
+  "devDependencies": {
+    "@types/jquery": "^3.5.32"
   }
 }

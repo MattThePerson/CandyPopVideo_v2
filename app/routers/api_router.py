@@ -145,6 +145,16 @@ def ROUTE_get_movie_series(movie_series: str):
     return movie_videos
 
 
+# GET LINE
+@api_router.get("/get/line/{line}")
+def ROUTE_get_line(line: str):
+    video_dicts = db.read_table_as_dict('videos')
+    video_objects_list = [ VideoData.from_dict(vd) for vd in video_dicts.values() if vd.get('is_linked') ]
+    line_videos = [ vd for vd in video_objects_list if vd.line and vd.line.lower() == line.lower() ]
+    line_videos.sort(key=lambda vd: vd.title or '')
+    return line_videos
+
+
 # GET ACTOR
 @api_router.get("/get/actor/{name}")
 def ROUTE_get_actor(name: str):

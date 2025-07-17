@@ -41,7 +41,6 @@
         <!-- VIDEO INFO ------------------------------------------------------->
         
         <section class="video-info-section">
-            <!-- title bar -->
             <div class="title-bar">
                 <button class="is-fav-button">
                     <svg class="off" width="32px" height="32px" viewBox="-4 0 30 30" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
@@ -59,19 +58,41 @@
                 <h1></h1>
             </div>
             <div class="year-studio-bar">
+                <a class="collection"></a>
                 <div class="year"></div>
                 <div class="studios-container"></div>
             </div>
             <div class="actors-container"></div>
-
         </section>
 
+        
+        <!-- RELATED VIDEOS SECTION ------------------------------------------->
+        
+        <section class="related-videos-section">
+            <h2>Related Videos:</h2>
+            <div class="related-videos-container">
+                <button class="prev"><</button>
+                <div class="carousel-container">
+                    <nav class="related-videos-nav">
+                        <!-- <button class="from-actor selected">from actor</button> -->
+                        <!-- <button class="from-studio">from studio</button> -->
+                        <button class="movie-series selected disabled">movie series</button>
+                        <button class="from-actor-studio disabled">actor & studio</button>
+                        <button class="from-line disabled">from line</button>
+                    </nav>
+                    <div class="carousel movie-series shown"></div>
+                    <div class="carousel from-actor-studio"></div>
+                    <div class="carousel from-line"></div>
+                </div>
+                <button class="next">></button>
+            </div>
+        </section>
 
 
         <!-- SIMILAR VIDEOS SECTION ------------------------------------------->
         
         <section class="similar-videos-section" style="visibility: hidden">
-            <h2>Similar videos:</h2>
+            <h2>Similar Videos:</h2>
             <div class="video-cards-styler" class="grid-view"></div>
             <button id="expand-results-button">LOAD MORE RESULTS</button>
         </section>

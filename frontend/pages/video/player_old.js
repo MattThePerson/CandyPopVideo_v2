@@ -48,7 +48,7 @@ export function load_video_player(video_hash, video_data, url_params) {
     let thumbActivateThickness = thumbActivateThickness_default;
 
     
-    console.log('requesting seek thumbs');
+    // console.log('requesting seek thumbs');
     makeApiRequestGET('/media/ensure/seek-thumbnails', [video_hash], () => {
         loadThumbnails(playerContainer, thumbnailContainer, video_hash, video_data, thumbActivateThickness);
     });

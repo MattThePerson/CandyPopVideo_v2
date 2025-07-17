@@ -30,7 +30,7 @@ export function Header(){
     });
 
     const useVideoTeasers = (localStorage.getItem('use_video_teasers') == 'true');
-    console.log(useVideoTeasers);
+    // console.log(useVideoTeasers);
     if (useVideoTeasers) {
         $('#teaser-mode-video').addClass('selected');
     } else {

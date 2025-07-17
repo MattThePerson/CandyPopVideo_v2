@@ -7,7 +7,7 @@ from ..schemas import SearchQuery, VideoData, TFIDFModel, VideoInteractions
 
 # search, filter and sort videos
 # metadata: incorperate into VideoData
-def searchVideosFunction(videos_list: list[VideoData], search_query: SearchQuery, video_interactions: dict[str, VideoInteractions], tfidf_model: TFIDFModel|None, token_hashes) -> tuple[list, int, list] | None:
+def searchVideos(videos_list: list[VideoData], search_query: SearchQuery, video_interactions: dict[str, VideoInteractions], tfidf_model: TFIDFModel|None, token_hashes) -> tuple[list, int, list] | None:
     """ Filter and sort a list of VideoData given a SearchQuery and TF-IDF model """
     q = search_query
     
@@ -67,7 +67,7 @@ def filterVideoObjects(filtered: list[VideoData], search_query: SearchQuery):
     
     # if q.only_favourites:     filtered = [ vid for vid in filtered if ( _favourites.is_favourite(vid.hash, metadata) ) ]
     if q.actor:           filtered = [ vid for vid in filtered if ( _actor_in_video(q.actor, vid) ) ]
-    if q.studio:              filtered = [ vid for vid in filtered if ( ( vid.studio and vid.studio.lower() in q.studio.lower() ) ) ]
+    if q.studio:              filtered = [ vid for vid in filtered if (  vid.studio and vid.studio.lower()==q.studio.lower()  or  vid.line and vid.line.lower()==q.studio.lower())  ]
     if q.collection:          filtered = [ vid for vid in filtered if ( (vid.collection and q.collection.lower() in vid.collection.lower()) ) ]
 
     if q.date_added_from:     filtered = [ vid for vid in filtered if ( (vid.date_added >= q.date_added_from) ) ]

@@ -10,7 +10,7 @@ export class MyCard extends HTMLElement {
         this.USE_VIDEO_TEASERS = (this.getAttribute('use_video_teasers') == 'true')
         this.video_hash = this.getAttribute('video_hash');
 
-        this.title = this.getAttribute('title');
+        this.video_title = this.getAttribute('video_title');
         this.actors_str = this.getAttribute('actors');
         this.studio = this.getAttribute('studio');
         this.line = this.getAttribute('line');
@@ -200,7 +200,7 @@ export class MyCard extends HTMLElement {
         ).join('\n')
 
         // title
-        let title = this.title.replace(';', ':');
+        let title = this.video_title.replace(';', ':');
         if (this.dvd_code !== 'null') title = `[${this.dvd_code}] ` + title;
         if (title.length > 80) title = title.slice(0, 78) + '...';
         
@@ -320,7 +320,7 @@ export class MyCard extends HTMLElement {
                                 }
                             </style>
                         </button>
-                        <a href="">
+                        <a class="title" href="/pages/video/page.html?hash=${this.video_hash}">
                             <h2>${title}</h2>
                         </a>
                     </div>
