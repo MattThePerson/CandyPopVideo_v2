@@ -1,11 +1,34 @@
 import { makeApiRequestPOST_JSON } from "../../shared/util/request.js"
 
 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 //region - PUBLIC ------------------------------------------------------------------------------------------------------
 
-export function load_related_videos(video_data, section) {
+export async function load_related_videos(video_data, section) {
     
+    /* load movie series */
+    if (video_data.movie_title || video_data.movie_series) {
+        get_movie_series(video_data.movie_title, video_data.movie_series, (videos, title) => {
+            configure_carousel(videos, video_data.hash, section,
+                'movie-series', `movie series: "${title}"  (${videos.length} videos)`);
+        });
+    }
+    await sleep(300);
 
+    /* load from actors */
+    if (video_data.actors.length > 1) {
+        const query = _get_blank_query();
+        query.actor = video_data.actors.join(',');
+        query.sortby = 'date_released';
+        makeApiRequestPOST_JSON('/api/query/search-videos', query, (results) => {
+            const videos = results.search_results;
+            configure_carousel(videos, video_data.hash, section,
+                'from-actors', `with: ${video_data.actors.slice(0,-1).join(', ') + ' & ' + video_data.actors.slice(-1)}  (${videos.length} videos)`);
+        });
+    }
+    await sleep(300);
+    
     /* load from actor & studio */
     if (video_data.primary_actors.length == 1 && video_data.studio) {
         const query = _get_blank_query();
@@ -14,31 +37,27 @@ export function load_related_videos(video_data, section) {
         query.sortby = 'date_released';
         makeApiRequestPOST_JSON('/api/query/search-videos', query, (results) => {
             const videos = results.search_results;
-            configure_carousel(videos, video_data.hash, section, 'from-actor-studio');
+            configure_carousel(videos, video_data.hash, section,
+                'from-actor-studio', `${query.actor} in ${query.studio} (${videos.length} videos)`);
         });
     }
+    await sleep(300);
 
     /* load line videos */
     if (video_data.line) {
         $.get('/api/get/line/'+video_data.line, (videos, status) => {
             if (status === 'success') {
-                configure_carousel(videos, video_data.hash, section, 'from-line');
+                configure_carousel(videos, video_data.hash, section,
+                    'from-line', `line: ${video_data.line}  (${videos.length} videos)`);
             }
         })
     }
 
-    /* load movie series */
-    if (video_data.movie_title || video_data.movie_series) {
-        get_movie_series(video_data.movie_title, video_data.movie_series, (videos) => {
-            configure_carousel(videos, video_data.hash, section, 'movie-series');
-        });
-    }
-
-
+    
     /* EVENT LISTENERS */
 
     const rel_vids_nav_buttons = $('.related-videos-nav button');
-    const rel_vids_carousels = $('.carousel-container .carousel');
+    const rel_vids_carousels = $('.carousel-container');
     rel_vids_nav_buttons.each((idx, button) => {
         button.onclick = () => {
             if (!button.classList.contains('selected') && !button.classList.contains('disabled')) {
@@ -50,7 +69,7 @@ export function load_related_videos(video_data, section) {
                 $('.related-videos-nav button.'+ident).addClass('selected');
                 
                 rel_vids_carousels.each((idx, car) => { $(car).removeClass('shown'); });
-                $('.carousel-container .carousel.'+ident).addClass('shown');
+                $('.carousel-container.'+ident).addClass('shown');
             }
         }
     });
@@ -61,12 +80,15 @@ export function load_related_videos(video_data, section) {
 //region - PRIVATE -----------------------------------------------------------------------------------------------------
 
 
-function configure_carousel(videos, video_hash, section, identifier) {
+function configure_carousel(videos, video_hash, section, identifier, title) {
     
     if (videos.length < 2) return;
     
-    const carousel = section.find('.carousel.'+identifier);
+    const carouselContainer = section.find('.carousel-container.'+identifier);
+    const carousel = carouselContainer.find('.carousel');
     const button = section.find('.related-videos-nav button.'+identifier);
+
+    carouselContainer.find('h3').text(title);
 
     button.removeClass('disabled');
 
@@ -77,32 +99,48 @@ function configure_carousel(videos, video_hash, section, identifier) {
             const highlighted = (result.hash === video_hash);
             carousel_content += /* html */`
                 <search-result-card-default
-                highlighted = ${highlighted}
-                use_video_teasers = false
-                widthh = 32rem
-                video_hash =        "${result.hash}"
-                video_title =             "${result.title}"
-                actors =            "${result.actors}"
-                studio =            "${result.studio}"
-                line =              "${result.line}"
-                date_released =     "${result.date_released}"
-                year =              "${result.year}"
-                description =       "${result.description}"
-                collection =        "${result.collection}"
-                dvd_code =          "${result.dvd_code}"
-                duration =          "${result.duration}"
-                resolution =        "${result.resolution}"
-                fps =               "${result.fps}"
-                bitrate =           "${result.bitrate}"
-                date_added =        "${result.date_added}"
-                tags =              "${result.tags}"
-                filename =          "${result.filename}"
-            ></search-result-card-default>
+                    highlighted = ${highlighted}
+                    use_video_teasers = false
+                    widthh = 32rem
+                    video_hash =        "${result.hash}"
+                    video_title =       "${result.title}"
+                    actors =            "${result.actors}"
+                    studio =            "${result.studio}"
+                    line =              "${result.line}"
+                    date_released =     "${result.date_released}"
+                    year =              "${result.year}"
+                    description =       "${result.description}"
+                    collection =        "${result.collection}"
+                    dvd_code =          "${result.dvd_code}"
+                    duration =          "${result.duration}"
+                    resolution =        "${result.resolution}"
+                    fps =               "${result.fps}"
+                    bitrate =           "${result.bitrate}"
+                    date_added =        "${result.date_added}"
+                    tags =              "${result.tags}"
+                    filename =          "${result.filename}"
+                ></search-result-card-default>
             `;
         }
     }
     
     carousel.append(carousel_content);
+    
+    /* buttons */
+
+    // prev
+    section.find('button.prev').on('mousedown', () => {
+        if (button.hasClass('selected')) {
+            // ...
+        }
+    });
+
+    // next
+    section.find('button.next').on('mousedown', () => {
+        if (button.hasClass('selected')) {
+            // ...
+        }
+    });
     
 }
 
@@ -121,7 +159,7 @@ async function get_movie_series(movie_title, movie_series, callback) {
 
     const res = await $.get(req + '/' + param);
 
-    callback(res);
+    callback(res, param);
 }
 
 
@@ -144,3 +182,11 @@ function _get_blank_query() {
     };
 }
 
+
+
+
+function _get_current_carousel_page(buttons) {
+
+
+    
+}

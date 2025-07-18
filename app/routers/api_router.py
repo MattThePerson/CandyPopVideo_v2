@@ -28,16 +28,6 @@ def ROUTE_get_video(video_hash: str):
     print("Found video:", video_data.path)
     response = video_data.to_dict()
     return response
-    # update views
-    # if state.videosHandler:
-    #     videodata = state.videosHandler.getValue(video_hash)
-    #     videodata['views'] = videodata.get('views', 0) + 1
-    #     state.videosHandler.setValue(video_hash, response)
-    # Add viewing to metadata
-    view_item = {'ts': time.time(), 'hash': video_hash}
-    # if state.metadataHandler:
-    #     state.metadataHandler.appendValue('view_history', view_item)
-    return generateReponse(response)
 
 # get("/get/video-metadata/{video_hash}")
 

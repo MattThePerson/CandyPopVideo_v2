@@ -39,7 +39,7 @@ makeApiRequestGET('/api/get/random-spotlight-video-hash', [], (initial_response)
                 use_video_teasers = true
                 width = "32rem"
                 video_hash =        "${video_data.hash}"
-                title =             "${video_data.title}"
+                video_title =       "${video_data.title}"
                 actors =            "${video_data.actors}"
                 studio =            "${video_data.studio}"
                 line =              "${video_data.line}"

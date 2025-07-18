@@ -33,7 +33,7 @@ def searchVideos(videos_list: list[VideoData], search_query: SearchQuery, video_
 
     # sort videos
     if q.sortby and not q.search_string:
-        videos_list = _sortVideos(videos_list, q.sortby)
+        videos_list = _sortVideos(videos_list, q.sortby, video_interactions)
 
     # return
     word_cloud = _generate_word_cloud(videos_list, q.studio, q.actor, q.collection, q.include_terms)
@@ -66,7 +66,10 @@ def filterVideoObjects(filtered: list[VideoData], search_query: SearchQuery):
     q = search_query
     
     # if q.only_favourites:     filtered = [ vid for vid in filtered if ( _favourites.is_favourite(vid.hash, metadata) ) ]
-    if q.actor:           filtered = [ vid for vid in filtered if ( _actor_in_video(q.actor, vid) ) ]
+    if q.actor:
+        for actor in [ act.strip() for act in q.actor.split(',') ]:
+            filtered = [ vid for vid in filtered if ( _actor_in_video(actor, vid) ) ]
+
     if q.studio:              filtered = [ vid for vid in filtered if (  vid.studio and vid.studio.lower()==q.studio.lower()  or  vid.line and vid.line.lower()==q.studio.lower())  ]
     if q.collection:          filtered = [ vid for vid in filtered if ( (vid.collection and q.collection.lower() in vid.collection.lower()) ) ]
 
@@ -84,13 +87,15 @@ def filterVideoObjects(filtered: list[VideoData], search_query: SearchQuery):
 
 
 # sort videos
-def _sortVideos(videos_list: list[VideoData], sortby_option: str) -> list[VideoData]:
+def _sortVideos(videos_list: list[VideoData], sortby_option: str, video_interactions: dict[str, VideoInteractions]) -> list[VideoData]:
     # sort by scene title
     
     videos_list.sort(
         reverse=False,
         key=lambda video: (None, video.title or ''),
     )
+    
+    INTERACTIONS_SORTBY_OPTIONS = ['viewtime', 'last_viewed', 'favourited_date']
     
     if sortby_option.startswith('random'):
         seed = int(sortby_option.split('-')[-1])
@@ -99,25 +104,36 @@ def _sortVideos(videos_list: list[VideoData], sortby_option: str) -> list[VideoD
         
     else:
         sort_reverse = ('desc' in sortby_option)
-        sortby_option = sortby_option.replace('-asc', '')
-        sortby_option = sortby_option.replace('-desc', '')
-        sortby_option = sortby_option.replace('-', '_')
+        sortby_attr = sortby_option.replace('-asc', '')
+        sortby_attr = sortby_attr.replace('-desc', '')
+        sortby_attr = sortby_attr.replace('-', '_')
+        
+        if sortby_attr in INTERACTIONS_SORTBY_OPTIONS:
+            videos_list = _sort_videos_by_interactions(videos_list, sortby_attr, sort_reverse, video_interactions)
+        
+        else:
 
-        videos_list.sort(
-            reverse=sort_reverse,
-            key=lambda video: ( (getattr(video, sortby_option) is None) != sort_reverse, getattr(video, sortby_option) ) # tuple where first element if boolean. 
-        )
-        # if sortby_option == 'date_released':
-        #     videos_list.sort(
-        #         reverse=sort_reverse,
-        #         key=lambda video: ( ( video.date_released is None) != sort_reverse, video.date_released ) # tuple where first element if boolean. 
-        #     )
-        # else:
-        #     videos_list.sort(
-        #         reverse=sort_reverse,
-        #         key=lambda video: ( (getattr(video, sortby_option) is None) != sort_reverse, getattr(video, sortby_option) ) # tuple where first element if boolean. 
-        #     )
+            videos_list.sort(
+                reverse=sort_reverse,
+                key=lambda video: ( (getattr(video, sortby_attr) is None) != sort_reverse, getattr(video, sortby_attr) ) # tuple where first element if boolean. 
+            )
+    
     return videos_list
+
+
+def _sort_videos_by_interactions(videos_list: list[VideoData], sortby_attr: str, sort_reverse: bool, vi: dict[str, VideoInteractions]) -> list[VideoData]:
+    videos_list = [
+        vd for vd in videos_list if True
+        and vi.get(vd.hash) is not None
+        and getattr(vi.get(vd.hash), sortby_attr) is not None
+        and getattr(vi.get(vd.hash), sortby_attr) != 0
+    ]
+    videos_list.sort(
+        reverse=sort_reverse,
+        key=lambda video: getattr(vi.get(video.hash), sortby_attr),
+    )
+    return videos_list
+
 
 
 # generate word cloud

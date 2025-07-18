@@ -53,6 +53,7 @@ export function load_video_player(video_hash, video_data, url_params) {
         loadThumbnails(playerContainer, thumbnailContainer, video_hash, video_data, thumbActivateThickness);
     });
 
+    /** @type {HTMLElement} */
     const video_el = document.querySelector('#player video');
     // return;
     loadSRTasVTT(`/media/get/subtitles/${video_hash}`, (url) => {
@@ -118,7 +119,27 @@ export function load_video_player(video_hash, video_data, url_params) {
     document.addEventListener('MSFullscreenChange', onFullscreenChange);
 
 
+    /* PLAYBACK CHANGE EVENT HANDLERS */
 
+    let last_play_time = null;
+    let first_playback = false;
+
+    video_el.addEventListener('play', () => {
+        last_play_time = Date.now();
+        if (!first_playback) {
+            $.post('/api/interact/last-viewed/add/'+video_hash);
+            first_playback = true;
+        }
+    })
+
+    video_el.addEventListener('pause', () => {
+        if (last_play_time) {
+            const time_played = (Date.now() - last_play_time) / 1000;
+            last_play_time = null;
+            // console.log(time_played + 's');
+            $.post(`/api/interact/viewtime/add/${video_hash}/${time_played}`);
+        }
+    })
     
 }
 

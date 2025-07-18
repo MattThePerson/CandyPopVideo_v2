@@ -5,13 +5,14 @@ import '../../shared/web_components/search_result_cards/default_card.js'
  * @param {Object} results
  * @param {*} results_container
  */
-export function generate_results(results, results_container, card_type="search-result-card-default") {
+export async function generate_results(results, results_container, card_type="search-result-card-default") {
     
     results_container.css('visibility', 'visible');
     
-    let html_content = '';
-    results.search_results.forEach( (result) => {
-        html_content += /* html */`
+    // let html_content = '';
+    // results.search_results.forEach( async (result, idx) => {
+    for (let result of results.search_results) {
+        let html_content = /* html */`
             <search-result-card-default
                 highlighted = false
                 use_video_teasers = false
@@ -35,9 +36,13 @@ export function generate_results(results, results_container, card_type="search-r
                 filename =          "${result.filename}"
             ></search-result-card-default>
         `
-    });
-    results_container.find('.video-cards-styler').append(html_content)
+        results_container.find('.video-cards-styler').append(html_content)
+        // console.log(`adding video card: ${result.hash}`);
+        await sleep(75);
+    };
     
 
 }
 
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));

@@ -58,7 +58,7 @@ export class MyCard extends HTMLElement {
     }
 
 
-    /* HYDRATE */
+    // #region - HYDRATE -----------------------------------------------------------------------------------------------
 
     hydrate() {
         const $shadow = $(this.shadowRoot);
@@ -98,13 +98,15 @@ export class MyCard extends HTMLElement {
                 $shadow.find('.details-bar .has-subs').show();
             }
         });
-        
-        /* check favourite */
-        const is_fav_button = $shadow.find('button.is-fav-button');
-        $.get(`/api/interact/favourites/check/${this.video_hash}`, (data, status) => {
+
+        /* GET INTERACTIONS */
+        $.get('/api/interact/get/'+this.video_hash, (VIs, status) => {
             if (status === 'success') {
+                
+                /* favourites button */
+                const is_fav_button = $shadow.find('button.is-fav-button');
                 is_fav_button.addClass('loaded');
-                if (data.is_favourite) {
+                if (VIs.is_favourite) {
                     is_fav_button.addClass('is-fav');
                 }
                 // add event listeners
@@ -115,19 +117,29 @@ export class MyCard extends HTMLElement {
                     } else {
                         change_favourite_route = `/api/interact/favourites/add/${this.video_hash}`;
                     }
-                    $.post(change_favourite_route, (data, status) => {
+                    $.post(change_favourite_route, (_, status) => {
                         if (status === 'success') {
                             is_fav_button.toggleClass('is-fav');
                         }
                     });
                 });
+                
+
+                /* other */
+                $shadow.find('.details-bar .viewtime').text(this.format_seconds(VIs.viewtime));
+
+                $shadow.find('.details-bar .likes').text(VIs.likes);
+                
+                
             }
         });
         
     }
     
 
-    /* EVENT LISTENERS */
+    // #endregion
+    
+    // #region - EVENT LISTENERS ---------------------------------------------------------------------------------------
 
     addEventListeners() {
         const $shadow = $(this.shadowRoot);
@@ -165,7 +177,9 @@ export class MyCard extends HTMLElement {
     }
     
 
-    /* RENDER */
+    // #endregion
+    
+    // #region - RENDER ------------------------------------------------------------------------------------------------
 
     render() {
 
@@ -206,9 +220,13 @@ export class MyCard extends HTMLElement {
         
         const year_el_style = (date_released_fmt !== 'null') ? '' : 'display: none;';
         
+
+        // #endregion
+    
+        // #region - html --------------------------------------------------------------------------
+        
         this.shadowRoot.innerHTML = /* html */`
         
-            <!-- html ----------------------------------------------------------------------------->
             <div class="${this.card_class}">
 
                 <!-- image -->
@@ -232,9 +250,9 @@ export class MyCard extends HTMLElement {
                 <div class="card-info-container">
                     <div class="details-bar">
                         <div class="left-side">
-                            <span class="views">9 views</span>
-                            <div class="likes">
-                                3
+                            <span class="viewtime">vt unknown</span>
+                            <div class="likes-span">
+                                <div class="likes">-1</div>
                                 <svg width="32px" height="32px" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M1.24264 8.24264L8 15L14.7574 8.24264C15.553 7.44699 16 6.36786 16 5.24264V5.05234C16 2.8143 14.1857 1 11.9477 1C10.7166 1 9.55233 1.55959 8.78331 2.52086L8 3.5L7.21669 2.52086C6.44767 1.55959 5.28338 1 4.05234 1C1.8143 1 0 2.8143 0 5.05234V5.24264C0 6.36786 0.44699 7.44699 1.24264 8.24264Z" fill="#000000"/>
                                 </svg>
@@ -251,7 +269,7 @@ export class MyCard extends HTMLElement {
                                 .left-side {
                                     gap: 0.65rem;
                                 }
-                                .likes {
+                                .likes-span {
                                     display: flex;
                                     align-items: center;
                                     gap: 1.5px;
@@ -261,11 +279,11 @@ export class MyCard extends HTMLElement {
                                     /* margin-bottom: 2px; */
                                     background: purple;
                                 }
-                                .likes svg {
+                                .likes-span svg {
                                     height: 10px;
                                     width: auto;
                                 }
-                                .likes svg path {
+                                .likes-span svg path {
                                     fill: rgba(255, 0, 0, 0.774);
                                 }
                                 .rating {
@@ -341,6 +359,14 @@ export class MyCard extends HTMLElement {
                 </div>
 
             </div>
+            `;
+
+
+        // #endregion
+        
+        // #region - css ---------------------------------------------------------------------------
+        
+        this.shadowRoot.innerHTML = /* html */`
 
             <!-- styles --------------------------------------------------------------------------->
             <style>
@@ -611,7 +637,9 @@ export class MyCard extends HTMLElement {
         `;
     }
     
-    /* HELPERS */
+    // #endregion
+    
+    // #region - HELPERS -----------------------------------------------------------------------------------------------
 
     format_date_added(date_added) {
         let diff_ms = (new Date()).getTime() - (new Date(date_added.replace(' ', 'T'))).getTime();
@@ -717,6 +745,20 @@ export class MyCard extends HTMLElement {
         
         return sprites;
     }
+    
+
+    format_seconds(seconds) {
+        if (seconds === null || seconds === 0) return '';
+        const hours = Math.floor(seconds / 3600);
+        const mins = Math.floor( (seconds-hours*3600) / 60 );
+        const secs = Math.floor( seconds - hours*3600 - mins*60 );
+        if (hours > 0) {        return `${hours}h ${mins}m ${secs}s`;
+        } else if (mins > 0) {  return `${mins}m ${secs}s`;
+        } else {                return `${secs}s`;
+        }
+    }
+    
+    // #endregion
     
 }
 customElements.define('search-result-card-default', MyCard);

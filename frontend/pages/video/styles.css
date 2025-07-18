@@ -28,8 +28,15 @@ section.similar-videos-section {
 
 section.video-info-section {
     display: flex;
+    width: 100%;
+    max-width: 80rem;
+    justify-content: space-between;
+    padding: 0.8rem;
+}
+
+.info-container {
+    display: flex;
     flex-direction: column;
-    padding: 0.8rem 17%;
 }
 
 .title-bar {
@@ -99,6 +106,24 @@ section.video-info-section {
     opacity: 0.8;
 }
 
+/* interactions buttons */
+
+.interactions-container {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: fit-content;
+}
+
+.interactions-container button {
+    background:slateblue;
+    color: white;
+    height: fit-content;
+    padding: 3px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
 
 /* - RELATED VIDEOS (CAROUSEL) ---------------------------------------------- */
 
@@ -120,7 +145,7 @@ section.video-info-section {
     align-items: center;
 }
 
-.carousel-container {
+.dunno-what-to-call-this {
     /* background: purple; */
     display: flex;
     flex-direction: column;
@@ -178,20 +203,33 @@ button.prev, button.next {
 }
 
 
-.carousel.shown {
+.carousel-container.shown {
     display: flex;
-    gap: 5px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.7rem;
     width: 100%;
-    height: fit-content;
+    height: auto;
     min-height: 15rem;
-    border: 1px solid orange;
+    /* border: 1px solid orange; */
     overflow: hidden;
     padding: 8px;
-    background: black;
+    background: #090909;
+}
+.carousel-container {
+    display: none;
+}
+
+.carousel-container h3 {
+    margin-left: 2rem;
 }
 
 .carousel {
-    display: none;
+    display: flex;
+    gap: 5px;
+    /* width: 100%; */
+    height: fit-content;
 }
+
 
 

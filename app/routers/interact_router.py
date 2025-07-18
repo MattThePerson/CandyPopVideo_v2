@@ -1,5 +1,6 @@
 from datetime import datetime
 from fastapi import APIRouter, HTTPException
+from datetime import datetime
 
 from .. import db
 from config import DATETIME_FORMAT
@@ -42,6 +43,7 @@ def ROUTE_remove_favourite(video_hash: str):
     if not video_interactions.is_favourite:
         raise HTTPException(status_code=400, detail="Video is already NOT a favourite")
     video_interactions.is_favourite = False
+    video_interactions.favourited_date = None
     # video_interactions.favourited_date = datetime.now().strftime(DATETIME_FORMAT)
     db.write_object_to_db(video_hash, video_interactions.to_dict(), 'interactions')
     return { 'msg': 'favourite removed' }
@@ -71,7 +73,10 @@ def ROUTE_get_rating(video_hash: str):
 
 @interact_router.post("/likes/add/{video_hash}")
 def ROUTE_likes_add(video_hash: str):
-    ...
+    vid_inter = get_video_interactions(video_hash)
+    vid_inter.likes += 1
+    db.write_object_to_db(video_hash, vid_inter.to_dict(), 'interactions')
+    return { 'likes': vid_inter.likes }
 
 
 @interact_router.get("/likes/get/{video_hash}")
@@ -82,15 +87,20 @@ def ROUTE_likes_get(video_hash: str):
 
 # VIEWS
 
-@interact_router.post("/views/add/{video_hash}")
-def ROUTE_add_views(video_hash: str):
-    ...
+@interact_router.post("/last-viewed/add/{video_hash}")
+def ROUTE_add_last_viewed(video_hash: str):
+    vid_inter = get_video_interactions(video_hash)
+    vid_inter.last_viewed = str(datetime.now())
+    db.write_object_to_db(video_hash, vid_inter.to_dict(), 'interactions')
+    return { 'msg': 'added view' }
 
 
-@interact_router.get("/views/get/{video_hash}")
-def ROUTE_get_views(video_hash: str):
-    ...
-
+@interact_router.post("/viewtime/add/{video_hash}/{viewtime}")
+def ROUTE_add_viewtime(video_hash: str, viewtime: float):
+    vid_inter = get_video_interactions(video_hash)
+    vid_inter.viewtime += viewtime
+    db.write_object_to_db(video_hash, vid_inter.to_dict(), 'interactions')
+    return { 'msg': 'added view time' }
 
 
 # MARKERS

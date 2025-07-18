@@ -136,6 +136,31 @@ function get_year_difference_between_dates(date1, date2) {
 }
 
 
+
+//region - HELPER FUNCTIONS --------------------------------------------------------------------------------------------
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+
+function _format_seconds(seconds) {
+
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor( (seconds-hours*3600) / 60 );
+    const secs = Math.floor( seconds - hours*3600 - mins*60 );
+
+    if (hours > 0) {
+        return `${hours} hours ${mins} mins ${secs} secs`;
+    } else if (mins > 0) {
+        return `${mins} mins ${secs} secs`;
+    } else {
+        return `${secs} secs`;
+    }
+    
+}
+
+
+
+
 //region - GLOBAL VARIABLES --------------------------------------------------------------------------------------------
 
 let favouritesButton = document.getElementById('add-favourite-button')
@@ -151,7 +176,7 @@ if (videoHash != null) {
 
     /* - video data --------------------------------------------------------- */
 
-    makeApiRequestGET('/api/get/video-data', [videoHash], videodata => {
+    makeApiRequestGET('/api/get/video-data', [videoHash], async (videodata) => {
         console.log('videodata:', videodata);
         
         document.title = get_video_page_title(videodata);
@@ -165,11 +190,6 @@ if (videoHash != null) {
         hydrate_info_section(info_section, videodata);
     
 
-        /* load recommended videos */
-        const related_videos_section = $('section.related-videos-section');
-        load_related_videos(videodata, related_videos_section);
-
-        
         /* load similar videos */
         const load_similar_videos = (results_container, video_hash, start_idx, load_amount) => {
             makeApiRequestGET('/api/query/get/similar-videos', [video_hash, start_idx + 1, load_amount], search_results => {
@@ -188,36 +208,33 @@ if (videoHash != null) {
         });
 
         
+        /* load recommended videos */
+        await sleep(1000);
+        const related_videos_section = $('section.related-videos-section');
+        load_related_videos(videodata, related_videos_section);
+        
+        
+        
     });
 
     
     /* - video interactions ------------------------------------------------- */
 
-    makeApiRequestGET('/api/interact/get', [videoHash], video_interactions => {
+    makeApiRequestGET('/api/interact/get', [videoHash], vi => {
 
-        // console.log('video_interactions:', video_interactions);
+        console.log('video_interactions:', vi);
         
-        // configure favourites button
-        favouritesButton.onclick = (args) => {
-            if (video_interactions.is_favourite) {
-                console.log("removing favourite: ", videoHash);
-                makeApiRequestPOST('/api/interact/favourites/remove', [videoHash], () => {
-                    toggle_favourites_button_OFF(favouritesButton);
-                    video_interactions.is_favourite = false;
-                });
-            } else {
-                console.log("adding favourite: ", videoHash);
-                makeApiRequestPOST('/api/interact/favourites/add', [videoHash], () => {
-                    toggle_favourites_button_ON(favouritesButton);
-                    video_interactions.is_favourite = true;
-                });
-            }
-        };
-
-        toggle_favourites_button_OFF(favouritesButton);
-        if (video_interactions.is_favourite) {
-            toggle_favourites_button_ON(favouritesButton);
-        }
+        $('.viewtime').text('viewtime: ' + _format_seconds(vi.viewtime));
+        
+        const likes_button = $('.likes-button');
+        likes_button.text(`${vi.likes} likes`);
+        likes_button.on('click', () => {
+            $.post('/api/interact/likes/add/'+videoHash, (data, status) => {
+                if (status === 'success') {
+                    likes_button.text(`${data.likes} likes`);
+                }
+            })
+        })
         
     });
     
