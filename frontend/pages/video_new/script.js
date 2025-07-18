@@ -1,249 +1,258 @@
-
-/* IMPORTS */
-
 import { injectComponents } from '../../shared/util/component.js'
-import { makeApiRequestGET, makeApiRequestPOST } from '../../shared/util/request.js';
 import { PassionPlayer } from '../../shared/libraries/PassionPlayer.js';
+import { makeApiRequestGET } from '../../shared/util/request.js';
 import { generate_results } from '../../shared/util/load.js';
-import { configure_teaser_thumb_spritesheet } from '../../shared/util/vtt.js';
-import '../../shared/web_components/search_result_cards/default_card.js'
+import { load_related_videos } from './related_videos.js';
 
 injectComponents();
 
 
-
-/* HANDLE RANDOM VIDEO REQUEST */
-
 const urlParams = new URLSearchParams(window.location.search);
+
+
+//region - HANDLE RANDOM VIDEO REQUEST ---------------------------------------------------------------------------------
 
 if (urlParams.get('random') || !urlParams.get('hash')) {
     console.log("Getting random video hash ...");
-    const response = await fetch('/api/get/random-video-hash');
-    const data = await response.json()
-    const params = new URLSearchParams(location.search);
-    params.set('hash', data.hash);
-    location.replace(location.pathname + '?' + params.toString())
-    await new Promise(() => {});
+    makeApiRequestGET('/api/get/random-video-hash', [], (arg) => {
+        const params = new URLSearchParams(location.search);
+        params.set('hash', arg.hash);
+        location.replace(location.pathname + '?' + params.toString())
+    });
 }
 
+let autoplayVideo = false;
+if (urlParams.get('autoplay'))
+    autoplayVideo = true;
 
 
 //region - FUNCTIONS ---------------------------------------------------------------------------------------------------
 
 
-function load_similar_videos(results_container, video_hash, start_idx, load_amount) {
-    makeApiRequestGET('/api/query/get/similar-videos', [video_hash, start_idx + 1, load_amount], search_results => {
-        console.log(results_container);
-        generate_results(search_results, results_container);
-    });
-    return start_idx + load_amount
-};
-
-
-function hydrate_preview_info(selector, data) {
-
-    const container = $(selector);
-
-    container.find('.title').text(data.title);
-    container.find('.date_released').text(data.date_released);
+function hydrate_info_section(section, video_data) {
     
-    /* append studios */
-    for (let x of [data.studio, data.line]) {
-        if (x) {
-            container.find('.studios-container').append(`
-                <a class="studio" href="/pages/search/page.html?studio=${x}">
-                    ${x}
-                </a>
+    section.find('.title-bar h1').text( video_data.title );
+    section.find('.year').text( video_data.date_released );
+
+    
+    section.find('.collection').text( video_data.collection );
+    section.find('.collection').attr('href', `/pages/search/page.html?collection=${video_data.collection}`)
+
+    // add studios
+    const studios_cont = section.find('.studios-container');
+    [video_data.studio, video_data.line].forEach((studio, idx) => {
+        if (studio) {
+            if (idx !== 0) studios_cont.append(`<div></div>`);
+            studios_cont.append(/* html */`
+                <a href="/pages/search/page.html?studio=${studio}">${studio}</a>
             `);
         }
-    }
-
-    for (let x of data.actors) {
-        container.find('.actors-container').append(/* html */`
-            <a class="actor" href="/pages/search/page.html?actor=${x}">
-                ${x}
-            </a>
+    })
+    
+    // add actors
+    const actors_cont = section.find('.actors-container');
+    video_data.actors.forEach((actor, idx) => {
+        const actor_id = 'actor_link-' + actor.replace(/ /g, '_');
+        if (idx !== 0) actors_cont.append('<div></div>');
+        actors_cont.append(/* html */`
+            <a id="${actor_id}" href="/pages/search/page.html?actor=${actor}">${actor}</a>
         `);
-        
-    };
-}
+
+        /* request */
+        $.get('/api/get/actor/'+actor, (data, status, response) => {
+            if (response.status === 200) {
+                const age_its = get_year_difference_between_dates(data.date_of_birth, video_data.date_released);
+                if (age_its) {
+                    document.getElementById(actor_id).innerText += ` (${age_its} y/o ITS)`
+                }
+            }
+        })
+    })
 
 
-function hydrate_about_section(selector, data) {
-
-    const section = $(selector);
-
-    /* left side */
-    section.find('.title').text( data.title )
-    section.find('.resolution').text( data.resolution )
-    section.find('.bitrate').text( data.bitrate )
-    section.find('.fps').text( data.fps )
-    section.find('.duration').text( data.duration )
-    section.find('.collection').text( data.collection )
-    section.find('.date_released').text( data.date_released )
     
-    /* append studios */
-    for (let x of [data.studio, data.line]) {
-        if (x) {
-            section.find('.studios-container').append(`
-                <div class="studio">${x}</div>
-            `);
-        }
-    }
+    
+    /* event listeners */
 
-    data.actors.forEach(name => {
-        const card_id = 'actor-card_' + name.toLowerCase().replace(/ /g, '-');
-        section.find('.actor-cards-bar').append(get_actor_card(name, card_id));
-        // makeApiRequestGET('/api/get/actor-data', [name], perf_data => {
-        //     // TODO: get actor age ITS
-        //     $('#' + card_id).find('age').text(perf_data.age + ' y/o ITS');
-        //     $('#' + card_id).find('scene_count').text(perf_data.scene_count + ' scenes');
-        // });
+    /* check favourite */
+    const is_fav_button = section.find('button.is-fav-button');
+    $.get(`/api/interact/favourites/check/${video_hash}`, (data, status) => {
+        // console.log(status);
+        if (status === 'success') {
+            is_fav_button.addClass('loaded');
+            if (data.is_favourite) {
+                is_fav_button.addClass('is-fav');
+            }
+            // add event listeners
+            is_fav_button.on('click', () => {
+                let change_favourite_route;
+                if (is_fav_button.hasClass('is-fav')) {
+                    change_favourite_route = `/api/interact/favourites/remove/${video_hash}`;
+                } else {
+                    change_favourite_route = `/api/interact/favourites/add/${video_hash}`;
+                }
+                $.post(change_favourite_route, (data, status) => {
+                    if (status === 'success') {
+                        is_fav_button.toggleClass('is-fav');
+                    }
+                });
+            });
+        }
     });
     
+}
+
+
+function get_video_page_title(video_data)  {
+    let title = video_data.primary_actors.join(', ');
+    if (video_data.studio) {
+        title += ` - ${video_data.studio}`;
+    }
+    title += ` - ${video_data.title}`;
+    return title;
+}
+
+function toggle_favourites_button_ON(butt) {
+    favouritesButton.innerText = 'REMOVE FAV';
+    favouritesButton.style.background = 'red';
+}
+
+function toggle_favourites_button_OFF(butt) {
+    favouritesButton.innerText = 'ADD FAV';
+    favouritesButton.style.background = 'orange';
+}
+
+
+function get_year_difference_between_dates(date1, date2) {
+    if (date1 === null || date2 === null) {
+        return null;
+    }
+    const a = Date.parse(date1);
+    const b = Date.parse(date2);
+    if (isNaN(a) || isNaN(b)) {
+        return null;
+    }
+    return Math.floor((b-a) / (1000 * 60 * 60 * 24 * 365))
+}
+
+
+
+//region - HELPER FUNCTIONS --------------------------------------------------------------------------------------------
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+
+function _format_seconds(seconds) {
+
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor( (seconds-hours*3600) / 60 );
+    const secs = Math.floor( seconds - hours*3600 - mins*60 );
+
+    if (hours > 0) {
+        return `${hours} hours ${mins} mins ${secs} secs`;
+    } else if (mins > 0) {
+        return `${mins} mins ${secs} secs`;
+    } else {
+        return `${secs} secs`;
+    }
     
 }
 
-function get_actor_card(name, card_id) {
-    return /* html */`
-        <div id="${card_id}" class="actor-card">
-            <img src="" alt="">
-            <h3 class="name">${name}</h3>
-            <div class="age">29 y/o ITS</div>
-            <div class="scene-count">69 scenes</div>
-        </div>
-    `;
-}
 
-
-//region - EVENT LISTENERS ---------------------------------------------------------------------------------------------
 
 
 //region - GLOBAL VARIABLES --------------------------------------------------------------------------------------------
+
+let favouritesButton = document.getElementById('add-favourite-button')
 
 
 
 //region - BACKEND REQUEST ---------------------------------------------------------------------------------------------
 
 const video_hash = urlParams.get('hash');
+console.log("Video hash: " + video_hash);
 
-console.log(video_hash);
+if (video_hash != null) {
 
-// GET VIDEO
+    /* - video data --------------------------------------------------------- */
 
-if (video_hash === null) {
-    throw new TypeError("Expected a non-null value");
-}
+    makeApiRequestGET('/api/get/video-data', [video_hash], async (video_data) => {
+        console.log('video_data:', video_data);
+        
+        document.title = get_video_page_title(video_data);
+        
+        /* load video player */
+        const player = new PassionPlayer({
+            player_id: 'player',
+            src: '/media/get/video/' + video_hash,
+            
+            styles: '/shared/libraries/PassionPlayer.css',
+            quiet: false,
+        });
 
+        player.init();
 
-
-makeApiRequestGET('/api/get/video-data', [video_hash], videodata => {
-
-    console.log('videodata:', videodata);
+        /* Hydrate video about section */
+        const info_section = $('section.video-info-section');
+        hydrate_info_section(info_section, video_data);
     
-    document.title = videodata.actors.join(', ') + ' in ' + videodata.title;
+        return;
 
-    /* - Initialize preview pane -------------------------------------------- */
+        /* load similar videos */
+        const load_similar_videos = (results_container, video_hash, start_idx, load_amount) => {
+            makeApiRequestGET('/api/query/get/similar-videos', [video_hash, start_idx + 1, load_amount], search_results => {
+                generate_results(search_results, results_container);
+            });
+            return start_idx + load_amount;
+        };
+        
+        const similar_videos_load_amount = 8;
+        let similar_videos_loaded = 0;
+        
+        const results_container = $('.similar-videos-section');
+        similar_videos_loaded = load_similar_videos(results_container, video_hash, similar_videos_loaded, similar_videos_load_amount);
+        document.getElementById('expand-results-button').addEventListener('click', () => {
+            similar_videos_loaded = load_similar_videos(results_container, video_hash, similar_videos_loaded, similar_videos_load_amount);
+        });
 
-    const preview_container = $('.video-preview-container');
+        
+        /* load recommended videos */
+        await sleep(1000);
+        const related_videos_section = $('section.related-videos-section');
+        load_related_videos(video_data, related_videos_section);
+        
+        
+        
+    });
 
-    preview_container.find('img.poster').get(0).src = '/media/get/poster-large/' + video_hash + '?t=' + Date.now()
     
-    makeApiRequestGET('/media/ensure/teaser-large', [video_hash], () => {
-        const teaser_video = preview_container.find('video').get(0);
-        teaser_video.src = `/static/preview-media/0x${video_hash}/teaser_large.mp4`;
-        // teaser_video.pause();
-        preview_container.on('click', () => {
-            if (teaser_video.paused) teaser_video.play(); else teaser_video.pause();
+    /* - video interactions ------------------------------------------------- */
+
+    makeApiRequestGET('/api/interact/get', [video_hash], vi => {
+
+        // console.log('video_interactions:', vi);  
+        
+        /* viewtime */
+        $('.viewtime').text('viewtime: ' + _format_seconds(vi.viewtime));
+        
+        /* likes */
+        const likes_button = $('.likes-button');
+        likes_button.text(`${vi.likes} likes`);
+        likes_button.on('click', () => {
+            $.post('/api/interact/likes/add/'+video_hash, (data, status) => {
+                if (status === 'success') {
+                    likes_button.text(`${data.likes} likes`);
+                }
+            })
         })
+
+        /* date markers */
+        const date_marker_button = $('.add-dated-marker');
+        date_marker_button.on('click', () => {
+            // ...
+        });
+        
+        
     });
-
-    hydrate_preview_info('.video-preview-container .info-container', videodata);
-
-    makeApiRequestGET('/media/ensure/teaser-thumbs-large', [video_hash], () => {
-        const teaser_thumbs = preview_container.find('img.teaser').get(0);
-        const teaser_thumbs_src = `/static/preview-media/0x${video_hash}/teaser_thumbs_large.jpg`;
-        configure_teaser_thumb_spritesheet(teaser_thumbs_src, teaser_thumbs, preview_container.get(0));
-    });
-
-    /* toggle teaser mode */
-    $('.toggle-teaser-mode-button').on('click', (e) => {
-        e.stopPropagation();
-        preview_container.find('video').toggleClass('hidden');
-        preview_container.find('img.teaser').toggleClass('hidden');
-    });
-
-    /* play */
-    $('.play-button').on('click', (e) => {
-        e.stopPropagation();
-        // toggle preview and video panels ...
-    });
-
-
-    /* - Initialize video player -------------------------------------------- */
-
-    console.log('initializing player ...')
     
-    // const player = new PassionPlayer({
-    //     player_id: 'video-container',
-    //     src: '/media/get/video/' + video_hash,
-    //     title: videodata.title,
-    //     styles: '/shared/libraries/PassionPlayer.css',
-    //     markers_get: '/api/interact/markers/get/' + video_hash,
-    //     markers_post: '/api/interact/markers/update/' + video_hash,
-    // });
-    
-
-    /* - Hydrate about section ---------------------------------------------- */
-
-    hydrate_about_section('.video-about-section', videodata);
-
-
-    /* - Load related videos ------------------------------------------------ */
-
-
-    
-    /* - Load similar videos -------------------------------------------- */
-
-    const similar_videos_load_amount = 8;
-    let similar_videos_loaded = 0;
-    const similar_videos_section = $('.similar-videos-section');
-    
-    // similar_videos_loaded = load_similar_videos(similar_videos_section, video_hash, similar_videos_loaded, similar_videos_load_amount);
-    // $('#expand-results-button').click = () => {
-    //     similar_videos_loaded = load_similar_videos(similar_videos_section, video_hash, similar_videos_loaded, similar_videos_load_amount);
-    // };
-
-});
-
-
-/* VIDEO INTERACTIONS */
-
-// makeApiRequestGET('/api/interact/get', [video_hash], video_interactions => {
-
-//     console.log('video_interactions:', video_interactions);
-    
-//     // configure favourites button
-//     favouritesButton.onclick = (args) => {
-//         if (video_interactions.is_favourite) {
-//             console.log("removing favourite: ", video_hash);
-//             makeApiRequestPOST('/api/interact/favourites/remove', [video_hash], () => {
-//                 toggle_favourites_button_OFF(favouritesButton);
-//                 video_interactions.is_favourite = false;
-//             });
-//         } else {
-//             console.log("adding favourite: ", video_hash);
-//             makeApiRequestPOST('/api/interact/favourites/add', [video_hash], () => {
-//                 toggle_favourites_button_ON(favouritesButton);
-//                 video_interactions.is_favourite = true;
-//             });
-//         }
-//     };
-
-//     toggle_favourites_button_OFF(favouritesButton);
-//     if (video_interactions.is_favourite) {
-//         toggle_favourites_button_ON(favouritesButton);
-//     }
-    
-// });
-
+}

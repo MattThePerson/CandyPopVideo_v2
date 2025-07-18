@@ -366,7 +366,7 @@ export class MyCard extends HTMLElement {
         
         // #region - css ---------------------------------------------------------------------------
         
-        this.shadowRoot.innerHTML = /* html */`
+        this.shadowRoot.innerHTML += /* html */`
 
             <!-- styles --------------------------------------------------------------------------->
             <style>
@@ -668,7 +668,7 @@ export class MyCard extends HTMLElement {
         fetch(vtt_src)
             .then(response => response.text())
             .then(vttText => {
-                // console.log('got vtt text');
+                // console.log('got vtt text:', vttText);
 
                 // Parse the VTT file to extract sprite coordinates
                 const sprites = this.parseVTT(vttText);

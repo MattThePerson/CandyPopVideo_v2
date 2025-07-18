@@ -9,14 +9,10 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
     <script type="module" src="script.js"></script>
-    <link rel="stylesheet" href="about_section_styles.css">
-    <link rel="stylesheet" href="player_section_styles.css">
+    <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="/global.css">
+    
     <link rel="stylesheet" href="/shared/styles/video_results_container.css">
-
-    <!-- try to remove -->
-
-    <!-- <script src="/shared/libraries/playerjs.js"></script> -->
     
     
 </head>
@@ -25,78 +21,98 @@
     
     <main>
 
-
-        <!-- PLAYER SECTION --------------------------------------------------->
-        <section class="player-section">
-
-            <div class="video-preview-container">
-                <div class="media-wrapper">
-                    <img class="poster hidden" src="" alt="">
-                    <video class="hidden" muted autoplay loop src=""></video>
-                    <img class="teaser" src="" alt="">
-                </div>
-                <button class="toggle-teaser-mode-button">toggle</button>
-                <button class="play-button">play</button>
-                <div class="info-container">
-                    <div class="title"></div>
-                    <div class="actors-container"></div>
-                    <div class="year-studios-bar">
-                        <div class="date_released"></div>
-                        <div class="studios-container"></div>
-                    </div>
-                </div>
+        <!-- VIDEO PLAYER ----------------------------------------------------->
+        
+        <section class="video-player-section">
+            <div id="video-player-container">
+                <div id="player"></div>
             </div>
-
-            <div id="player-container"></div>
-            
         </section>
 
-
-        <!-- ABOUT SECTION ---------------------------------------------------->
-        <section class="video-about-section">
-
-            <!-- left side -->
-            <div class="left-side-container">
-                <div class="title-attributes-bar">
-                    <button class="favourite-button">o</button>
-                    <h1 class="title"></h1>
-                    <div class="attributes-container">
-                        <div class="duration"></div>
-                        <div class="resolution"></div>
-                        <div class="bitrate"></div>
-                        <div class="fps"></div>
-                    </div>
+        <!-- VIDEO INFO ------------------------------------------------------->
+        
+        <section class="video-info-section">
+            <div class="info-container">
+                <div class="title-bar">
+                    <button class="is-fav-button">
+                        <svg class="off" width="32px" height="32px" viewBox="-4 0 30 30" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
+                            <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage"><g id="Icon-Set" sketch:type="MSLayerGroup" transform="translate(-417.000000, -151.000000)" fill="#000000">
+                                <path d="M437,177 C437,178.104 436.104,179 435,179 L428,172 L421,179 C419.896,179 419,178.104 419,177 L419,155 C419,153.896 419.896,153 421,153 L435,153 C436.104,153 437,153.896 437,155 L437,177 L437,177 Z M435,151 L421,151 C418.791,151 417,152.791 417,155 L417,177 C417,179.209 418.791,181 421,181 L428,174 L435,181 C437.209,181 439,179.209 439,177 L439,155 C439,152.791 437.209,151 435,151 L435,151 Z" id="bookmark" sketch:type="MSShapeGroup"></path>
+                            </g></g>
+                        </svg>
+                        <svg class="on" width="32px" height="32px" viewBox="-4 0 30 30" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
+                            <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage"><g id="Icon-Set-Filled" sketch:type="MSLayerGroup" transform="translate(-419.000000, -153.000000)" fill="#000000">
+                                <path d="M437,153 L423,153 C420.791,153 419,154.791 419,157 L419,179 C419,181.209 420.791,183 423,183 L430,176 L437,183 C439.209,183 441,181.209 441,179 L441,157 C441,154.791 439.209,153 437,153" id="bookmark" sketch:type="MSShapeGroup"></path>
+                            </g></g>
+                        </svg>
+    
+                    </button>
+                    <h1></h1>
                 </div>
                 <div class="year-studio-bar">
-                    <div class="collection"></div>
-                    <div class="date_released"></div>
+                    <a class="collection"></a>
+                    <div class="year"></div>
                     <div class="studios-container"></div>
                 </div>
-                <div class="actor-cards-bar"></div>
+                <div class="actors-container"></div>
             </div>
-
-            <!-- right side -->
-            <div class="right-side-container">
-                
+            <div class="interactions-container">
+                <button class="likes-button">x likes</button>
+                <button class="add-dated-marker-button">coomed</button>
+                <button class="rate-button">rate</button>
+                <div class="viewtime"></div>
             </div>
         </section>
 
-
+        
         <!-- RELATED VIDEOS SECTION ------------------------------------------->
-        <section class="related-videos-section">
-
+        
+        <section class="related-videos-section" style="display: none">
+            <h2>Related Videos:</h2>
+            <div class="related-videos-container">
+                <button class="prev"><</button>
+                <div class="dunno-what-to-call-this">
+                    <nav class="related-videos-nav">
+                        <!-- <button class="from-actor selected">from actor</button> -->
+                        <!-- <button class="from-studio">from studio</button> -->
+                        <button class="movie-series selected disabled">movie series</button>
+                        <button class="from-actors disabled">from actors</button>
+                        <button class="from-actor-studio disabled">actor & studio</button>
+                        <button class="from-line disabled">from line</button>
+                    </nav>
+                    <div class="carousel-container movie-series shown">
+                        <h3></h3>
+                        <div class="carousel"></div>
+                    </div>
+                    <div class="carousel-container from-actors">
+                        <h3></h3>
+                        <div class="carousel"></div>
+                    </div>
+                    <div class="carousel-container from-actor-studio">
+                        <h3></h3>
+                        <div class="carousel"></div>
+                    </div>
+                    <div class="carousel-container from-line">
+                        <h3></h3>
+                        <div class="carousel"></div>
+                    </div>
+                </div>
+                <button class="next">></button>
+            </div>
         </section>
 
 
         <!-- SIMILAR VIDEOS SECTION ------------------------------------------->
+        
         <section class="similar-videos-section" style="visibility: hidden">
-            <h2>Recommended videos:</h2>
+            <h2>Similar Videos:</h2>
             <div class="video-cards-styler" class="grid-view"></div>
             <button id="expand-results-button">LOAD MORE RESULTS</button>
         </section>
 
+        
+    </main>
     
     <div class="MyComponent" component="Footer"></div>
 </body>
-
 </html>

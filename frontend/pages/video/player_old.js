@@ -92,6 +92,7 @@ export function load_video_player(video_hash, video_data, url_params) {
     /** @type {*} */
     const progressionBarCanvas = document.getElementById('progression-bar-canvas'); // for showing progression when controlls disappear in fullscreen
     const progressionBarCanvas_thickness = 3.5;
+    progressionBarCanvas.style.display = 'block';
     progressionBarCanvas.style.position = 'fixed';
     progressionBarCanvas.style.bottom = '0';
     progressionBarCanvas.height = progressionBarCanvas_thickness;
@@ -109,7 +110,7 @@ export function load_video_player(video_hash, video_data, url_params) {
         } else {
             document.body.appendChild(thumbnailContainer);
             // document.body.appendChild(progressionBarCanvas);
-            progressionBarCanvas.style.display = 'none';
+            // progressionBarCanvas.style.display = 'none';
             stopProgressBar();
         }
     }
@@ -119,6 +120,9 @@ export function load_video_player(video_hash, video_data, url_params) {
     document.addEventListener('MSFullscreenChange', onFullscreenChange);
 
 
+    /* CUSTOM PROGRESS BAR */
+    // const progress_bar
+    
     /* PLAYBACK CHANGE EVENT HANDLERS */
 
     let last_play_time = null;

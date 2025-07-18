@@ -22,6 +22,10 @@ section.related-videos-section {
     padding-top: 0.8rem;
 }
 
+#video-player-container, #player {
+    height: 100%; width: 100%;
+}
+
 section.similar-videos-section {
     border-top: 2px solid #fff4;
     padding-top: 0.8rem;

@@ -18,7 +18,7 @@ class VideoInteractions:
     
     views:          list[str] = field(default_factory=list) # list of dates
     likes:          int = 0
-    rating:         str = ""  # S+ | S | A | B+ | B- | C
+    rating:         str|None = None  # S+ | S | A | B+ | B- | C
     
     markers:        list[tuple] = field(default_factory=list) # ( video_time, color, tag )
     dated_markers:  list[tuple] = field(default_factory=list) # ( video_time, datetime )

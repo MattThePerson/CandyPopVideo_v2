@@ -224,8 +224,10 @@ if (videoHash != null) {
 
         console.log('video_interactions:', vi);
         
+        /* viewtime */
         $('.viewtime').text('viewtime: ' + _format_seconds(vi.viewtime));
         
+        /* likes */
         const likes_button = $('.likes-button');
         likes_button.text(`${vi.likes} likes`);
         likes_button.on('click', () => {
@@ -235,6 +237,13 @@ if (videoHash != null) {
                 }
             })
         })
+
+        /* date markers */
+        const date_marker_button = $('.add-dated-marker');
+        date_marker_button.on('click', () => {
+            // ...
+        });
+        
         
     });
     
