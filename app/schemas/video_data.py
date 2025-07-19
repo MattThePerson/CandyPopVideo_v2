@@ -8,7 +8,7 @@ class VideoData:
     """ Dataclass for containing video data """
     
     hash: str
-    date_added: str
+    date_added: str # eg. 2025-06-12 20:00
     path: str
     filename: str
     

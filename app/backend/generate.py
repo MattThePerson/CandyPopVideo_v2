@@ -224,10 +224,10 @@ def checkPreviewMediaStatus(videos_list: list[VideoData], mediadir: str, selecti
     options = {
         'teaser_thumbs':        checkers.hasTeaserThumbsSmall,
         'teasers':              checkers.hasTeaserSmall,
-        'preview_thumbs':       checkers.hasPreviewThumbs,
         'seek_thumbs':          checkers.hasSeekThumbs,
-        'teasers_large':        checkers.hasTeaserLarge,
-        'teaser_thumbs_large':  checkers.hasTeaserThumbsLarge,
+        'preview_thumbs':       checkers.hasPreviewThumbs,
+        # 'teasers_large':        checkers.hasTeaserLarge,
+        # 'teaser_thumbs_large':  checkers.hasTeaserThumbsLarge,
     }
     # get & print status
     print('{:<20} | {:>6} | {:>8} | {:>8} | {}'.format('MEDIA TYPE', 'PERC', 'WITH', 'WITHOUT', 'TOTAL'))
@@ -260,6 +260,8 @@ def checkPreviewMediaStatus(videos_list: list[VideoData], mediadir: str, selecti
 def _get_status_line(name, with_, without):
     yes, no = len(with_), len(without)
     total = yes + no
-    perc = (yes / (total)) * 100
+    perc = -1
+    if total > 0:
+        perc = (yes / (total)) * 100
     perc_str = '{:.1f}%'.format(perc)
     return '{:<20} | {:>6} : {:>8_} : {:>8_} : {:>8_} |'.format(name, perc_str, yes, no, total)
