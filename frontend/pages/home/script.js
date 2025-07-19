@@ -3,18 +3,10 @@ const $ = window.$;
 
 import { injectComponents } from '../../shared/util/component.js'
 import { makeApiRequestGET } from '../../shared/util/request.js';
-import { generate_results } from '../../shared/util/load.js';
+import { render_video_cards } from '../../shared/util/load.js';
 
 injectComponents();
 
-
-
-const load_similar_videos = (results_container, video_hash, start_idx, load_amount) => {
-    makeApiRequestGET('/api/query/get/similar-videos', [video_hash, start_idx + 1, load_amount], search_results => {
-        generate_results(search_results, results_container);
-    });
-    return start_idx + load_amount;
-};
 
 
 /* API REQUEST */
@@ -24,7 +16,7 @@ makeApiRequestGET('/api/get/random-spotlight-video-hash', [], (initial_response)
     console.log(initial_response);
     // initial_response.hash = '121a23562d15'; // 'b213a0d3edbe' // '00c1f7c43d27';
 
-    makeApiRequestGET('/api/get/video-data', [initial_response.hash], (video_data) => {
+    makeApiRequestGET('/api/get/video-data', [initial_response.hash], async (video_data) => {
 
         console.log(video_data);
 
@@ -64,14 +56,25 @@ makeApiRequestGET('/api/get/random-spotlight-video-hash', [], (initial_response)
         
         /* load related videos */
 
-        const similar_videos_load_amount = 8 //24;
-        let similar_videos_loaded = 0;
+        const card_type = "search-result-card-default"; // TODO: Replace with local storage
+
+        const video_load_amount = 8 //24;
+
+        const query_amount = 512
+        const result = await $.get(`/api/query/get/similar-videos/${initial_response.hash}/0/${query_amount}`);
+        let similar_videos = result.search_results;
         
-        const results_container = $('.similar-videos-section');
-        similar_videos_loaded = load_similar_videos(results_container, video_data.hash, similar_videos_loaded, similar_videos_load_amount);
-        document.getElementById('expand-results-button').addEventListener('click', () => {
-            similar_videos_loaded = load_similar_videos(results_container, video_data.hash, similar_videos_loaded, similar_videos_load_amount);
-        });
+        const results_container = $('.similar-videos-section').get(0);
+
+        const expand_results_func = await render_video_cards(
+            similar_videos,
+            results_container,
+            video_load_amount,
+            '24rem',
+            card_type,
+            1,
+        )
+        $(results_container).find('#expand-results-button').on('click', expand_results_func);
 
     });
 })

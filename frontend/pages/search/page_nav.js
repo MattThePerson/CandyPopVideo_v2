@@ -4,11 +4,12 @@
  * 
  * @param {number} videos_filtered_count 
  * @param {number} time_taken 
- * @param {*} search_query 
+ * @param {number} results_per_page 
+ * @param {number} startfrom_index 
  */
-export function configure_page_nav(videos_filtered_count, time_taken, search_query) {
+export function configure_page_nav(videos_filtered_count, time_taken, results_per_page, startfrom_index) {
     const amount_of_results = videos_filtered_count;
-    const number_of_pages = Math.max(1, Math.floor((amount_of_results-1) / search_query.limit) + 1);
+    const number_of_pages = Math.max(1, Math.floor((amount_of_results-1) / results_per_page) + 1);
     
     /** @type {HTMLElement} */
     const page_number = document.querySelector('#search-page-info .page-number')
@@ -16,7 +17,7 @@ export function configure_page_nav(videos_filtered_count, time_taken, search_que
         page_number.innerText += ' of ' + number_of_pages + ' (' + amount_of_results + ' search results, took ' + time_taken + ' seconds)';
     }
     
-    const current_page = Math.floor(search_query.startfrom / search_query.limit);
+    const current_page = Math.floor(startfrom_index / results_per_page);
     const max_buttons = 11;
     
     const pageNav = document.getElementById('page-nav');

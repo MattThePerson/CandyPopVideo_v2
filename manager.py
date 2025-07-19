@@ -114,14 +114,14 @@ def backend_manager(args: argparse.Namespace, ws=None):
             succ, fail = generate.mass_generate_seek_thumbs( *alist, **kdict )
             succs['seek_thumbs'] = succ
             fails['seek_thumbs'] = fail
-        if opt == 'all' or opt == 'teasers_large': 
-            succ, fail = generate.mass_generate_teasers_large( *alist, **kdict )
-            succs['teasers_large'] = succ
-            fails['teasers_large'] = fail
-        if opt == 'all' or opt == 'teaser_thumbs_large': 
-            succ, fail = generate.mass_generate_teaser_thumbs_large( *alist, **kdict )
-            succs['teaser_thumbs_large'] = succ
-            fails['teaser_thumbs_large'] = fail
+        # if opt == 'all' or opt == 'teasers_large': 
+        #     succ, fail = generate.mass_generate_teasers_large( *alist, **kdict )
+        #     succs['teasers_large'] = succ
+        #     fails['teasers_large'] = fail
+        # if opt == 'all' or opt == 'teaser_thumbs_large': 
+        #     succ, fail = generate.mass_generate_teaser_thumbs_large( *alist, **kdict )
+        #     succs['teaser_thumbs_large'] = succ
+        #     fails['teaser_thumbs_large'] = fail
         # try:
         # except KeyboardInterrupt:
         #     print('\n... interrupting')

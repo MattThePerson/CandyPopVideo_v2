@@ -1,8 +1,8 @@
 import { injectComponents } from '../../shared/util/component.js'
-import { makeApiRequestGET, makeApiRequestPOST } from '../../shared/util/request.js';
+import { makeApiRequestGET } from '../../shared/util/request.js';
 import { generate_results } from '../../shared/util/load.js';
 import { load_video_player } from './player_old.js';
-import { load_related_videos } from './related_videos.js';
+import { load_recommended_videos } from './recommended_videos.js';
 
 injectComponents();
 
@@ -190,30 +190,39 @@ if (videoHash != null) {
         hydrate_info_section(info_section, videodata);
     
 
-        /* load similar videos */
-        const load_similar_videos = (results_container, video_hash, start_idx, load_amount) => {
-            makeApiRequestGET('/api/query/get/similar-videos', [video_hash, start_idx + 1, load_amount], search_results => {
-                generate_results(search_results, results_container);
-            });
-            return start_idx + load_amount;
-        };
+        /* load recommended (related & similar) videos */
+        const related_videos_section = $('section.related-videos-section').get(0);
+        const similar_videos_section = $('.similar-videos-section').get(0);
         
-        const similar_videos_load_amount = 8;
-        let similar_videos_loaded = 0;
+        load_recommended_videos(
+            videodata,
+            related_videos_section,
+            similar_videos_section,
+            videoHash,
+        );
+
+        // load_related_videos(videodata, related_videos_section);
         
-        const results_container = $('.similar-videos-section');
-        similar_videos_loaded = load_similar_videos(results_container, videoHash, similar_videos_loaded, similar_videos_load_amount);
-        document.getElementById('expand-results-button').addEventListener('click', () => {
-            similar_videos_loaded = load_similar_videos(results_container, videoHash, similar_videos_loaded, similar_videos_load_amount);
-        });
 
         
-        /* load recommended videos */
-        await sleep(1000);
-        const related_videos_section = $('section.related-videos-section');
-        load_related_videos(videodata, related_videos_section);
+        /* load similar videos */
+
+        // const load_similar_videos = (results_container, video_hash, start_idx, load_amount) => {
+        //     makeApiRequestGET('/api/query/get/similar-videos', [video_hash, start_idx + 1, load_amount], search_results => {
+        //         console.log('similar videos:', search_results);
+        //         generate_results(search_results, results_container);
+        //     });
+        //     return start_idx + load_amount;
+        // };
         
+        // const similar_videos_load_amount = 8;
+        // let similar_videos_loaded = 0;
         
+        // similar_videos_loaded = load_similar_videos(results_container, videoHash, similar_videos_loaded, similar_videos_load_amount);
+        // document.getElementById('expand-results-button').addEventListener('click', () => {
+        //     similar_videos_loaded = load_similar_videos(results_container, videoHash, similar_videos_loaded, similar_videos_load_amount);
+        // });
+
         
     });
 

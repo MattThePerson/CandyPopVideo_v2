@@ -1,10 +1,6 @@
-// @ts-ignore
-const $ = window.$;
-
 import { injectComponents } from '../../shared/util/component.js'
 import { makeApiRequestGET, makeApiRequestPOST_JSON } from '../../shared/util/request.js';
-// import { generate_results_OLD } from '../../shared/util/search_OLD.js';
-import { generate_results } from '../../shared/util/load.js';
+import { generate_results, render_video_cards } from '../../shared/util/load.js';
 import { configure_page_nav } from './page_nav.js';
 
 
@@ -176,6 +172,7 @@ for (let button_group of button_groups) {
 
 
 const params = new URLSearchParams(window.location.search);
+const results_per_page = 24;
 
 /* make page changes */
 
@@ -223,7 +220,7 @@ params.forEach((value, key) => {
     }
 });
 
-query.limit =       params.get('results-amount') || 24;
+query.limit =       params.get('results-amount') || results_per_page;
 query.startfrom =   query.limit * (pageNumber-1);
 
 if (typeof query.include_terms === 'string') query.include_terms = query.include_terms.split(',').map(w => w.trim());
@@ -246,15 +243,24 @@ if (query.only_favourites)  onlyFavsCheckbox.checked = true;
 if (urlParams.size > 0) {
     makeApiRequestPOST_JSON('/api/query/search-videos', query, (results) => {
         
-        console.log('search_results:', results);
+        // console.log('search_results:', results);
 
-        // generate_results_OLD(results, {generate_nav : true}, query);
+        const card_type = "search-result-card-default"; // TODO: Replace with local storage
+        
+        const results_container = $('.similar-videos-section').get(0);
+        
+        // generate_results(results, results_container);
 
-        const results_container = $('.similar-videos-section');
-        generate_results(results, results_container);
+        render_video_cards(
+            results.search_results,
+            results_container,
+            results_per_page,
+            '24rem',
+            card_type,
+        )
 
         /* Configure page nav */
-        configure_page_nav(results.videos_filtered_count, results.time_taken, query);
+        configure_page_nav(results.videos_filtered_count, results.time_taken, results_per_page, query.startfrom);
         
         /* similar performers */
         if (query.actor) {

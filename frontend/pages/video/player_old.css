@@ -9,7 +9,6 @@
 }
 #player-container {
     height: 100%;
-    position: relative;
 }
 #player {
     width: 99vw;
@@ -66,7 +65,7 @@ video::cue {
 
 /* PROGRESS BAR */
 
-#progress {
+/* #progress {
     position: absolute;
     bottom: 0;
     left: 0;
@@ -79,4 +78,4 @@ video::cue {
     width: 40%;
     background: red;
 }
-
+ */

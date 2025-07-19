@@ -300,7 +300,7 @@ def _get_movie(title):
     
     words = title.lower().split(' ')
     
-    for sc_delim in ['scene', 'part', 'episode']:
+    for sc_delim in ['scene', 'part', 'episode', 'chapter']:
         if sc_delim in words:
             part_idx = words.index(sc_delim)
             if part_idx > 0 and len(words) > part_idx+1:
@@ -338,11 +338,11 @@ def _get_movie_series_from_movie(title):
         movie_idx = _extract_number_from_term(title_words[-1])
         if movie_idx is not None:
             title_words = title_words[:-1]
-            if title_words[-1].lower().replace('.', '') in ['vol', 'volume']:
+            if title_words[-1].lower().replace('.', '') in ['vol', 'volume', 'season']:
                 title_words = title_words[:-1]
             if title_words != []:
                 return ' '.join(title_words)
-    return None
+    return title
 
 
 def _remove_chars(string, chars):

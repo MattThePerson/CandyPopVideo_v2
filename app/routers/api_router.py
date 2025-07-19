@@ -61,13 +61,14 @@ def ROUTE_get_random_video_seeded(seed):
 @api_router.get("/get/random-spotlight-video-hash")
 def ROUTE_get_random_spotlight_video():
     seed = (datetime.now() - datetime.strptime('1900 06:00:00', '%Y %H:%M:%S')).days
-    rng = random.Random(seed)
     videos_dict = db.read_table_as_dict('videos')
     video_hashes = sorted([ hsh for hsh, vd in videos_dict.items() if vd.get('is_linked') ])
     if video_hashes == []:
         print('No videos loaded')
         raise HTTPException(status_code=404, detail="No videos found")
-    random_hash = rng.choice( video_hashes )
+    random_hash = _get_random_hash_seeded(video_hashes, seed)
+    # rng = random.Random(seed)
+    # random_hash = rng.choice( video_hashes )
     return { 'hash' : random_hash }
 
 
@@ -154,4 +155,22 @@ def ROUTE_get_actor(name: str):
         if info is None:
             return Response(status_code=204)
     return info
+
+
+
+# HELPERS #
+
+def _get_random_hash_seeded(video_hashes, seed):
+    from difflib import SequenceMatcher
+    rng = random.Random(seed)
+    gen_hash = ''
+    gen_hash_len = len(video_hashes[0])
+    for _ in range(gen_hash_len):
+        gen_hash += hex(rng.randint(0,15))[2:]
+    print('random generated hash:', gen_hash)
+    return max(
+        video_hashes,
+        key=lambda hsh: SequenceMatcher(None, hsh, gen_hash).ratio(),
+    )
+    
 

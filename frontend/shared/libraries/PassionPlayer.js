@@ -61,6 +61,7 @@ export class PassionPlayer {
         this.log('video loaded');
         
         // add keybinds ...
+        this.addKeybinds(this.keybind_override_elements);
 
         // add event listeners
         this.addEventListeners();
@@ -98,28 +99,38 @@ export class PassionPlayer {
 
     // #region - HANDLERS ----------------------------------------------------------------------------------------------
     
+    
     addEventListeners() {
 
         const video = this.$('video');
         const video_duration = video.get(0).duration;
 
-        // video.on('click', () => this.toggle_playback() );
-        // video.on('dblclick', () => this.toggle_fullscreen() );
-        
+
         /* click interactions interactions */
-        this.addClickEventListeners();
+        this.addVideoClickEventListeners();
 
 
         /* progress bar */
         const progress_bar = this.$('#progress-bar');
+        const progress_bar_interact = this.$('.progress-bar-interact-zone');
 
         video.on('timeupdate', (event) => {
-            const ts = event.timeStamp
-            const perc = ts/1000 / video_duration * 100;
+            const ts = this.video.currentTime;
+            const perc = ts / video_duration * 100;
             progress_bar.width( perc+'%' );
         })
-        
 
+        progress_bar_interact.on('mouseenter', () => progress_bar_interact.css('height', '38px'));
+        progress_bar_interact.on('mouseleave', () => progress_bar_interact.css('height', '12px'));
+
+        progress_bar_interact.on('click', (e) => {
+            console.log('clicked');
+            const rect = progress_bar_interact[0].getBoundingClientRect();
+            const x = e.clientX - rect.left; // x relative to element
+            const perc = x / rect.width;
+            this.setPlaybackTime(perc, progress_bar[0]);
+        });
+        
     }
     
     // #endregion
@@ -134,12 +145,51 @@ export class PassionPlayer {
                 autoplay
                 preload="metadata"
             ></video>
-            <div id="progress-bar-wrapper">
-                <div id="progress-bar"></div>
+            <div class="video-controls">
+                <div class="progress-bar-interact-zone">
+                    <div id="progress-bar-wrapper">
+                        <div id="progress-bar"></div>
+                    </div>
+                </div>
             </div>
         `;
     }
 
+
+    // #endregion
+    
+    // #region - KEYBINDS -----------------------------------------------------------------------------------------------
+
+    addKeybinds(keybind_override_elements) {
+        
+        document.addEventListener('keydown', (e) => {
+
+            const ignore_keydown = false
+                || document.activeElement.tagName === 'INPUT'
+                // || document.activeElement.className
+            ;
+
+            if (!ignore_keydown) {
+
+                let key = e.code;
+                if (e.shiftKey) {
+                    key = 's-' + key;
+                }
+                // console.log(key);
+                
+                switch (key) {
+                    case 'KeyF':
+                        console.log('f has been pressed');
+                        break;
+                }
+                
+            }
+            
+        });
+        
+    }
+
+    
     // #endregion
     
     // #region - HELPERS -----------------------------------------------------------------------------------------------
@@ -154,21 +204,15 @@ export class PassionPlayer {
         }
     }
 
-    toggle_playback() {
-        (this.video.paused) ? this.video.play() : this.video.pause();
-    }
-
-    toggle_fullscreen() {
-        const container = this.video.parentElement;
-        if (!document.fullscreenElement) {
-            container.requestFullscreen().catch(err => console.error(err));
-        } else {
-            document.exitFullscreen();
-        }
+    /* get playback time as perc between 0 -> 1 */
+    setPlaybackTime(perc, progress_bar) {
+        const newTime = this.video.duration * perc;
+        this.video.currentTime = newTime;
+        progress_bar.style.width = `${perc * 100}%`;
     }
 
     /* responsive toggle playback but lenient toggle fullscreen */
-    addClickEventListeners() {
+    addVideoClickEventListeners() {
         let pb_flag = false; // playback
         let fs_flag = false; // fullscreen
         this.video.addEventListener('click', () => {
@@ -195,6 +239,21 @@ export class PassionPlayer {
             }
         });
     }
+
+    toggle_playback() {
+        (this.video.paused) ? this.video.play() : this.video.pause();
+    }
+
+    toggle_fullscreen() {
+        const container = this.video.parentElement;
+        if (!document.fullscreenElement) {
+            container.requestFullscreen().catch(err => console.error(err));
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
+    
     
     // #endregion
 

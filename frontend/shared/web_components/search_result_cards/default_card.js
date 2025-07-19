@@ -62,6 +62,12 @@ export class MyCard extends HTMLElement {
 
     hydrate() {
         const $shadow = $(this.shadowRoot);
+
+        /* set thumbnail src */
+        $shadow.find('img.thumbnail').attr(
+            'src',
+            `/media/get/poster/${this.video_hash}?t=${Date.now()}`
+        );
         
         /* get teasers */
         if (this.USE_VIDEO_TEASERS) { // teaser video
@@ -231,7 +237,7 @@ export class MyCard extends HTMLElement {
 
                 <!-- image -->
                 <a class="thumb-container" href="/pages/video/page.html?hash=${this.video_hash}">
-                    <img class="thumbnail" src="/media/get/poster/${this.video_hash}?t=${Date.now()}" alt="">
+                    <img class="thumbnail" src="" alt="">
                     <img class="teaser-thumbs" alt="">
                     <video class="teaser-video" preload="none" muted loop autoplay></video>
                     <span class="spinner loader-2"></span>
@@ -364,9 +370,138 @@ export class MyCard extends HTMLElement {
 
         // #endregion
         
-        // #region - css ---------------------------------------------------------------------------
         
-        this.shadowRoot.innerHTML += /* html */`
+        this.shadowRoot.innerHTML += this.getCSS();
+
+    }
+
+    
+    // #region - HELPERS -----------------------------------------------------------------------------------------------
+
+    format_date_added(date_added) {
+        let diff_ms = (new Date()).getTime() - (new Date(date_added.replace(' ', 'T'))).getTime();
+        let string = ['second', 'minute', 'hour', 'day', 'week', 'month', 'year'];
+        let mult =  [60, 60, 24, 7, 4.345, 12, 10];
+        let limit = [60, 60, 24, 7, 3*4.345, 12*3, 10];
+        let ms = 1000;
+        for (let i = 0; i < mult.length; i++) {
+            if (diff_ms < ms*limit[i]) {
+                let unit = Math.floor(diff_ms / ms);
+                let ret = unit + ' ' + string[i];
+                if (unit > 1)
+                    ret = ret + 's';
+                return ret;
+            }
+            ms *= mult[i];
+        }
+    }
+
+    /* configure_teaser_thumb_spritesheet */
+    configure_teaser_thumb_spritesheet(spritesheet_src, thumbnail_container, parent_container, loaded_callback=null) {
+    
+        const vtt_src = spritesheet_src.replace('.jpg', '.vtt');
+        
+        // First, load and parse the VTT file to get the sprite information
+        fetch(vtt_src)
+            .then(response => response.text())
+            .then(vttText => {
+                // console.log('got vtt text:', vttText);
+
+                // Parse the VTT file to extract sprite coordinates
+                const sprites = this.parseVTT(vttText);
+                if (sprites.length === 0) {
+                    throw new Error(`No sprites parsed from vtt file: ${vtt_src}`);
+                };
+                
+                // Set up the spritesheet as the background for the thumbnail container
+                
+                thumbnail_container.style.backgroundImage = `url("${spritesheet_src}")`;
+                thumbnail_container.style.backgroundRepeat = 'no-repeat';
+                
+                // load image to get spritesheet height
+                const img = new Image();
+                img.src = spritesheet_src;
+
+                img.onload = () => {
+                    const thumbAspectRatio = sprites[0].w / sprites[0].h;
+                    const thumbContainerHeight = parent_container.clientHeight; // parents height because of possible display: none;
+                    thumbnail_container.style.width = (thumbAspectRatio * thumbContainerHeight) + 'px';
+
+                    // determine background image scale factor
+                    const scaleFactor = (thumbContainerHeight / sprites[0].h);
+                    thumbnail_container.style.backgroundSize = (img.naturalWidth * scaleFactor) + 'px ' + (img.naturalHeight * scaleFactor) + 'px';
+
+                    // Calculate how many thumbnails we have
+                    const thumbCount = sprites.length;
+                    
+                    // Handle mouse movement to update the thumbnail
+                    parent_container.addEventListener('mousemove', (e) => {
+                        // Calculate the percentage of mouse position within the parent container
+                        const rect = parent_container.getBoundingClientRect();
+                        const xPos = e.clientX - rect.left;
+                        
+                        const perc = Math.max(0, Math.min(1, xPos / rect.width));
+                        const thumbIndex = Math.floor(perc * (thumbCount));
+                        
+                        const sprite = sprites[thumbIndex];
+                        thumbnail_container.style.backgroundPosition = `-${sprite.x*scaleFactor}px -${sprite.y*scaleFactor}px`;
+                    });
+                    
+                    if (loaded_callback) {
+                        loaded_callback();
+                    }
+                }
+            })
+            .catch(error => {
+                console.warn('Error loading thumbnails:', error);
+            });
+    }
+
+    // Helper function to parse VTT files containing sprite metadata
+    parseVTT(vttText) {
+        const sprites = [];
+        const lines = vttText.split('\n');
+        
+        // The VTT format we're expecting has entries like:
+        // 00:00:00.000 --> 00:00:00.000
+        // xywh=0,0,160,90
+        
+        for (let i = 0; i < lines.length; i++) {
+            if (lines[i].includes('xywh=')) {
+                const coords = lines[i].split('xywh=')[1].split(',');
+                if (coords.length === 4) {
+                    sprites.push({
+                        x: parseInt(coords[0]),
+                        y: parseInt(coords[1]),
+                        w: parseInt(coords[2]),
+                        h: parseInt(coords[3])
+                    });
+                }
+            }
+        }
+        
+        return sprites;
+    }
+    
+
+    format_seconds(seconds) {
+        if (seconds === null || seconds === 0) return '';
+        const hours = Math.floor(seconds / 3600);
+        const mins = Math.floor( (seconds-hours*3600) / 60 );
+        const secs = Math.floor( seconds - hours*3600 - mins*60 );
+        if (hours > 0) {        return `${hours}h ${mins}m ${secs}s`;
+        } else if (mins > 0) {  return `${mins}m ${secs}s`;
+        } else {                return `${secs}s`;
+        }
+    }
+
+    
+    // #endregion
+    
+    // #region - css -------------------------------------------------------------------------------
+
+    getCSS() {
+        return /* html */`
 
             <!-- styles --------------------------------------------------------------------------->
             <style>
@@ -639,126 +774,6 @@ export class MyCard extends HTMLElement {
     
     // #endregion
     
-    // #region - HELPERS -----------------------------------------------------------------------------------------------
-
-    format_date_added(date_added) {
-        let diff_ms = (new Date()).getTime() - (new Date(date_added.replace(' ', 'T'))).getTime();
-        let string = ['second', 'minute', 'hour', 'day', 'week', 'month', 'year'];
-        let mult =  [60, 60, 24, 7, 4.345, 12, 10];
-        let limit = [60, 60, 24, 7, 3*4.345, 12*3, 10];
-        let ms = 1000;
-        for (let i = 0; i < mult.length; i++) {
-            if (diff_ms < ms*limit[i]) {
-                let unit = Math.floor(diff_ms / ms);
-                let ret = unit + ' ' + string[i];
-                if (unit > 1)
-                    ret = ret + 's';
-                return ret;
-            }
-            ms *= mult[i];
-        }
-    }
-
-    /* configure_teaser_thumb_spritesheet */
-    configure_teaser_thumb_spritesheet(spritesheet_src, thumbnail_container, parent_container, loaded_callback=null) {
-    
-        const vtt_src = spritesheet_src.replace('.jpg', '.vtt');
-        
-        // First, load and parse the VTT file to get the sprite information
-        fetch(vtt_src)
-            .then(response => response.text())
-            .then(vttText => {
-                // console.log('got vtt text:', vttText);
-
-                // Parse the VTT file to extract sprite coordinates
-                const sprites = this.parseVTT(vttText);
-                if (sprites.length === 0) {
-                    throw new Error(`No sprites parsed from vtt file: ${vtt_src}`);
-                };
-                
-                // Set up the spritesheet as the background for the thumbnail container
-                
-                thumbnail_container.style.backgroundImage = `url("${spritesheet_src}")`;
-                thumbnail_container.style.backgroundRepeat = 'no-repeat';
-                
-                // load image to get spritesheet height
-                const img = new Image();
-                img.src = spritesheet_src;
-
-                img.onload = () => {
-                    const thumbAspectRatio = sprites[0].w / sprites[0].h;
-                    const thumbContainerHeight = parent_container.clientHeight; // parents height because of possible display: none;
-                    thumbnail_container.style.width = (thumbAspectRatio * thumbContainerHeight) + 'px';
-
-                    // determine background image scale factor
-                    const scaleFactor = (thumbContainerHeight / sprites[0].h);
-                    thumbnail_container.style.backgroundSize = (img.naturalWidth * scaleFactor) + 'px ' + (img.naturalHeight * scaleFactor) + 'px';
-
-                    // Calculate how many thumbnails we have
-                    const thumbCount = sprites.length;
-                    
-                    // Handle mouse movement to update the thumbnail
-                    parent_container.addEventListener('mousemove', (e) => {
-                        // Calculate the percentage of mouse position within the parent container
-                        const rect = parent_container.getBoundingClientRect();
-                        const xPos = e.clientX - rect.left;
-                        
-                        const perc = Math.max(0, Math.min(1, xPos / rect.width));
-                        const thumbIndex = Math.floor(perc * (thumbCount));
-                        
-                        const sprite = sprites[thumbIndex];
-                        thumbnail_container.style.backgroundPosition = `-${sprite.x*scaleFactor}px -${sprite.y*scaleFactor}px`;
-                    });
-                    
-                    if (loaded_callback) {
-                        loaded_callback();
-                    }
-                }
-            })
-            .catch(error => {
-                console.warn('Error loading thumbnails:', error);
-            });
-    }
-
-    // Helper function to parse VTT files containing sprite metadata
-    parseVTT(vttText) {
-        const sprites = [];
-        const lines = vttText.split('\n');
-        
-        // The VTT format we're expecting has entries like:
-        // 00:00:00.000 --> 00:00:00.000
-        // xywh=0,0,160,90
-        
-        for (let i = 0; i < lines.length; i++) {
-            if (lines[i].includes('xywh=')) {
-                const coords = lines[i].split('xywh=')[1].split(',');
-                if (coords.length === 4) {
-                    sprites.push({
-                        x: parseInt(coords[0]),
-                        y: parseInt(coords[1]),
-                        w: parseInt(coords[2]),
-                        h: parseInt(coords[3])
-                    });
-                }
-            }
-        }
-        
-        return sprites;
-    }
-    
-
-    format_seconds(seconds) {
-        if (seconds === null || seconds === 0) return '';
-        const hours = Math.floor(seconds / 3600);
-        const mins = Math.floor( (seconds-hours*3600) / 60 );
-        const secs = Math.floor( seconds - hours*3600 - mins*60 );
-        if (hours > 0) {        return `${hours}h ${mins}m ${secs}s`;
-        } else if (mins > 0) {  return `${mins}m ${secs}s`;
-        } else {                return `${secs}s`;
-        }
-    }
-    
-    // #endregion
     
 }
 customElements.define('search-result-card-default', MyCard);
