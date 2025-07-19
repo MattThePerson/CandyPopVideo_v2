@@ -247,12 +247,8 @@ def create_argument_parser(non_exiting=False):
     parser.add_argument('--reparse-filenames',          action='store_true',    help='[scan]')
     parser.add_argument('--reread-json-metadata',   action='store_true',        help='[scan]')
     parser.add_argument('--redo-video-attributes',   action='store_true',       help='[scan]')
-    # parser.add_argument('--generate-tfidf',            action='store_true',     help='')
-    # parser.add_argument('--generate-embeddings',       action='store_true',     help='')
-
-    # parser.add_argument('--path-filters',                                      help='[scan]') # if called, non scanning wont flip is_linked flag
-    # parser.add_argument('--path-exclude-filters',                              help='[scan]') # if called, non scanning wont flip is_linked flag
-    
+    parser.add_argument('--generate-tfidf',            action='store_true',     help='')
+    parser.add_argument('--generate-embeddings',       action='store_true',     help='')
 
     # [3] Media generation
     parser.add_argument('--generate-media', '-gm',                              help='opts=[all|teasers|teasers_large|teaser_thumbs|teaser_thumbs_large|preview_thumbs|seek_thumbs]', choices=GENERATE_MEDIA_OPTIONS)

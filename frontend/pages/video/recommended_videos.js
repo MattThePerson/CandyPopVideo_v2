@@ -83,6 +83,7 @@ export async function load_recommended_videos(vd, related_sec, similar_sec, vide
         8,
         '24rem',
         card_type,
+        1,
     );
     $(similar_sec).find('#expand-results-button').on('click', expand_results_func);
 
@@ -173,94 +174,6 @@ async function load_related_videos(related_videos, section, video_hash) {
     
 }
 
-
-/* OLD */
-async function load_related_videos_old(video_data, section) {
-    
-    /* load movie */
-    if (video_data.movie_title) {
-        $.get('/api/get/movie/'+video_data.movie_title, (videos, status) => {
-            if (status === 'success') {
-                configure_carousel(videos, video_data.hash, section,
-                    'movie', `movie title: "${video_data.movie_title}"  (${videos.length} videos)`
-                );
-            }
-        });
-    }
-    await sleep(150);
-
-    /* load movie series */
-    if (video_data.movie_series) {
-        $.get('/api/get/movie-series/'+video_data.movie_series, (videos, status) => {
-            if (status === 'success') {
-                configure_carousel(videos, video_data.hash, section,
-                    'movie-series', `movie series: "${video_data.movie_series}"  (${videos.length} videos)`
-                );
-            }
-        });
-    }
-    await sleep(200);
-
-    /* load line videos */
-    if (video_data.line) {
-        $.get('/api/get/line/'+video_data.line, (videos, status) => {
-            if (status === 'success') {
-                configure_carousel(videos, video_data.hash, section,
-                    'from-line', `line: ${video_data.line}  (${videos.length} videos)`);
-            }
-        })
-    }
-
-    await sleep(300);
-    
-    /* load from actors */
-    if (video_data.actors.length > 1) {
-        const query = _get_blank_query();
-        query.actor = video_data.actors.join(',');
-        query.sortby = 'date_released';
-        makeApiRequestPOST_JSON('/api/query/search-videos', query, (results) => {
-            const videos = results.search_results;
-            configure_carousel(videos, video_data.hash, section,
-                'from-actors', `with: ${video_data.actors.slice(0,-1).join(', ') + ' & ' + video_data.actors.slice(-1)}  (${videos.length} videos)`);
-        });
-    }
-    await sleep(300);
-    
-    /* load from actor & studio */
-    if (video_data.primary_actors.length == 1 && video_data.studio) {
-        const query = _get_blank_query();
-        query.actor = video_data.primary_actors[0];
-        query.studio = video_data.studio;
-        query.sortby = 'date_released';
-        makeApiRequestPOST_JSON('/api/query/search-videos', query, (results) => {
-            const videos = results.search_results;
-            configure_carousel(videos, video_data.hash, section,
-                'from-actor-studio', `${query.actor} in ${query.studio} (${videos.length} videos)`);
-        });
-    }
-
-    
-    /* EVENT LISTENERS */
-
-    const rel_vids_nav_buttons = $('.related-videos-nav button');
-    const rel_vids_carousels = $('.carousel-container');
-    rel_vids_nav_buttons.each((idx, button) => {
-        button.onclick = () => {
-            if (!button.classList.contains('selected') && !button.classList.contains('disabled')) {
-                const ident = Array.from(button.classList).find(
-                    cls => cls !== 'selected' && cls !== 'disabled'
-                );
-                // add selected to current button
-                rel_vids_nav_buttons.each((idx, butt) => { $(butt).removeClass('selected'); });
-                $('.related-videos-nav button.'+ident).addClass('selected');
-                
-                rel_vids_carousels.each((idx, car) => { $(car).removeClass('shown'); });
-                $('.carousel-container.'+ident).addClass('shown');
-            }
-        }
-    });
-
-}
 
 
 //region - PRIVATE -----------------------------------------------------------------------------------------------------
