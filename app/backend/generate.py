@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from argparse import Namespace
 import time
 import gc
 
@@ -8,8 +7,6 @@ from handymatt_media import media_generator
 
 from ..schemas import VideoData
 from ..media import generators, checkers
-# from ..media.helpers import get_video_media_dir
-from .helpers import aprint
 from ..loggers import MEDIA_GEN, MEDIA_GEN_FAILED
 
 

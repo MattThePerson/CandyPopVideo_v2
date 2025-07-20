@@ -45,16 +45,24 @@ def generatePosterSimple(video_path: str, video_hash: str, mediadir: str, durati
 
 def generateTeaserSmall(path: str, video_hash: str, mediadir: str, duration_sec: int|float, quiet=True) -> str:
     outfolder = get_video_media_dir(mediadir, video_hash)
-    if not os.path.exists(outfolder):
-        print("Making folder: ", outfolder)
-        os.makedirs(outfolder)
+    os.makedirs(outfolder, exist_ok=True)
     clip_amount = int( ( 584/119 + (11/5355)*duration_sec ) * 2 )
     if not quiet: print("clip amount:", clip_amount)
-    try:
-        return generateVideoTeaser(path, outfolder, 'teaser_small.mp4', abs_amount_mode=True, n=clip_amount, clip_len=1.3, skip=2, small_resolution=True, end_perc=98)
-    except Exception as e:
-        print("[ERROR] generateTeasersSmall:\n", e)
-        return ""
+    return generateVideoTeaser(
+        path,
+        outfolder,
+        'teaser_small.mp4',
+        abs_amount_mode=True,
+        n=clip_amount,
+        clip_len=1.3,
+        skip=2,
+        small_resolution=True,
+        end_perc=98,
+    )
+    # try:
+    # except Exception as e:
+    #     print("[ERROR] generateTeasersSmall:\n", e)
+    #     return ""
 
 
 
