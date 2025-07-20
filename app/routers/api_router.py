@@ -1,14 +1,10 @@
 import random
-import time
 import os
 from datetime import datetime
 from fastapi import APIRouter, Response, HTTPException
 
-# from handymatt.wsl_paths import convert_to_wsl_path, convert_to_windows_path
-
 from ..schemas import VideoData
 from ..APIs import actor_api
-# from ..media import generators
 from .. import db
 
 

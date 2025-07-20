@@ -26,7 +26,13 @@ def mass_generate_preview_thumbs(videos_list: list[VideoData], mediadir: str, re
                 media_path = ""
                 try:
                     # START GENERATOR
-                    thumbs = generators.generatePreviewThumbs(video_data.path, video_data.hash, mediadir, amount=5, n_frames=n_frames)
+                    thumbs = generatePreviewThumbs(
+                        video_data.path,
+                        video_data.hash,
+                        mediadir,
+                        amount=5,
+                        n_frames=n_frames,
+                    )
                     if thumbs and thumbs != []:
                         media_path = thumbs[0]
                     # END GENERATOR
@@ -61,7 +67,13 @@ def mass_generate_seek_thumbs(videos_list: list[VideoData], mediadir: str, redo=
                 try:
                     # START GENERATOR
                     vid_media_dir = checkers.get_video_media_dir(mediadir, video_data.hash)
-                    spritesheet_path, _ = media_generator.generateSeekThumbnails( video_data.path, vid_media_dir, n=400, height=300 )
+                    spritesheet_path, _ = media_generator.generateVideoSpritesheet(
+                        video_data.path,
+                        vid_media_dir,
+                        number_of_frames=400,
+                        height=300,
+                        filestem='seekthumbs',
+                    )
                     media_path = spritesheet_path
                     # END GENERATOR
                 except Exception as e:
@@ -95,7 +107,12 @@ def mass_generate_teasers_small(videos_list: list[VideoData], mediadir: str, red
                 media_path = ""
                 try:
                     # START GENERATOR
-                    media_path = generators.generateTeaserSmall(video_data.path, video_data.hash, mediadir, video_data.duration_seconds)
+                    media_path = generators.generateTeaserSmall(
+                        video_data.path,
+                        video_data.hash,
+                        mediadir,
+                        video_data.duration_seconds,
+                    )
                     # END GENERATOR
                 except Exception as e:
                     fails.append(video_data.path)
@@ -113,7 +130,7 @@ def mass_generate_teasers_small(videos_list: list[VideoData], mediadir: str, red
     return succ, fails
 
 
-# TODO: Test!
+
 def mass_generate_teasers_large(videos_list: list[VideoData], mediadir: str, redo=False, limit=None, ws=None):
     type_ = 'large_teasers'
     succ, fails = [], []
@@ -127,7 +144,12 @@ def mass_generate_teasers_large(videos_list: list[VideoData], mediadir: str, red
                 media_path = ""
                 try:
                     # START GENERATOR
-                    media_path = generators.generateTeaserLarge(video_data.path, video_data.hash, mediadir, video_data.duration_seconds)
+                    media_path = generators.generateTeaserLarge(
+                        video_data.path,
+                        video_data.hash,
+                        mediadir,
+                        video_data.duration_seconds,
+                    )
                     # END GENERATOR
                 except Exception as e:
                     fails.append(video_data.path)
@@ -160,7 +182,13 @@ def mass_generate_teaser_thumbs_small(videos_list: list[VideoData], mediadir: st
                 try:
                     # START GENERATOR
                     vid_media_dir = checkers.get_video_media_dir(mediadir, video_data.hash)
-                    spritesheet_path, _ = media_generator.generateSeekThumbnails( video_data.path, vid_media_dir, n=16, height=300, filename='teaser_thumbs_small' )
+                    spritesheet_path, _ = media_generator.generateVideoSpritesheet(
+                        video_data.path,
+                        vid_media_dir,
+                        number_of_frames=16,
+                        height=300,
+                        filestem='teaser_thumbs_small',
+                    )
                     media_path = spritesheet_path
                     # END GENERATOR
                 except Exception as e:
@@ -196,7 +224,13 @@ def mass_generate_teaser_thumbs_large(videos_list: list[VideoData], mediadir: st
                 try:
                     # START GENERATOR
                     vid_media_dir = checkers.get_video_media_dir(mediadir, video_data.hash)
-                    spritesheet_path, _ = media_generator.generateSeekThumbnails( video_data.path, vid_media_dir, n=30, height=900, filename='teaser_thumbs_large' )
+                    spritesheet_path, _ = media_generator.generateVideoSpritesheet(
+                        video_data.path,
+                        vid_media_dir,
+                        number_of_frames=30,
+                        height=900,
+                        filestem='teaser_thumbs_large',
+                    )
                     media_path = spritesheet_path
                     # END GENERATOR
                 except Exception as e:
@@ -265,3 +299,12 @@ def _get_status_line(name, with_, without):
         perc = (yes / (total)) * 100
     perc_str = '{:.1f}%'.format(perc)
     return '{:<20} | {:>6} : {:>8_} : {:>8_} : {:>8_} |'.format(name, perc_str, yes, no, total)
+
+
+# HELPER
+
+def generatePreviewThumbs(path, hash, mediadir, amount=5, n_frames=30*10):
+    vid_folder = os.path.join( checkers.get_video_media_dir(mediadir, hash), 'previewthumbs' )
+    os.makedirs(vid_folder, exist_ok=True)
+    return media_generator.extractPreviewThumbs(path, vid_folder, amount=amount, resolution=[360, 1080], n_frames=n_frames)
+

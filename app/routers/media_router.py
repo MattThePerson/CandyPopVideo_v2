@@ -5,13 +5,12 @@ from fastapi import APIRouter, Response, HTTPException
 from fastapi.responses import FileResponse
 from pathlib import Path
 
-from handymatt_media import media_generator
+# from handymatt_media import media_generator
 
 from config import PREVIEW_MEDIA_DIR, SUBTITLE_FOLDERS
 from .. import db
 from ..schemas import VideoData
-# from ..media import generators
-from ..media import checkers
+from ..media import generators, checkers
 
 
 media_router = APIRouter()
@@ -34,7 +33,7 @@ def xyz(video_hash: str):
     return FileResponse(video_path, media_type='video/mp4')
 
 
-# ENSURE SEEK THUMBNAIL (Gets Poster)
+# 
 @media_router.get("/get/poster/{video_hash}")
 def ROUTER_get_poster(video_hash: str):
     video_data = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') )
@@ -47,7 +46,7 @@ def ROUTER_get_poster(video_hash: str):
         if thumbnail is None:
             print("Generating placeholder poster for:", video_data.filename)
             try:
-                thumbnail = _generatePosterSimple(video_data.path, video_hash, PREVIEW_MEDIA_DIR, video_data.duration_seconds)
+                thumbnail = generators.generatePosterSimple(video_data.path, video_hash, PREVIEW_MEDIA_DIR, video_data.duration_seconds)
             except FileNotFoundError as e:
                 print('ERROR: Cant generate poster, video not found:', video_data.path)
             if thumbnail is None:
@@ -58,7 +57,7 @@ def ROUTER_get_poster(video_hash: str):
     return FileResponse(thumbnail_path)
 
 
-# ENSURE SEEK THUMBNAIL (Gets Poster)
+# UNUSED
 @media_router.get("/get/poster-large/{video_hash}")
 def ROUTER_get_poster_large(video_hash: str):
     video_data = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') )
@@ -80,13 +79,8 @@ def ROUTER_get_poster_large(video_hash: str):
     return FileResponse(thumbnail_path)
 
 
-# ENSURE PREVIEW THUMBNAILS
-@media_router.get("/ensure/preview-thumbnails/{video_hash}")
-def confirm_preview_thumbnails(video_hash: str):
-    raise HTTPException(status_code=501, detail='Not implemented')
 
-
-# ENSURE SEEK THUMBNAIL
+# UNUSED
 @media_router.get("/ensure/teaser-small/{video_hash}")
 def confirm_teaser_small(video_hash: str):
     video_data = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') )
@@ -104,7 +98,7 @@ def confirm_teaser_small(video_hash: str):
     return {'msg': 'good!'}
 
 
-# ENSURE SEEK THUMBNAIL
+# UNUSED
 @media_router.get("/ensure/teaser-large/{video_hash}")
 def confirm_teaser_large(video_hash: str):
     video_data = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') )
@@ -122,31 +116,44 @@ def confirm_teaser_large(video_hash: str):
     return {'msg': 'good!'}
 
 
-# ENSURE SEEK THUMBNAIL
+# 
 @media_router.get("/ensure/seek-thumbnails/{video_hash}")
 def confirm_seek_thumbnails(video_hash: str):
     vid_media_dir = checkers.get_video_media_dir(PREVIEW_MEDIA_DIR, video_hash)
-    if os.path.exists( vid_media_dir + '/seekthumbs.jpg') and os.path.exists( vid_media_dir + '/seekthumbs.vtt' ):
-        return {'msg': 'Video has seek thumbs!'}
-    # get video data
-    video_data = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') )
-    if video_data is None:
-        return Response('No video with that hash', 404)
-    # generate thumbs
-    print(f'Generating seek thumbnails for : "{video_data.path}"')
-    # raise HTTPException(status_code=503, detail='Temporarily disabled')
-    try:
-        _ = media_generator.generateSeekThumbnails(video_data.path, vid_media_dir, n=400)
-    except Exception as e:
-        print('ERROR: Unable to generate seek thumbnails:\n', e)
-        return Response('Unable to generate seek thumbs for video', 500)
-    if os.path.exists( vid_media_dir + '/seekthumbs.jpg') and os.path.exists( vid_media_dir + '/seekthumbs.vtt' ):
-        return {'msg': 'Video has seek thumbs!'}
-        return Response(f'Video has seekthumbs', 200)
-    return Response('Unable to generate seek thumbs for video', 500)
+    if not (os.path.exists( vid_media_dir + '/seekthumbs.jpg') and os.path.exists( vid_media_dir + '/seekthumbs.vtt' )):
+        
+        video_data = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') )
+        if video_data is None:
+            return Response('No video with that hash', 404)
+
+        script = 'app/media/scripts/generateVideoSpritesheet.py'
+        print('[MEDIA] running subprocess:', script)
+        try:
+            cmd = [
+                './.venv/Scripts/python.exe',
+                script,
+                '-path', video_data.path,
+                '-mediadir', vid_media_dir,
+                '-num', '400',
+                '-height', '300',
+                '-filestem', 'seekthumbs',
+            ]
+            subprocess.run(cmd, check=True, stderr=subprocess.PIPE, text=True)
+        except subprocess.CalledProcessError as e:
+            msg = f'Subprocess error for [{video_hash}] "{video_data.path}":\n{e.stderr}'
+            print(msg)
+            raise HTTPException(status_code=500, detail=msg)
+        except Exception as e:
+            msg = f'Some other exception occured [{video_hash}] "{video_data.path}":\n{e}'
+            print(msg)
+            raise HTTPException(status_code=500, detail=msg)
+        
+        if not (os.path.exists( vid_media_dir + '/seekthumbs.jpg') and os.path.exists( vid_media_dir + '/seekthumbs.vtt' )):
+            return Response('Unable to generate seek thumbs for video', 500)
+    return {'msg': 'Video has seek thumbs!'}
 
 
-# ENSURE TEASER THUMBS (SMALL)
+# 
 @media_router.get("/ensure/teaser-thumbs-small/{video_hash}")
 def ROUTER_ensure_teaser_thumbs_small(video_hash: str):
     video_data = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') )
@@ -155,13 +162,28 @@ def ROUTER_ensure_teaser_thumbs_small(video_hash: str):
     vid_media_dir = checkers.get_video_media_dir(PREVIEW_MEDIA_DIR, video_hash)
     media_path = vid_media_dir + '/teaser_thumbs_small.jpg'
     if not os.path.exists( media_path ):
-        # raise HTTPException(status_code=503, detail='Temporarily disabled')
+        script = 'app/media/scripts/generateVideoSpritesheet.py'
+        print('[MEDIA] running subprocess:', script)
         try:
-            _ = media_generator.generateSeekThumbnails( video_data.path, vid_media_dir, n=16, height=300, filename='teaser_thumbs_small' )
-        except Exception as e:
-            msg = f'Unable to generate teaser thumbs for [{video_hash}] "{video_data.path}"'
+            cmd = [
+                './.venv/Scripts/python.exe',
+                script,
+                '-path', video_data.path,
+                '-mediadir', vid_media_dir,
+                '-num', '16',
+                '-height', '300',
+                '-filestem', 'teaser_thumbs_small',
+            ]
+            subprocess.run(cmd, check=True, stderr=subprocess.PIPE, text=True)
+        except subprocess.CalledProcessError as e:
+            msg = f'Subprocess error for [{video_hash}] "{video_data.path}":\n{e.stderr}'
             print(msg)
             raise HTTPException(status_code=500, detail=msg)
+        except Exception as e:
+            msg = f'Some other exception occured [{video_hash}] "{video_data.path}":\n{e}'
+            print(msg)
+            raise HTTPException(status_code=500, detail=msg)
+        
         if not os.path.exists( media_path ):
             msg = f'Teaser thumbs dont exist after attempted generation for [{video_hash}] "{video_data.path}"'
             print(msg)
@@ -169,7 +191,7 @@ def ROUTER_ensure_teaser_thumbs_small(video_hash: str):
     return {'msg': 'all good brotha'}
 
 
-# ENSURE TEASER THUMBS (LARGE)
+# UNUSED
 @media_router.get("/ensure/teaser-thumbs-large/{video_hash}")
 def ROUTER_ensure_teaser_thumbs_large(video_hash: str):
     video_data = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') )
@@ -193,7 +215,7 @@ def ROUTER_ensure_teaser_thumbs_large(video_hash: str):
     return {'msg': 'all good brotha'}
 
 
-# GET SUBTITLES
+# 
 @media_router.get("/get/subtitles/{video_hash}")
 def ROUTER_get_subtitles(video_hash: str, check: bool=False):
     try:
@@ -217,25 +239,9 @@ def ROUTER_get_subtitles(video_hash: str, check: bool=False):
 
 
 
+# 
+@media_router.get("/ensure/preview-thumbnails/{video_hash}")
+def confirm_preview_thumbnails(video_hash: str):
+    raise HTTPException(status_code=501, detail='Not implemented')
 
-def _generatePosterSimple(video_path: str, video_hash: str, mediadir: str, duration_sec: float) -> str|None:
-    """ For given video path and hash, generates simple poster into mediadir and returns poster relative path """
-    if not os.path.exists(video_path):
-        raise FileNotFoundError("Video path doesn't exist:", video_path)
-    poster_path = f'{checkers.get_video_media_dir(mediadir, video_hash)}/poster.png'
-    os.makedirs( os.path.dirname(poster_path), exist_ok=True )
-    command = [
-        'ffmpeg', 
-        '-ss', f'{duration_sec*0.2}',
-        '-i', video_path,
-        '-frames:v', "1",
-        poster_path,
-        '-loglevel', 'quiet',
-    ]
-    subprocess.run(command)
-    
-    # ensure file exists
-    if not os.path.exists(poster_path):
-        raise FileExistsError("Poster doesn't exist after creation attempt")
-    
-    return 'poster.png' # _path_relative_to(poster_path, mediadir)
+
