@@ -6,8 +6,7 @@ __pycache__
 *.svg
 
 # custom
-.recyclebin
-.trash
+.discard
 config.yaml
 tests/
 testing*
