@@ -145,12 +145,64 @@ export class PassionPlayer {
                 autoplay
                 preload="metadata"
             ></video>
+            <!-- video controls -->
             <div class="video-controls">
                 <div class="progress-bar-interact-zone">
                     <div id="progress-bar-wrapper">
                         <div id="progress-bar"></div>
                     </div>
                 </div>
+            </div>
+
+            <!-- icons -->
+            <div class="play-pause-indicator">
+                <svg class="pp-icon pause-icon" width="64px" height="64px" viewBox="-1 0 8 8" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+                    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"><g id="Dribbble-Light-Preview" transform="translate(-227.000000, -3765.000000)" fill="#000000"><g id="icons" transform="translate(56.000000, 160.000000)">
+                        <path d="M172,3605 C171.448,3605 171,3605.448 171,3606 L171,3612 C171,3612.552 171.448,3613 172,3613 C172.552,3613 173,3612.552 173,3612 L173,3606 C173,3605.448 172.552,3605 172,3605 M177,3606 L177,3612 C177,3612.552 176.552,3613 176,3613 C175.448,3613 175,3612.552 175,3612 L175,3606 C175,3605.448 175.448,3605 176,3605 C176.552,3605 177,3605.448 177,3606" id="pause-[#1006]"></path>
+                    </g></g></g>
+                </svg>
+
+                <svg class="pp-icon play-icon" width="64px" height="64px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21.4086 9.35258C23.5305 10.5065 23.5305 13.4935 21.4086 14.6474L8.59662 21.6145C6.53435 22.736 4 21.2763 4 18.9671L4 5.0329C4 2.72368 6.53435 1.26402 8.59661 2.38548L21.4086 9.35258Z" fill="#1C274C"/>
+                </svg>
+                
+                
+                <style>
+                    .play-pause-indicator {
+                        width: fit-content;
+                        height: fit-content;
+                        position: absolute;
+                        top: calc(50% - 32px);
+                        left: calc(50% - 32px);
+                        pointer-events: none;
+                    }
+                    .play-pause-indicator svg path {
+                        fill: #fffd;
+                    }
+                    .NONE {
+                        position: absolute; top: 0; left: 0;
+                    }
+                    .pp-icon {
+                        display: none;
+                        opacity: 0;
+                        background: #0005;
+                        border-radius: 50%;
+                        padding: 1rem;
+                        border: 1px solid #fff4;
+                        transform-origin: center;
+                        transform: scale(110%);
+                        transition:
+                            opacity 500ms ease-out,
+                            transform 500ms ease-out
+                        ;
+                    }
+                    .pp-icon.shown {
+                        opacity: 1;
+                        transform: scale(80%);
+                        transition: none;
+                    }
+                </style>
+
             </div>
         `;
     }
@@ -226,7 +278,7 @@ export class PassionPlayer {
                         this.toggle_playback();
                         pb_flag = false;
                     }
-                }, 75);
+                }, 125);
                 setTimeout(() => {fs_flag = false}, 350);
             
             } else if (fs_flag) {
@@ -241,7 +293,31 @@ export class PassionPlayer {
     }
 
     toggle_playback() {
-        (this.video.paused) ? this.video.play() : this.video.pause();
+        (this.video.paused) ? this.playVideo() : this.pauseVideo();
+    }
+
+    pauseVideo() {
+        this.video.pause();
+        this.flashPPIndicator('.pause-icon');
+    }
+
+    playVideo() {
+        this.video.play();
+        this.flashPPIndicator('.play-icon');
+    }
+
+    flashPPIndicator(selector) {
+        const play_icon = this.$('.play-icon');
+        const pause_icon = this.$('.pause-icon');
+        play_icon.hide();
+        pause_icon.hide();
+        void play_icon.get(0).offsetWidth; // Force reflow
+        void pause_icon.get(0).offsetWidth; // Force reflow
+        
+        const flash_icon = this.$(selector);
+        flash_icon.show();
+        flash_icon.addClass('shown');
+        setTimeout(() => flash_icon.removeClass('shown'), 1);
     }
 
     toggle_fullscreen() {
