@@ -12,7 +12,6 @@ export class PassionPlayer {
         autoplay=true,
         mute=false,
         preload='auto',
-        // seek: 5,  // Seeks the video to the nearest 5 seconds
         markers_get=null,  // api route to get timeline markers 
         markers_post=null,
         keybind_override_elements=null,  // array of selectors for elements that will disable keybinds when focused
@@ -28,7 +27,6 @@ export class PassionPlayer {
         this.autoplay = autoplay;
         this.mute = mute;
         this.preload = preload;
-        // this.seek = seek;
         this.markers_get = markers_get;
         this.markers_post = markers_post;
         this.keybind_override_elements = keybind_override_elements;
@@ -38,6 +36,11 @@ export class PassionPlayer {
         this.root_element;
         this.shadow;
         this.video;
+        
+        /* seek thumbs */
+        this.seekThumbsContainer;
+        this.seekThumbsSprites; // list of sprites objects
+        this.seekThumbsSpritesheetSize;
         
     }
 
@@ -67,6 +70,9 @@ export class PassionPlayer {
         this.addEventListeners();
         
         // load seek thumbs ...
+        if (this.seek_thumbs_vtt_src) {
+            this.loadSeekThumbnails(this.seek_thumbs_vtt_src);
+        }
 
         // load subtitles ...
         
@@ -103,35 +109,79 @@ export class PassionPlayer {
     addEventListeners() {
 
         const video = this.$('video');
-        const video_duration = video.get(0).duration;
-
 
         /* click interactions interactions */
         this.addVideoClickEventListeners();
 
-
         /* progress bar */
-        const progress_bar = this.$('#progress-bar');
-        const progress_bar_interact = this.$('.progress-bar-interact-zone');
+        const progress_bar_container = this.shadow.querySelector('#progress-bar-default');
+        this.addDefaultProgressBarEventListeners(progress_bar_container);
+        
+    }
 
-        video.on('timeupdate', (event) => {
+    /* responsive toggle playback but lenient toggle fullscreen */
+    addVideoClickEventListeners() {
+        let pb_flag = false; // playback
+        let fs_flag = false; // fullscreen
+        this.video.addEventListener('click', () => {
+            if (pb_flag === false && fs_flag === false) {
+                pb_flag = true;
+                fs_flag = true;
+                setTimeout(() => {
+                    if (pb_flag) {
+                        this.toggle_playback();
+                        pb_flag = false;
+                    }
+                }, 175);
+                setTimeout(() => {fs_flag = false}, 350);
+            
+            } else if (fs_flag) {
+                if (pb_flag === false) { // clicked after pb toggled (125ms)
+                    this.toggle_playback();
+                    console.log('hiding');
+                    console.log(this.$('.pp-icon').length);
+                    this.$('.pp-icon').each((_, el) => { el.style.display = 'none' });
+                }
+                this.toggle_fullscreen();
+                pb_flag = false;
+                fs_flag = false;
+            }
+        });
+    }
+
+    addDefaultProgressBarEventListeners(container) {
+
+        const progress_bar_container = this.$(container);
+        const progress_bar = progress_bar_container.find('.progress-bar');
+        const video_duration = this.video.duration;
+        
+        $(this.video).on('timeupdate', () => {
             const ts = this.video.currentTime;
             const perc = ts / video_duration * 100;
             progress_bar.width( perc+'%' );
         })
 
-        progress_bar_interact.on('mouseenter', () => progress_bar_interact.css('height', '38px'));
-        progress_bar_interact.on('mouseleave', () => progress_bar_interact.css('height', '12px'));
+        /* toggle container height */
+        progress_bar_container.on('mouseenter', () => progress_bar_container.css('height', '38px'));
+        progress_bar_container.on('mouseleave', () => progress_bar_container.css('height', '12px'));
 
-        progress_bar_interact.on('click', (e) => {
-            console.log('clicked');
-            const rect = progress_bar_interact[0].getBoundingClientRect();
+        progress_bar_container.on('click', (e) => {
+            const rect = progress_bar_container[0].getBoundingClientRect();
             const x = e.clientX - rect.left; // x relative to element
             const perc = x / rect.width;
             this.setPlaybackTime(perc, progress_bar[0]);
+            console.log(this.video.currentTime, perc*100);
         });
         
+        progress_bar_container.on('mousemove', (e) => {
+            const rect = progress_bar_container.get(0).getBoundingClientRect();
+            const perc = ((e.clientX - rect.left) / rect.width) * 100;
+            this.updateSeekThumbnail(e.clientX, perc);
+        });
+        progress_bar_container.on('mouseleave', () => this.hideSeekThumbnail());
+        
     }
+    
     
     // #endregion
     
@@ -141,18 +191,28 @@ export class PassionPlayer {
         return /* html */ `
             <video
                 src=${this.src}
+                loop
                 muted
-                autoplay
                 preload="metadata"
             ></video>
+
             <!-- video controls -->
             <div class="video-controls">
-                <div class="progress-bar-interact-zone">
-                    <div id="progress-bar-wrapper">
-                        <div id="progress-bar"></div>
+                
+                <div id="progress-bar-default" class="progress-bar-interact-zone"> <!-- default progress bar -->
+                    <div class="progress-bar-wrapper">
+                        <div class="progress-bar"></div>
                     </div>
                 </div>
+
+                <div id="progress-bar-alt"> <!-- alt progress bar -->
+                    <div id="playhead"></div>
+                </div>
+
             </div>
+
+            <!-- <div id="progress-bar-persistent"></div> -->
+            <!-- <div class="tooltip"></div> -->
 
             <!-- icons -->
             <div class="play-pause-indicator">
@@ -161,49 +221,16 @@ export class PassionPlayer {
                         <path d="M172,3605 C171.448,3605 171,3605.448 171,3606 L171,3612 C171,3612.552 171.448,3613 172,3613 C172.552,3613 173,3612.552 173,3612 L173,3606 C173,3605.448 172.552,3605 172,3605 M177,3606 L177,3612 C177,3612.552 176.552,3613 176,3613 C175.448,3613 175,3612.552 175,3612 L175,3606 C175,3605.448 175.448,3605 176,3605 C176.552,3605 177,3605.448 177,3606" id="pause-[#1006]"></path>
                     </g></g></g>
                 </svg>
-
                 <svg class="pp-icon play-icon" width="64px" height="64px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M21.4086 9.35258C23.5305 10.5065 23.5305 13.4935 21.4086 14.6474L8.59662 21.6145C6.53435 22.736 4 21.2763 4 18.9671L4 5.0329C4 2.72368 6.53435 1.26402 8.59661 2.38548L21.4086 9.35258Z" fill="#1C274C"/>
                 </svg>
-                
-                
-                <style>
-                    .play-pause-indicator {
-                        width: fit-content;
-                        height: fit-content;
-                        position: absolute;
-                        top: calc(50% - 32px);
-                        left: calc(50% - 32px);
-                        pointer-events: none;
-                    }
-                    .play-pause-indicator svg path {
-                        fill: #fffd;
-                    }
-                    .NONE {
-                        position: absolute; top: 0; left: 0;
-                    }
-                    .pp-icon {
-                        display: none;
-                        opacity: 0;
-                        background: #0005;
-                        border-radius: 50%;
-                        padding: 1rem;
-                        border: 1px solid #fff4;
-                        transform-origin: center;
-                        transform: scale(110%);
-                        transition:
-                            opacity 500ms ease-out,
-                            transform 500ms ease-out
-                        ;
-                    }
-                    .pp-icon.shown {
-                        opacity: 1;
-                        transform: scale(80%);
-                        transition: none;
-                    }
-                </style>
-
             </div>
+
+            <!-- seek thumbs container -->
+            <div id="seek-thumbs-container">
+                <div class="seek-thumbnail"></div>
+            </div>
+            
         `;
     }
 
@@ -219,19 +246,20 @@ export class PassionPlayer {
             const ignore_keydown = false
                 || document.activeElement.tagName === 'INPUT'
                 // || document.activeElement.className
+                // || true
             ;
-
+            
             if (!ignore_keydown) {
 
-                let key = e.code;
-                if (e.shiftKey) {
-                    key = 's-' + key;
-                }
-                // console.log(key);
+                const key = e.shiftKey ? 's-'+e.code : e.code;
                 
                 switch (key) {
+                    case 'Space':
+                        e.preventDefault();
+                        this.toggle_playback();
+                        break;
                     case 'KeyF':
-                        console.log('f has been pressed');
+                        this.toggle_fullscreen();
                         break;
                 }
                 
@@ -261,35 +289,6 @@ export class PassionPlayer {
         const newTime = this.video.duration * perc;
         this.video.currentTime = newTime;
         progress_bar.style.width = `${perc * 100}%`;
-    }
-
-    /* responsive toggle playback but lenient toggle fullscreen */
-    addVideoClickEventListeners() {
-        let pb_flag = false; // playback
-        let fs_flag = false; // fullscreen
-        this.video.addEventListener('click', () => {
-            const curr = Date.now()
-            if (pb_flag === false && fs_flag === false) {
-                pb_flag = true
-                fs_flag = true
-                setTimeout(() => {
-                    if (pb_flag) {
-                        console.log('click');
-                        this.toggle_playback();
-                        pb_flag = false;
-                    }
-                }, 125);
-                setTimeout(() => {fs_flag = false}, 350);
-            
-            } else if (fs_flag) {
-                if (pb_flag === false) { // clicked after 75ms
-                    this.toggle_playback();
-                }
-                this.toggle_fullscreen();
-                pb_flag = false;
-                fs_flag = false;
-            }
-        });
     }
 
     toggle_playback() {
@@ -330,6 +329,117 @@ export class PassionPlayer {
     }
 
     
+    // #endregion
+
+    // #region - seek thumbs ---------------------------------------------------------------------------------------------------
+    
+    updateSeekThumbnail(mouse_x, video_perc) {
+        if (this.seekThumbsContainer) {
+            const cont = $(this.seekThumbsContainer);
+            cont.show();
+
+            /* x translate */
+            const cont_wid = parseInt(cont.css('width'));
+            let x_translate = mouse_x-cont_wid/2;
+            const padding = 8;
+            x_translate = Math.max(x_translate, padding);
+            const window_wid = document.documentElement.clientWidth;
+            x_translate = Math.min(x_translate, window_wid-cont_wid-padding);
+            cont.css('left', x_translate + 'px');
+            
+            /* background image shift */
+            const holder = cont.find('.seek-thumbnail');
+            const scaleFactor = (parseInt(holder.css('height')) / this.seekThumbsSprites[0].h);
+            holder.css(
+                'backgroundSize',
+                (this.seekThumbsSpritesheetSize.w * scaleFactor) + 'px ' + (this.seekThumbsSpritesheetSize.h * scaleFactor) + 'px'
+            )
+
+            const thumbIndex = Math.floor(video_perc/100 * (this.seekThumbsSprites.length));
+            // console.log(thumbIndex, this.seekThumbsSprites.length, video_perc);
+            const sprite = this.seekThumbsSprites[thumbIndex];
+            holder.css(
+                'backgroundPosition',
+                `-${sprite.x*scaleFactor}px -${sprite.y*scaleFactor}px`
+            )
+
+            console.table(thumbIndex, video_perc);
+            
+        }
+    }
+
+    hideSeekThumbnail() {
+        if (this.seekThumbsContainer) {
+            $(this.seekThumbsContainer).hide();
+        }
+    }
+    
+    async loadSeekThumbnails(vtt_src) {
+
+        const response = await fetch(vtt_src)
+        if (response.status !== 200) {
+            throw new Error(`Unable to fetch seek thumbnail webvtt from: ${vtt_src}`);
+        }
+        const vtt = await response.text();
+        const sprites = this.parseVTT(vtt);
+        // console.log(sprites);
+
+        // get image and wait to load
+        const spritesheet_src = vtt_src.replace('.vtt', '.jpg');
+        const img = new Image();
+        img.src = spritesheet_src;
+
+        await new Promise(resolve => {
+            img.onload = resolve;
+        });
+
+        this.seekThumbsSpritesheetSize = { w: img.naturalWidth, h: img.naturalHeight };
+        
+        /** @type {HTMLElement} */
+        this.seekThumbsContainer = this.shadow.querySelector('#seek-thumbs-container');
+        /** @type {HTMLElement} */
+        const seekThumbsHolder = this.seekThumbsContainer.querySelector('.seek-thumbnail');
+        seekThumbsHolder.style.backgroundImage = `url("${spritesheet_src}")`;
+        seekThumbsHolder.style.backgroundRepeat = 'no-repeat';
+
+        /* determine  */
+        const thumbAspectRatio = sprites[0].w / sprites[0].h;
+        seekThumbsHolder.style.width = (thumbAspectRatio * seekThumbsHolder.clientHeight) + 'px';
+
+        /* make visible but hidden */
+        this.seekThumbsContainer.style.visibility = 'visible';
+        this.seekThumbsContainer.style.display = 'none';
+        
+        this.seekThumbsSprites = sprites;
+
+        
+    }
+
+    // Helper function to parse VTT files containing sprite metadata
+    parseVTT(vttText) {
+        const sprites = [];
+        const lines = vttText.split('\n');
+        
+        // The VTT format we're expecting has entries like:
+        // 00:00:00.000 --> 00:00:00.000
+        // xywh=0,0,160,90
+        
+        for (let i = 0; i < lines.length; i++) {
+            if (lines[i].includes('xywh=')) {
+                const coords = lines[i].split('xywh=')[1].split(',');
+                if (coords.length === 4) {
+                    sprites.push({
+                        x: parseInt(coords[0]),
+                        y: parseInt(coords[1]),
+                        w: parseInt(coords[2]),
+                        h: parseInt(coords[3])
+                    });
+                }
+            }
+        }
+        
+        return sprites;
+    }
     
     // #endregion
 

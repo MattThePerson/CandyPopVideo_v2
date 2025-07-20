@@ -192,6 +192,14 @@ if (video_hash != null) {
 
         player.init();
 
+        /* ensure seek thumbs */
+        console.log('ensuring!');
+        $.get('/media/ensure/seek-thumbnails/'+video_hash, (data, status) => {
+            if (status === 'success') {
+                player.loadSeekThumbnails(`/static/preview-media/0x${video_hash}/seekthumbs.vtt`);
+            }
+        })
+
         /* Hydrate video about section */
         const info_section = $('section.video-info-section');
         hydrate_info_section(info_section, video_data);
