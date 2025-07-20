@@ -61,7 +61,11 @@ function hydrate_info_section(section, video_data) {
         /* request */
         $.get('/api/get/actor/'+actor, (data, status, response) => {
             if (response.status === 200) {
-                const age_its = get_year_difference_between_dates(data.date_of_birth, video_data.date_released);
+                let video_dr = video_data.date_released;
+                if (video_dr.length == 4) {
+                    video_dr = video_dr + '-06-01';
+                }
+                const age_its = get_year_difference_between_dates(data.date_of_birth, video_dr);
                 if (age_its) {
                     document.getElementById(actor_id).innerText += ` (${age_its} y/o ITS)`
                 }
@@ -124,7 +128,11 @@ function toggle_favourites_button_OFF(butt) {
 
 
 function get_year_difference_between_dates(date1, date2) {
-    if (date1 === null || date2 === null) {
+    if (!date1 || !date2) {
+        return null;
+    }
+    console.log(date1, date2);
+    if (date1.length < 4 || date2.length < 4) {
         return null;
     }
     const a = Date.parse(date1);
@@ -132,7 +140,8 @@ function get_year_difference_between_dates(date1, date2) {
     if (isNaN(a) || isNaN(b)) {
         return null;
     }
-    return Math.floor((b-a) / (1000 * 60 * 60 * 24 * 365))
+    let year_diff = Math.floor((b-a) / (1000 * 60 * 60 * 24 * 365));
+    return Math.max(year_diff, 18);
 }
 
 
