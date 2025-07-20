@@ -29,8 +29,8 @@ export function Header(){
         }
     });
 
+    /* use video teasers buttons */
     const useVideoTeasers = (localStorage.getItem('use_video_teasers') == 'true');
-    // console.log(useVideoTeasers);
     if (useVideoTeasers) {
         $('#teaser-mode-video').addClass('selected');
     } else {
@@ -49,6 +49,19 @@ export function Header(){
         }
     });
 
+    /* card size buttons */
+    const cardSize = localStorage.getItem('card_size') || 'medium';
+    const cardSizeSel = '#card-size-' + cardSize;
+    $(cardSizeSel).addClass('selected');
+    $('.card-size button').each((idx, button) => {
+        button.onclick = () => {
+            if (!$(button).hasClass('selected')) {
+                const new_card_size = button.id.replace('card-size-', '');
+                localStorage.setItem('card_size', new_card_size);
+                location.reload();
+            }
+        }
+    })
     
 
 </script>
@@ -109,6 +122,14 @@ export function Header(){
                         <div class="selector">
                             <button id="teaser-mode-image">image</button>
                             <button id="teaser-mode-video">video</button>
+                        </div>
+                    </section>
+                    <section class="card-size">
+                        <h3>card size</h3>
+                        <div class="selector vertical">
+                            <button id="card-size-small">small</button>
+                            <button id="card-size-medium">medium</button>
+                            <button id="card-size-large">large</button>
                         </div>
                     </section>
                     <section class="card-style">
@@ -263,6 +284,7 @@ export function Header(){
         border: 1px solid #fff9;
         border-radius: 10px;
         padding: 0.7rem 0.8rem;
+        z-index: 9999;
     }
     .config-menu.hidden {
         display: hidden;

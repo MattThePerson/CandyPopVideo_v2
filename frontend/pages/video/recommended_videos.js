@@ -22,7 +22,7 @@ export async function load_recommended_videos(vd, related_sec, similar_sec, vide
 
     if (vd.movie_title) {
         const result = await $.get('/api/get/movie/'+vd.movie_title);
-        if (Array.isArray(result) && result.length > 0) {
+        if (Array.isArray(result) && result.length > 1) {
             related_videos_dict['movie'] = result;
             related_videos_dict['movie'] = {
                 'videos': result,
@@ -33,7 +33,7 @@ export async function load_recommended_videos(vd, related_sec, similar_sec, vide
 
     if (vd.movie_series) {
         const result = await $.get('/api/get/movie-series/'+vd.movie_series);
-        if (Array.isArray(result) && result.length > 0) {
+        if (Array.isArray(result) && result.length > 1) {
             related_videos_dict['movie-series'] = result;
             related_videos_dict['movie-series'] = {
                 'videos': result,
@@ -44,7 +44,7 @@ export async function load_recommended_videos(vd, related_sec, similar_sec, vide
 
     if (vd.line) {
         const result = await $.get('/api/get/line/'+vd.line);
-        if (Array.isArray(result) && result.length > 0) {
+        if (Array.isArray(result) && result.length > 1) {
             related_videos_dict['line'] = result;
             related_videos_dict['line'] = {
                 'videos': result,
@@ -81,8 +81,6 @@ export async function load_recommended_videos(vd, related_sec, similar_sec, vide
         similar_videos,
         similar_sec,
         8,
-        '24rem',
-        card_type,
         1,
     );
     $(similar_sec).find('#expand-results-button').on('click', expand_results_func);
@@ -141,7 +139,7 @@ async function load_related_videos(related_videos, section, video_hash) {
         return;
     }
     
-    $(section).css('visibility', 'visible');
+    $(section).show();
 
     /* render carousels */
     for (let [cls_, obj] of Object.entries(related_videos)) {

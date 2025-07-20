@@ -22,14 +22,17 @@ makeApiRequestGET('/api/get/random-spotlight-video-hash', [], (initial_response)
 
         /* show date */
         let date = Date().split(' ').slice(0,4).join(' ');
-        document.querySelector('.target-video-section h3').innerText += ' ' + date;
+        // document.querySelector('.target-video-section h3').innerText += ' ' + date;
+        $('.target-video-section h3').text(function(i, t) {
+            return t + ' ' + date;
+        });
         
         /* add spotlight video */
         $('.target-video-container').html(/* html */`
             <search-result-card-default
                 highlighted = true
                 use_video_teasers = true
-                width = "32rem"
+                width = "38rem"
                 video_hash =        "${video_data.hash}"
                 video_title =       "${video_data.title}"
                 actors =            "${video_data.actors}"
@@ -70,8 +73,6 @@ makeApiRequestGET('/api/get/random-spotlight-video-hash', [], (initial_response)
             similar_videos,
             results_container,
             video_load_amount,
-            '24rem',
-            card_type,
             1,
         )
         $(results_container).find('#expand-results-button').on('click', expand_results_func);

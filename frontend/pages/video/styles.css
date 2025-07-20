@@ -18,12 +18,12 @@ section.video-player-section {
 }
 
 section.related-videos-section {
-    border-top: 2px solid #fff4;
+    /* border-top: 2px solid #fff4; */
     padding-top: 0.8rem;
 }
 
 section.similar-videos-section {
-    border-top: 2px solid #fff4;
+    /* border-top: 2px solid #fff4; */
     padding-top: 0.8rem;
 }
 
@@ -32,9 +32,12 @@ section.similar-videos-section {
 section.video-info-section {
     display: flex;
     width: 100%;
-    max-width: 80rem;
+    /* max-width: 80rem; */
     justify-content: space-between;
-    padding: 0.8rem;
+    padding: 0.8rem 10%;
+    background: #111;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #fff3;
 }
 
 .info-container {

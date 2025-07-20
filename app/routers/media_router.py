@@ -80,17 +80,22 @@ def ROUTER_get_poster_large(video_hash: str):
 
 
 
-# UNUSED
+# 
 @media_router.get("/ensure/teaser-small/{video_hash}")
 def confirm_teaser_small(video_hash: str):
     video_data = VideoData.from_dict( db.read_object_from_db(video_hash, 'videos') )
     if video_data is None:
         raise HTTPException(404, f'Could not find video with hash: {video_hash}')
     if not checkers.hasTeaserSmall(video_hash, PREVIEW_MEDIA_DIR):
-        raise HTTPException(status_code=503, detail='Temporarily disabled')
+        # raise HTTPException(status_code=503, detail='Temporarily disabled')
         teaser = "NULL_PATH"
         try:
-            teaser = generators.generateTeaserSmall(video_data.path, video_hash, PREVIEW_MEDIA_DIR, video_data.duration_seconds)
+            teaser = generators.generateTeaserSmall(
+                video_data.path,
+                video_hash,
+                PREVIEW_MEDIA_DIR,
+                video_data.duration_seconds,
+            )
         except FileNotFoundError as e:
             print('ERROR: Cant generate teaser, video not found:', video_data.path)
         if not os.path.exists(teaser):

@@ -30,6 +30,8 @@ export class MyCard extends HTMLElement {
 
         this.card_class = (this.getAttribute('highlighted') == 'true') ? "card highlighted" : "card";
         this.card_width = this.getAttribute('width') || "24rem";
+        this.aspect_ratio = this.getAttribute('aspect_ratio') || "16/9";
+
     }
 
     disconnectedCallback() {
@@ -78,11 +80,6 @@ export class MyCard extends HTMLElement {
                 teaser_el.addClass('loaded');
                 $shadow.find('.spinner').hide()
             });
-
-            // $.get('/media/ensure/teaser-small/'+this.video_hash, (data, status) => {
-            //     if (status === 'success') {
-            //     }
-            // });
 
         } else { // teaser thumbs
             const teaser_el = $shadow.find('img.teaser-thumbs');
@@ -158,11 +155,18 @@ export class MyCard extends HTMLElement {
 
         /* first time hover */
         $shadow.find('.thumb-container').one('mouseenter', () => {
-            console.log('ensuring teaser media');
+            
             if (this.USE_VIDEO_TEASERS) {
+                console.log('ensuring teaser video');
+                $.get('/media/ensure/teaser-small/'+this.video_hash, (data, status) => {
+                    if (status === 'success') {
+                        const teaser_el = $shadow.find('.teaser-media');
+                        teaser_el.attr('src', `/static/preview-media/0x${this.video_hash}/teaser_small.mp4`);
+                    }
+                })
 
-                // ...
             } else {
+                console.log('ensuring teaser thumbs');
                 $.get('/media/ensure/teaser-thumbs-small/'+this.video_hash, (data, status) => {
                     if (status === 'success') {
                         // console.log('teaser_thumbs ensured!');
@@ -237,10 +241,10 @@ export class MyCard extends HTMLElement {
 
                 <!-- image -->
                 <a class="thumb-container" href="/pages/video/page.html?hash=${this.video_hash}">
+                    <span class="spinner loader-2"></span>
                     <img class="thumbnail" src="" alt="">
                     <img class="teaser-thumbs" alt="">
                     <video class="teaser-video" preload="none" muted loop autoplay></video>
-                    <span class="spinner loader-2"></span>
                     <div class="stats">
                         <div class="collection">${this.collection}</div>
                         <div class="top-right">
@@ -538,24 +542,32 @@ export class MyCard extends HTMLElement {
                     border-radius: 5px;
                     font-size: 0.8rem;
                     width: 100%;
-                    aspect-ratio: 16/9;
+                    aspect-ratio: ${this.aspect_ratio};
                     height: auto;
                     object-fit: contain;
                     overflow: hidden;
                     user-select: none;
 
+                    * { box-sizing: border-box; }
+                    
                     img.thumbnail {
                         height: 100%;
-                        display: hide;
+                        width: 100%;
+                        object-fit: cover;
+                        z-index: 999;
                     }
                     img.teaser-thumbs {
                         height: 100%;
-                        display: hide;
+                        width: 100%;
+                        object-fit: cover;
+                        display: none;
                     }
                     video {
-                        display: none;
                         height: 100%;
-                        object-fit: contain;
+                        width: 100%;
+                        /* object-fit: contain; */
+                        object-fit: cover;
+                        display: none;
                     }
                     div {
                         position: absolute;
@@ -740,11 +752,13 @@ export class MyCard extends HTMLElement {
                 }
 
                 .loader-2 {
-                    width: 27px;
+                    width:  27px;
                     height: 27px;
                     border-radius: 50%;
                     display: inline-block;
-                    position: relative;
+                    position: absolute;
+                    top: calc(50% - 13px);
+                    left: calc(50% - 13px);
                     background: linear-gradient(0deg, rgba(255, 61, 0, 0.2) 33%, #ff3d00 100%);
                     box-sizing: border-box;
                     animation: rotation-2 1s linear infinite;

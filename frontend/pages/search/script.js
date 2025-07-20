@@ -1,6 +1,6 @@
 import { injectComponents } from '../../shared/util/component.js'
 import { makeApiRequestGET, makeApiRequestPOST_JSON } from '../../shared/util/request.js';
-import { generate_results, render_video_cards } from '../../shared/util/load.js';
+import { render_video_cards } from '../../shared/util/load.js';
 import { configure_page_nav } from './page_nav.js';
 
 
@@ -255,8 +255,6 @@ if (urlParams.size > 0) {
             results.search_results,
             results_container,
             results_per_page,
-            '24rem',
-            card_type,
         )
 
         /* Configure page nav */
