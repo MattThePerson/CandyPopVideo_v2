@@ -4,14 +4,12 @@
 
 My personal lightweight video viewer App! Browse local collection of videos using a *YouTube-like* web UI, search videos with powerful search panel, preview videos with generated preview media, get recommended videos under the video you're watching. 
 
-Built with **FastAPI** + **Svelte** ❤️
+Built with **FastAPI** + **Vanilla JS** ❤️
 
 
 ## System Dependencies
 
 - python >= 3.8
-- npm
-- Node.js (18.13 or higher for Svelte)
 - ffmpeg
 
 
@@ -30,7 +28,8 @@ Built with **FastAPI** + **Svelte** ❤️
 
 ## Improvements from v1:
 - switched from Flask --> FastApi + Uvicorn for the backend
-- went from plain JS --> Svelte for the frontend
+- improved frontend UI
 - using proper db (SQLite)
 - better shell scripts for installing/running
+- better backend manager
 

@@ -4,28 +4,68 @@
 
 ## TODO
 
+
+TINY_TERM:
+- [frontend] [add] dated marker button/ui
+- [frontend] catalogue page: add thresh and item counts
+
+SHORT_TERM:
+- [frontend] [finish] related videos section
+- [media_gen] [fix] seek thumbs alignment
+- [frontend] create PassionPlayer MVP
+
+MEDIUM_TERM:
+- [data] port old favourites
+- [frontend] [finish] search panel
+- [frontend] [finish] catalogue page
+- [frontend] [finish] creating PassionPlayer
+- [frontend] [add] search panel: list/compact list view & page result count
+- [backend] Get performer (and studio) embeddings working
+- [collection] Handle PMVHaven collection
+- [collection] Handle collisions (Curated v. PH)
+- [frontend] [finish] video page below section
+- [frontend/backend] Redo dashboard (minimal)
+
+LONG_TERM:
+- [admin] promote to others/get others to test
+- [admin] find way to make not-nsfw preview
+- [app] dockerize
+
+FAR_FUTURE:
+- [db] migrate to proper column structure
+- [backend] rewrite in Go
+
+MILESTONES:
+- [media] Generate preview media for entire collection
+
+
+OPTIONAL:
+- [backend] Add method of seeing tf-idf tokens
+- [frontend] Add search box to nav search button
+- [frontend] Make list view search result component
+- [frontend] date_added/date_released dist extension
+- [frontend] word cloud
+
+THEORETICAL:
+- [app] Add way to make gifs
+- [app] Figure out way to link to d18 (or other 18+ db)
+
+
+
+
+<!-- - [media] Convert entire collection to mp4 -->
+<!-- - [media] Transcode non remuxable -->
+<!-- - [backend] Review collection ignore/include folder step -->
+<!-- - [media] Handle JAV collection -->
+<!-- - [media] Handle PH collection -->
 <!-- - [frontend] [new] port & clean search page -->
 <!-- - [frontend] [new] port & clean video page -->
 <!-- - [frontend] [new] port & clean home page -->
 <!-- - [frontend] [new] port & clean dashboard page -->
 <!-- - [frontend] [new] Add new search result cards -->
-- [frontend] [new] Add new catalogue page
-- [frontend] [new] Add new search panel
-- [frontend] Create custom video player
-- [frontend] [new] Add new video page
-- [frontend] [new] Add search box to nav search button
-- [frontend] Improve frontend terminal experience
-- [frontend] Add nav dropdown to select search result style (for grid view)
-- [frontend] Make list view search result component
-- [media] Handle JAV collection
-- [media] Handle PH collection
-- [media] Convert entire collection to mp4
-- [media] Generate preview media for entire collection
-- [media] Transcode non remuxable
-- [backend/media] Figure out media gen errors
-- [backend] Get performer (and studio) embeddings working
-- [backend] Add method of seeing tf-idf tokens
-- [backend] Review collection ignore/include folder step
+<!-- - [frontend] [new] Add new catalogue page -->
+<!-- - [frontend] [new] Add new video page -->
+<!-- - [frontend] Add nav dropdown to select search result style (for grid view) -->
 <!-- - [backend] Add teaser thumbs -->
 <!-- - [backend] Add preview media status -->
 <!-- - [backend] Find why no similar-videos for f5593d2a6f9a -->
@@ -40,82 +80,28 @@
 
 
 
-CatalogueQuery:
-  - type: [performers|sort-performers|studios|collections|tags]
-  - query_string: str
-  - filter_performer: str
-  - filter_studio: str
-  - filter_collection: str
-  - filter_tag: str
+## VIDEO PAGE
+
+buttons:
+- rate
+- like
+- add dated marker
+- make gif
+- chapter nav
+- edit filename
+- open d18 page
+- open external link (ph)
 
 
-CatalogueResponse:
-  - performers:  [ (name, scenes), ... ]
-  - studios:     [ (name, scenes), ... ]
-  - collections: [ (name, scenes), ... ]
-  - tags:        [ (name, scenes), ... ]
-
-
-/query/get/catalogue/{CatalogueQuery}
-
-
-
-## METADATA DB
-
-
-- favourite
-- views
-- likes
-- rating [S+|S|A|B+|B-|C]
-- markers
-- i_came_markers
-- user_comments
+info:
+- date added
+- show description button
+- filename (copy button)
+- Location parent on disk (copy button)
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-## Desired Changes
-
-Backend:
-- media gen worker process (w/ Muiltiprocessing queue for jobs)
-- logging for various things
-    - worker process
-    - file listener
-    - hash collisions
-<!-- - dataclass for video objects -->
-<!-- - preview media saved elsewhere -->
-
-Frontend:
-- written in Svelte (MPA)
-- served by backend (static MPA site)
-- written in typescript
-- Dashboard page for
-    * app status
-    * scanning / rescanning
-    * start media generation
-    * media generation status
-    * adding site-wide content filters (eg. Studio, Category, Performer)
-- 
-
-
-
-## Other
-
-main() stages:
-- load existing data and collections from json and txt files
-- loads and processes videos
-- loads/generates video/performer TF-IDF profiles
-- [REMOVE] optionally generates preview media
 
 
 ## Routes
@@ -155,9 +141,9 @@ main() stages:
 
 
 
-### PYTHON SCRIPTS
+### STRUCTURE
 
-|-- backend/
+|-- src/
 |   |-- routes/                 `// api routes`
 |   |   |-- __init__.py
 |   |   |-- api_media_router.py     `// `
@@ -173,6 +159,8 @@ main() stages:
 |   |   |-- media.py                `// `
 |   |   |-- meta.py                 `// `
 |   |   |-- process.py              `// `
-|   |-- app_state.py            `// holding app state (to replace with db stuff)`
+|   |-- db.py               `// `
+|   |-- logging.py          `// `
 |-- config.py               `// global config variables`
 |-- main.py                 `// app starting point`
+
