@@ -10,14 +10,7 @@ async function main() {
     /* Ensure catalogue type in url */
     const default_type = 'actor';
     const default_sortby = 'alphabetic';
-    // const urlParams = new URLSearchParams(window.location.search);
-
-    // if (!urlParams.has('type')) {
-    //     urlParams.set('type', default_type);
-    //     const new_url = window.location.href + '?' + urlParams.toString();
-    //     history.pushState(null, '', new_url);
-    // }
-
+    
     
     /* REQUEST CATALOGUE */
     const query = {

@@ -79,8 +79,9 @@ export function Header(){
                     <div class="secondary-text">Video</div>
                 </span>
             </a>
-
         </span>
+
+        <custom-twaddle></custom-twaddle>
         
         <!-- page nav -->
         <span>
