@@ -58,7 +58,7 @@ async function render_video_cards_helper(videos, start_idx, load_amount, contain
         await sleep(50);
     }
 
-    return videos_added;
+    return start_idx + videos_added;
 }
 
 

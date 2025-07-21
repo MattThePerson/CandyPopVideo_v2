@@ -338,15 +338,19 @@ def _extract_movie_and_scene_titles(words, delim_idx):
     return movie, scene
 
 def _get_movie_series_from_movie(title):
+    
     title_words = title.split(' ')
-    if len(title_words) > 1:
-        movie_idx = _extract_number_from_term(title_words[-1])
-        if movie_idx is not None:
-            title_words = title_words[:-1]
-            if title_words[-1].lower().replace('.', '') in ['vol', 'volume', 'season']:
-                title_words = title_words[:-1]
-            if title_words != []:
-                return ' '.join(title_words)
+    title_words_lower = title.lower().split(' ')
+    
+    if len(title_words_lower) <= 1:
+        return title
+    
+    for series_delim in ['vol', 'vol.', 'volume', 'season']:
+        if series_delim in title_words_lower:
+            part_idx = title_words_lower.index(series_delim)
+            movie_series_parts = title_words[:part_idx]
+            return ' '.join(movie_series_parts)
+
     return title
 
 

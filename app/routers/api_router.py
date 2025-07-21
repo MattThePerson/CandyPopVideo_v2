@@ -107,6 +107,7 @@ def ROUTE_get_movie(movie_title: str):
     video_dicts = db.read_table_as_dict('videos')
     video_objects_list = [ VideoData.from_dict(vd) for vd in video_dicts.values() if vd.get('is_linked') ]
     movie_videos = [ vd for vd in video_objects_list if vd.movie_title and vd.movie_title.lower() == movie_title.lower() ]
+    movie_videos.sort(key=lambda vd: vd.title or '')
     return movie_videos
     
 

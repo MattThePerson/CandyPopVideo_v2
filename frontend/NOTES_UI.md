@@ -2,9 +2,10 @@
 
 TODO:
 - fix issue with seekthumbs misalignment
-- fix spinner on top
-- fix video card title and performers and tags overflowing
-- 
+- finish  related videos section
+<!-- - add catalogue page MVP -->
+<!-- - fix video card title and performers and tags overflowing -->
+<!-- - fix spinner on top -->
 
 
 ## VIDEO PAGE

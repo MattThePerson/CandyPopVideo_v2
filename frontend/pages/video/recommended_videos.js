@@ -42,16 +42,16 @@ export async function load_recommended_videos(vd, related_sec, similar_sec, vide
         }
     }
 
-    if (vd.line) {
-        const result = await $.get('/api/get/line/'+vd.line);
-        if (Array.isArray(result) && result.length > 1) {
-            related_videos_dict['line'] = result;
-            related_videos_dict['line'] = {
-                'videos': result,
-                'title': `line: ${vd.line}  (${result.length} videos)`,
-            };
-        }
-    }
+    // if (vd.line) {
+    //     const result = await $.get('/api/get/line/'+vd.line);
+    //     if (Array.isArray(result) && result.length > 1) {
+    //         related_videos_dict['line'] = result;
+    //         related_videos_dict['line'] = {
+    //             'videos': result,
+    //             'title': `line: ${vd.line}  (${result.length} videos)`,
+    //         };
+    //     }
+    // }
 
     console.log(`loaded related videos in ${Math.floor((Date.now()-start))} ms`);
 
