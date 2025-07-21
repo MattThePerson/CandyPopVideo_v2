@@ -58,6 +58,7 @@ def process_videos(
                 # add data parsed from filename / path
                 video_data = _add_filename_parsed_data(video_data, parser)
                 # add extracted movie title and series
+                
                 video_data = _add_extracted_movie_series(video_data)
                 # organize tags
                 video_data = _get_tags_from_path(video_data)
@@ -229,7 +230,7 @@ def _add_filename_info_to_scene_data(vd: VideoData, info: dict[str, str]):
     vd.primary_actors =    [ p for p in info.get('primary_actors', '').split(', ') if p != '' ]
     vd.secondary_actors = [ p for p in info.get('secondary_actors', '').split(', ') if p != '' ]
     vd.actors = _get_ordered_set( vd.primary_actors + vd.secondary_actors )
-    
+
     # use year if no date_released
     date_released = None
     if 'date_released' in info:
@@ -262,9 +263,13 @@ def _add_metadata_to_video_data(video_data: VideoData, metadata: dict) -> VideoD
     
     valid_keys = { field.name for field in video_data.__dataclass_fields__.values() }
     filtered_data = { k: v for k, v in metadata.items() if k in valid_keys }
-    
-    for k, v in metadata.items():
-        setattr(video_data, k, v)
+
+    for k, v in filtered_data.items():
+        if not hasattr(video_data, k):
+            setattr(video_data, k, v)
+
+    # for k, v in metadata.items():
+        # setattr(video_data, k, v)
     
     return video_data
 

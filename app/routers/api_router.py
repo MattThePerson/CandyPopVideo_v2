@@ -91,18 +91,6 @@ def ROUTE_get_studios():
     return jsonify(), 500
 
 
-# GET CATALOGURE
-@api_router.get("/get/catalogue")
-def ROUTE_get_catalogue():
-    video_dicts = db.read_table_as_dict('videos')
-    video_objects_list = [ VideoData.from_dict(vd) for vd in video_dicts.values() if vd.get('is_linked') ]
-    raise HTTPException(status_code=501, detail='Not implemented')
-    items = ff.getStudios(videos_dict)
-    print('Len of items:', len(items))
-    if items:
-        return jsonify(generateReponse(items)), 200
-    return jsonify(), 500
-
 
 # GET CURATED COLLECTIONS
 @api_router.get("/get/curated-collections")

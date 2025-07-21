@@ -113,7 +113,7 @@ video {
     bottom: 5rem;
     left: 0;
     height: 200px;
-    min-width: 300px;
+    width: 300px;
     width: fit-content;
     background: #222;
     border: 1px solid #bbb;

@@ -6,8 +6,11 @@
     <title>Catalogue Page</title>
     <link rel="icon" type="image/x-icon" href="/static/icons/donut-pngs/donut_pink_inner.png">
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
     <link rel="stylesheet" href="/global.css">
     <script type="module" src="script.js"></script>
+    <Link rel="stylesheet" href="styles.css">
     
 </head>
 <body>
@@ -15,6 +18,64 @@
     
     <main>
 
+        <!-- LEFT PANEL ------------------------------------------------------->
+        <section class="left-panel-section">
+
+            <div class="item-filters-container">
+                <h2>ITEM FILTERS</h2>
+                <div class="holder">
+
+                </div>
+            </div>
+            
+            <div class="quick-filters-container">
+                <h2>QUICK FILTERS</h2>
+                <div class="holder">
+
+                </div>
+            </div>
+
+            <div class="options-container">
+                <h2>OPTIONS</h2>
+                <div class="holder">
+
+                </div>
+            </div>
+            
+        </section>
+
+        <!-- CONTENT SECTION -------------------------------------------------->
+        <section class="content-section">
+
+            <div class="section-header">
+                <div class="catalogue-page-nav">
+                    <button id="nav-button-actor">ACTORS</button>
+                    <button id="nav-button-studio">STUDIOS</button>
+                    <button id="nav-button-collection">COLLECTIONS</button>
+                    <button id="nav-button-tag">TAGS</button>
+                </div>
+    
+                <div class="sortby-bar">
+                    <h3>sort</h3>
+                    <div class="sortby-options-bar">
+                        <button id="sortby-button-alphabetic" class="selected">alphabetic</button>
+                        <button id="sortby-button-count" >number of scenes</button>
+                        <input class="relevance-query-input" type="text" placeholder="relevance">
+                    </div>
+                </div>
+
+                <div class="letter-nav"></div>
+            </div>
+            
+
+            <div class="list-section">
+
+                <div class="catalogue-list"></div>
+
+            </div>
+            
+        </section>
+        
     </main>
     
     <div class="MyComponent" component="Footer"></div>

@@ -87,7 +87,6 @@ def ROUTE_get_catalogue(query: CatalogueQuery):
     # raise HTTPException(status_code=501, detail='Not implemented')
     video_dicts = db.read_table_as_dict('videos')
     videos_list = [ VideoData.from_dict(vd) for vd in video_dicts.values() if vd.get('is_linked') ]
-    print('[catalogue] getting catalogue')
     start = time.time()
     result: dict = {}
     result = get_catalogue(videos_list, query)
@@ -97,6 +96,6 @@ def ROUTE_get_catalogue(query: CatalogueQuery):
     #     raise HTTPException(status_code=500, detail="Exception while getting catalogue")
     tt = time.time() - start
     print('[catalogue] done. took {:.1f} sec'.format(tt))
-    result['time_taken'] = tt
+    result['time_taken'] = tt*1000
     return result
 

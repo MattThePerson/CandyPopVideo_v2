@@ -62,7 +62,7 @@ function hydrate_info_section(section, video_data) {
         $.get('/api/get/actor/'+actor, (data, status, response) => {
             if (response.status === 200) {
                 let video_dr = video_data.date_released;
-                if (video_dr.length == 4) {
+                if (video_dr && video_dr.length == 4) {
                     video_dr = video_dr + '-06-01';
                 }
                 const age_its = get_year_difference_between_dates(data.date_of_birth, video_dr);
