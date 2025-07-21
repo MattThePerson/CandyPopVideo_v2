@@ -131,7 +131,10 @@ export class MyCard extends HTMLElement {
                 /* other */
                 $shadow.find('.details-bar .viewtime').text(this.format_seconds(VIs.viewtime));
 
-                $shadow.find('.details-bar .likes').text(VIs.likes);
+                if (VIs.likes > 0) {
+                    $shadow.find('.details-bar .likes-span').css('display', 'flex');
+                    $shadow.find('.details-bar .likes').text(VIs.likes);
+                }
                 
                 
             }
@@ -241,7 +244,7 @@ export class MyCard extends HTMLElement {
 
                 <!-- image -->
                 <a class="thumb-container" href="/pages/video/page.html?hash=${this.video_hash}">
-                    <span class="spinner loader-2"></span>
+                    <div class="spinner loader-2"></div>
                     <img class="thumbnail" src="" alt="">
                     <img class="teaser-thumbs" alt="">
                     <video class="teaser-video" preload="none" muted loop autoplay></video>
@@ -261,12 +264,12 @@ export class MyCard extends HTMLElement {
                     <div class="details-bar">
                         <div class="left-side">
                             <span class="viewtime">vt unknown</span>
-                            <div class="likes-span">
+                            <span class="likes-span">
                                 <div class="likes">-1</div>
                                 <svg width="32px" height="32px" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M1.24264 8.24264L8 15L14.7574 8.24264C15.553 7.44699 16 6.36786 16 5.24264V5.05234C16 2.8143 14.1857 1 11.9477 1C10.7166 1 9.55233 1.55959 8.78331 2.52086L8 3.5L7.21669 2.52086C6.44767 1.55959 5.28338 1 4.05234 1C1.8143 1 0 2.8143 0 5.05234V5.24264C0 6.36786 0.44699 7.44699 1.24264 8.24264Z" fill="#000000"/>
                                 </svg>
-                            </div>
+                            </span>
                             <span class="rating">B+</span>
                             <span style="display: none" class="has-subs">subs</span>
                             <style>
@@ -280,7 +283,7 @@ export class MyCard extends HTMLElement {
                                     gap: 0.65rem;
                                 }
                                 .likes-span {
-                                    display: flex;
+                                    display: none;
                                     align-items: center;
                                     gap: 1.5px;
                                     text-align: center;
@@ -531,6 +534,13 @@ export class MyCard extends HTMLElement {
                 a.thumb-container:hover .teaser-media.loaded {
                     display: block;
                 }
+
+                .spinner {
+                    visibility: hidden;
+                }
+                a.thumb-container:hover .spinner {
+                    visibility: visible;
+                }
                 
                 /* - IMAGE PART --------------------------------------------- */
                 a.thumb-container {
@@ -554,7 +564,6 @@ export class MyCard extends HTMLElement {
                         height: 100%;
                         width: 100%;
                         object-fit: cover;
-                        z-index: 999;
                     }
                     img.teaser-thumbs {
                         height: 100%;
@@ -634,6 +643,7 @@ export class MyCard extends HTMLElement {
                     min-height: 8rem;
                     display: flex;
                     flex-direction: column;
+                    overflow: hidden;
                 }
 
                 .details-bar, .title-bar, .year-studio-bar, .studios-bar, .actors-bar, .tags-bar, .left-side {
@@ -689,6 +699,13 @@ export class MyCard extends HTMLElement {
                     color: #777;
                     font-family: "Inter";
                 }
+                .actors-bar {
+                    flex-wrap: wrap;
+                    margin-bottom: 5px;
+                }
+                .actors-bar a {
+                    text-wrap: nowrap;
+                }
 
                 /* separator */
                 .studios-bar span,
@@ -699,6 +716,7 @@ export class MyCard extends HTMLElement {
                     margin: 0 2px;
                     transform: rotate(45deg);
                     user-select: none;
+                    background: #fa09;
                 }
 
                 .tags-bar {
@@ -706,6 +724,10 @@ export class MyCard extends HTMLElement {
                     margin-top: auto;
                     justify-content: flex-end;
                     gap: 3px;
+                    flex-wrap: wrap;
+                }
+                .tags-bar a {
+                    text-wrap: nowrap;
                 }
 
                 /* a tags */
@@ -736,7 +758,7 @@ export class MyCard extends HTMLElement {
 
 
                 /* - LOADERS ------------------------------------------------ */
-                .loader-1 {
+                /* .loader-1 {
                     width: 1.6rem;
                     height: 1.6rem;
                     border-radius: 50%;
@@ -749,7 +771,7 @@ export class MyCard extends HTMLElement {
                 @keyframes rotation-1 {
                     0% {    transform: rotate(0deg); }
                     100% {  transform: rotate(360deg); }
-                }
+                } */
 
                 .loader-2 {
                     width:  27px;
