@@ -8,7 +8,7 @@ from .. import db
 from config import SCENE_FILENAME_FORMATS, VIDEO_EXTENSIONS
 from ..util.process import process_videos, combine_loaded_and_existing_videos
 from ..schemas import VideoData
-from .helpers import aprint
+# from .helpers import aprint
 
 
 #region main

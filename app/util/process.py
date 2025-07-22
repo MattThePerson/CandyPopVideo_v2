@@ -70,9 +70,11 @@ def process_videos(
                 # get additional metadata from json files
                 id_ = video_data.dvd_code or video_data.source_id or Path(video_data.path).stem
                 if id_ is not None:
+                    from pprint import pprint
                     metadata = json_metadata.get_metadata(id_, video_data.path)
                     if metadata != {}:
                         video_data = _add_metadata_to_video_data(video_data, metadata)
+                        video_data.actors = _get_ordered_set( video_data.primary_actors + video_data.secondary_actors )
             
             video_data.tags = list(set( video_data.tags_from_filename + video_data.tags_from_path + video_data.tags_from_json ))
             
@@ -266,7 +268,13 @@ def _add_metadata_to_video_data(video_data: VideoData, metadata: dict) -> VideoD
     filtered_data = { k: v for k, v in metadata.items() if k in valid_keys }
 
     for k, v in filtered_data.items():
-        if not hasattr(video_data, k):
+        if isinstance(v, list):
+            l2 = getattr(video_data, k)
+            for item in v:
+                if item not in l2:
+                    l2.append(item)
+            setattr(video_data, k, l2)
+        elif not hasattr(video_data, k):
             setattr(video_data, k, v)
 
     # for k, v in metadata.items():
@@ -293,12 +301,6 @@ def _add_extracted_movie_series(video_data: VideoData) -> VideoData:
     if title:
         movie, scene, scene_idx, series = _get_movie(title)
         if movie is not None:
-            # print('\nEXTRACTED SHIT FOR:', video_data.filename)
-            # print('movie:', movie)
-            # print('scene:', scene)
-            # print('scene_idx:', scene_idx)
-            # print('series:', series)
-            # print()
             video_data.movie_title = movie
             video_data.scene_title = scene
             video_data.scene_number = scene_idx
