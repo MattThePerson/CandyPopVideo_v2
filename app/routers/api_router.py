@@ -3,10 +3,10 @@ import os
 from datetime import datetime
 from fastapi import APIRouter, Response, HTTPException
 
+from .. import db
 from ..schemas import VideoData
 from ..APIs import actor_api
-from .. import db
-
+from ..util.general import get_sortable_string_tuple
 
 
 api_router = APIRouter()
@@ -107,7 +107,9 @@ def ROUTE_get_movie(movie_title: str):
     video_dicts = db.read_table_as_dict('videos')
     video_objects_list = [ VideoData.from_dict(vd) for vd in video_dicts.values() if vd.get('is_linked') ]
     movie_videos = [ vd for vd in video_objects_list if vd.movie_title and vd.movie_title.lower() == movie_title.lower() ]
-    movie_videos.sort(key=lambda vd: vd.title or '')
+    movie_videos.sort(
+        key=lambda vd: (vd.date_released or '', get_sortable_string_tuple(vd.title))
+    )
     return movie_videos
     
 
@@ -117,7 +119,9 @@ def ROUTE_get_movie_series(movie_series: str):
     video_dicts = db.read_table_as_dict('videos')
     video_objects_list = [ VideoData.from_dict(vd) for vd in video_dicts.values() if vd.get('is_linked') ]
     movie_videos = [ vd for vd in video_objects_list if vd.movie_series and vd.movie_series.lower() == movie_series.lower() ]
-    movie_videos.sort(key=lambda vd: vd.title or '')
+    movie_videos.sort(
+        key=lambda vd: (vd.date_released or '', get_sortable_string_tuple(vd.title))
+    )
     return movie_videos
 
 
@@ -127,7 +131,7 @@ def ROUTE_get_line(line: str):
     video_dicts = db.read_table_as_dict('videos')
     video_objects_list = [ VideoData.from_dict(vd) for vd in video_dicts.values() if vd.get('is_linked') ]
     line_videos = [ vd for vd in video_objects_list if vd.line and vd.line.lower() == line.lower() ]
-    line_videos.sort(key=lambda vd: vd.title or '')
+    line_videos.sort(key=lambda vd: vd.date_released or '')
     return line_videos
 
 

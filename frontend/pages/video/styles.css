@@ -2,6 +2,7 @@
 main {
     padding-top: 0 !important;
     padding: 0 !important;
+    min-height: 90rem !important;
 }
 
 body {
@@ -184,6 +185,7 @@ section.video-info-section {
     background: #333;
     border: 1px solid black;
     cursor: pointer;
+    user-select: none;
 }
 .related-videos-nav button:not(.disabled):active {
     opacity: 80%;
@@ -198,16 +200,25 @@ section.video-info-section {
     cursor: auto;
 }
 
-button.prev, button.next {
+.carousel-scroll-button {
     margin: 1rem;
-    width: 2rem;
-    height: 2rem;
-    font-size: 20px;
-    font-weight: bold;
-    background: #bbb;
-    color: black;
+    width: fit-content;
+    height: fit-content;
+    background: #bbb5;
+    cursor: pointer;
+    border-radius: 1rem;
 }
 
+.carousel-scroll-button svg {
+    width: 48px;
+    height: 48px;
+}
+.carousel-scroll-button path {
+    fill: #eee;
+}
+.carousel-scroll-button.next svg {
+    transform: rotate(180deg);
+}
 
 .carousel-container.shown {
     display: flex;
@@ -217,24 +228,34 @@ button.prev, button.next {
     width: 100%;
     height: auto;
     min-height: 15rem;
-    /* border: 1px solid orange; */
-    overflow: hidden;
     padding: 8px;
     background: #090909;
+    overflow-x: auto;
+    /* white-space: nowrap; */
 }
 .carousel-container {
     display: none;
 }
 
+/* disable scroll bar */
+.carousel-container {
+    scrollbar-width: none;        /* Firefox */
+    -ms-overflow-style: none;     /* IE/Edge */
+}
+.carousel-container::-webkit-scrollbar {
+    display: none;                /* Chrome/Safari */
+}
+
 .carousel-container h3 {
-    margin-left: 2rem;
+    position: sticky;
+    left: 2rem;
 }
 
 .carousel {
     display: flex;
     gap: 5px;
-    /* width: 100%; */
     height: fit-content;
+    width: fit-content;
 }
 
 

@@ -11,6 +11,7 @@ from handymatt_media.metadata import video_metadata
 from ..loggers import LOGGER_HASHING_FAILED, LOGGER_COLLISIONS, LOADING_FAILED
 from ..schemas.video_data import VideoData
 from .metadata import set_NTFS_ADS_tag, get_NTFS_ADS_tag
+from ..util.general import extract_number_from_term
 
 
 #region - PUBLIC -------------------------------------------------------------------------------------------------------
@@ -292,6 +293,12 @@ def _add_extracted_movie_series(video_data: VideoData) -> VideoData:
     if title:
         movie, scene, scene_idx, series = _get_movie(title)
         if movie is not None:
+            # print('\nEXTRACTED SHIT FOR:', video_data.filename)
+            # print('movie:', movie)
+            # print('scene:', scene)
+            # print('scene_idx:', scene_idx)
+            # print('series:', series)
+            # print()
             video_data.movie_title = movie
             video_data.scene_title = scene
             video_data.scene_number = scene_idx
@@ -310,7 +317,7 @@ def _get_movie(title):
             part_idx = words.index(sc_delim)
             if part_idx > 0 and len(words) > part_idx+1:
                 part_word = _remove_chars(words[part_idx+1], ':;,꞉')
-                scene_idx = _extract_number_from_term(part_word)
+                scene_idx = extract_number_from_term(part_word)
                 if scene_idx is not None:
                     movie, scene  = _extract_movie_and_scene_titles(title.split(' '), part_idx)
             break
@@ -350,6 +357,10 @@ def _get_movie_series_from_movie(title):
             part_idx = title_words_lower.index(series_delim)
             movie_series_parts = title_words[:part_idx]
             return ' '.join(movie_series_parts)
+    
+    movie_idx = extract_number_from_term(title_words_lower[-1])
+    if movie_idx:
+        return ' '.join(title_words[:-1])
 
     return title
 
@@ -359,36 +370,6 @@ def _remove_chars(string, chars):
         string = string.replace(c, '')
     return string
 
-
-def _extract_number_from_term(x):
-
-    if x.isnumeric():
-        return x
-        
-    number_words = 'one,two,three,four,five,six,seven,eight,nine,ten'.split(',')
-    if x.lower() in number_words:
-        return number_words.index(x.lower()) + 1
-    
-    return _roman_to_int(x)
-
-
-def _roman_to_int(s):
-    roman_map = {'I': 1, 'V': 5, 'X': 10, 'L': 50,
-                'C': 100, 'D': 500, 'M': 1000}
-    prev = 0
-    total = 0
-
-    for c in reversed(s.upper()):
-        if c not in roman_map:
-            return None
-        val = roman_map[c]
-        if val < prev:
-            total -= val
-        else:
-            total += val
-            prev = val
-
-    return total
 
 
 #region - HELPERS ------------------------------------------------------------------------------------------------------

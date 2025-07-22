@@ -557,6 +557,7 @@ export class MyCard extends HTMLElement {
                     object-fit: contain;
                     overflow: hidden;
                     user-select: none;
+                    -webkit-user-drag: none;
 
                     * { box-sizing: border-box; }
                     

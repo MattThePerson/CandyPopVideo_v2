@@ -1,46 +1,91 @@
 import { injectComponents } from '../../shared/util/component.js'
 import { makeApiRequestGET } from '../../shared/util/request.js';
-import { generate_results } from '../../shared/util/load.js';
 import { load_video_player } from './player_old.js';
 import { load_recommended_videos } from './recommended_videos.js';
 
 injectComponents();
 
 
-const urlParams = new URLSearchParams(window.location.search);
+// #region - MAIN ------------------------------------------------------------------------------------------------------
 
+function main(video_hash) {
 
-//region - HANDLE RANDOM VIDEO REQUEST ---------------------------------------------------------------------------------
+    /* - video data --------------------------------------------------------- */
 
-if (urlParams.get('random') || !urlParams.get('hash')) {
-    console.log("Getting random video hash ...");
-    makeApiRequestGET('/api/get/random-video-hash', [], (arg) => {
-        const params = new URLSearchParams(location.search);
-        params.set('hash', arg.hash);
-        location.replace(location.pathname + '?' + params.toString())
+    makeApiRequestGET('/api/get/video-data', [video_hash], async (video_data) => {
+        console.log('videodata:', video_data);
+        
+        document.title = get_video_page_title(video_data);
+        
+        /* load video player */
+        load_video_player(video_hash, video_data, urlParams);
+        
+    
+        /* Hydrate video about section */
+        const info_section = $('section.video-info-section');
+        hydrate_info_section(info_section, video_data);
+    
+        /* load recommended (related & similar) videos */
+        const related_videos_section = $('section.related-videos-section').get(0);
+        const similar_videos_section = $('.similar-videos-section').get(0);
+        
+        load_recommended_videos(
+            video_data,
+            related_videos_section,
+            similar_videos_section,
+        );
+        
     });
+
+    
+    /* - video interactions ------------------------------------------------- */
+
+    makeApiRequestGET('/api/interact/get', [video_hash], vi => {
+
+        console.log('video_interactions:', vi);
+        
+        /* viewtime */
+        $('.viewtime').text('viewtime: ' + _format_seconds(vi.viewtime));
+        
+        /* likes */
+        const likes_button = $('.likes-button');
+        likes_button.text(`${vi.likes} likes`);
+        likes_button.on('click', () => {
+            $.post('/api/interact/likes/add/'+video_hash, (data, status) => {
+                if (status === 'success') {
+                    likes_button.text(`${data.likes} likes`);
+                }
+            })
+        })
+
+        /* date markers */
+        const date_marker_button = $('.add-dated-marker');
+        date_marker_button.on('click', () => {
+            // ...
+        });
+        
+        
+    });
+
 }
 
-let autoplayVideo = false;
-if (urlParams.get('autoplay'))
-    autoplayVideo = true;
+// #endregion
+
+// #region - METHODS ---------------------------------------------------------------------------------------------------
 
 
-//region - FUNCTIONS ---------------------------------------------------------------------------------------------------
-
-
-function hydrate_info_section(section, video_data) {
+function hydrate_info_section(section, vd) {
     
-    section.find('.title-bar h1').text( video_data.title );
-    section.find('.year').text( video_data.date_released );
+    section.find('.title-bar h1').text( vd.title );
+    section.find('.year').text( vd.date_released );
 
     
-    section.find('.collection').text( video_data.collection );
-    section.find('.collection').attr('href', `/pages/search/page.html?collection=${video_data.collection}`)
+    section.find('.collection').text( vd.collection );
+    section.find('.collection').attr('href', `/pages/search/page.html?collection=${vd.collection}`)
 
     // add studios
     const studios_cont = section.find('.studios-container');
-    [video_data.studio, video_data.line].forEach((studio, idx) => {
+    [vd.studio, vd.line].forEach((studio, idx) => {
         if (studio) {
             if (idx !== 0) studios_cont.append(`<div></div>`);
             studios_cont.append(/* html */`
@@ -51,7 +96,7 @@ function hydrate_info_section(section, video_data) {
     
     // add actors
     const actors_cont = section.find('.actors-container');
-    video_data.actors.forEach((actor, idx) => {
+    vd.actors.forEach((actor, idx) => {
         const actor_id = 'actor_link-' + actor.replace(/ /g, '_');
         if (idx !== 0) actors_cont.append('<div></div>');
         actors_cont.append(/* html */`
@@ -61,7 +106,7 @@ function hydrate_info_section(section, video_data) {
         /* request */
         $.get('/api/get/actor/'+actor, (data, status, response) => {
             if (response.status === 200) {
-                let video_dr = video_data.date_released;
+                let video_dr = vd.date_released;
                 if (video_dr && video_dr.length == 4) {
                     video_dr = video_dr + '-06-01';
                 }
@@ -73,14 +118,11 @@ function hydrate_info_section(section, video_data) {
         })
     })
 
-
-    
-    
     /* event listeners */
 
     /* check favourite */
     const is_fav_button = section.find('button.is-fav-button');
-    $.get(`/api/interact/favourites/check/${videoHash}`, (data, status) => {
+    $.get(`/api/interact/favourites/check/${vd.hash}`, (data, status) => {
         // console.log(status);
         if (status === 'success') {
             is_fav_button.addClass('loaded');
@@ -91,9 +133,9 @@ function hydrate_info_section(section, video_data) {
             is_fav_button.on('click', () => {
                 let change_favourite_route;
                 if (is_fav_button.hasClass('is-fav')) {
-                    change_favourite_route = `/api/interact/favourites/remove/${videoHash}`;
+                    change_favourite_route = `/api/interact/favourites/remove/${vd.hash}`;
                 } else {
-                    change_favourite_route = `/api/interact/favourites/add/${videoHash}`;
+                    change_favourite_route = `/api/interact/favourites/add/${vd.hash}`;
                 }
                 $.post(change_favourite_route, (data, status) => {
                     if (status === 'success') {
@@ -116,22 +158,12 @@ function get_video_page_title(video_data)  {
     return title;
 }
 
-function toggle_favourites_button_ON(butt) {
-    favouritesButton.innerText = 'REMOVE FAV';
-    favouritesButton.style.background = 'red';
-}
-
-function toggle_favourites_button_OFF(butt) {
-    favouritesButton.innerText = 'ADD FAV';
-    favouritesButton.style.background = 'orange';
-}
-
 
 function get_year_difference_between_dates(date1, date2) {
     if (!date1 || !date2) {
         return null;
     }
-    console.log(date1, date2);
+    // console.log(date1, date2);
     if (date1.length < 4 || date2.length < 4) {
         return null;
     }
@@ -145,11 +177,11 @@ function get_year_difference_between_dates(date1, date2) {
 }
 
 
+// #endregion
 
-//region - HELPER FUNCTIONS --------------------------------------------------------------------------------------------
+// #region - HELPERS ---------------------------------------------------------------------------------------------------
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
 
 function _format_seconds(seconds) {
 
@@ -168,101 +200,25 @@ function _format_seconds(seconds) {
 }
 
 
+// #endregion
 
+// #region - START -----------------------------------------------------------------------------------------------------
 
-//region - GLOBAL VARIABLES --------------------------------------------------------------------------------------------
+const urlParams = new URLSearchParams(window.location.search);
+const video_hash = urlParams.get('hash');
 
-let favouritesButton = document.getElementById('add-favourite-button')
+if (!video_hash || urlParams.has('random')) {
+    console.log("Getting random video hash ...");
+    $.get('/api/get/random-video-hash', (data, status) => {
+        if (status === 'success') {
+            const params = new URLSearchParams(location.search);
+            params.set('hash', data.hash);
+            // location.replace(location.pathname + '?' + params.toString())
+            window.location.search = params.toString();
+        }
+    })
 
+} else {
+    main(video_hash);
 
-
-//region - BACKEND REQUEST ---------------------------------------------------------------------------------------------
-
-const videoHash = urlParams.get('hash');
-console.log("Video hash: " + videoHash);
-
-if (videoHash != null) {
-
-    /* - video data --------------------------------------------------------- */
-
-    makeApiRequestGET('/api/get/video-data', [videoHash], async (videodata) => {
-        console.log('videodata:', videodata);
-        
-        document.title = get_video_page_title(videodata);
-        
-        /* load video player */
-        load_video_player(videoHash, videodata, urlParams);
-        
-    
-        /* Hydrate video about section */
-        const info_section = $('section.video-info-section');
-        hydrate_info_section(info_section, videodata);
-    
-
-        /* load recommended (related & similar) videos */
-        const related_videos_section = $('section.related-videos-section').get(0);
-        const similar_videos_section = $('.similar-videos-section').get(0);
-        
-        load_recommended_videos(
-            videodata,
-            related_videos_section,
-            similar_videos_section,
-            videoHash,
-        );
-
-        // load_related_videos(videodata, related_videos_section);
-        
-
-        
-        /* load similar videos */
-
-        // const load_similar_videos = (results_container, video_hash, start_idx, load_amount) => {
-        //     makeApiRequestGET('/api/query/get/similar-videos', [video_hash, start_idx + 1, load_amount], search_results => {
-        //         console.log('similar videos:', search_results);
-        //         generate_results(search_results, results_container);
-        //     });
-        //     return start_idx + load_amount;
-        // };
-        
-        // const similar_videos_load_amount = 8;
-        // let similar_videos_loaded = 0;
-        
-        // similar_videos_loaded = load_similar_videos(results_container, videoHash, similar_videos_loaded, similar_videos_load_amount);
-        // document.getElementById('expand-results-button').addEventListener('click', () => {
-        //     similar_videos_loaded = load_similar_videos(results_container, videoHash, similar_videos_loaded, similar_videos_load_amount);
-        // });
-
-        
-    });
-
-    
-    /* - video interactions ------------------------------------------------- */
-
-    makeApiRequestGET('/api/interact/get', [videoHash], vi => {
-
-        console.log('video_interactions:', vi);
-        
-        /* viewtime */
-        $('.viewtime').text('viewtime: ' + _format_seconds(vi.viewtime));
-        
-        /* likes */
-        const likes_button = $('.likes-button');
-        likes_button.text(`${vi.likes} likes`);
-        likes_button.on('click', () => {
-            $.post('/api/interact/likes/add/'+videoHash, (data, status) => {
-                if (status === 'success') {
-                    likes_button.text(`${data.likes} likes`);
-                }
-            })
-        })
-
-        /* date markers */
-        const date_marker_button = $('.add-dated-marker');
-        date_marker_button.on('click', () => {
-            // ...
-        });
-        
-        
-    });
-    
 }

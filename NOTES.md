@@ -10,21 +10,22 @@ TINY_TERM:
 - [frontend] catalogue page: add thresh and item counts
 
 SHORT_TERM:
-- [frontend] [finish] related videos section
 - [media_gen] [fix] seek thumbs alignment
 - [frontend] create PassionPlayer MVP
+- [frontend] figure out why middle click drag opens results card hrefs
+- [frontend] add video rating
 
 MEDIUM_TERM:
 - [data] port old favourites
 - [frontend] [finish] search panel
+
 - [frontend] [finish] catalogue page
-- [frontend] [finish] creating PassionPlayer
+- [frontend] [finish] PassionPlayer
 - [frontend] [add] search panel: list/compact list view & page result count
 - [backend] Get performer (and studio) embeddings working
-- [collection] Handle PMVHaven collection
-- [collection] Handle collisions (Curated v. PH)
 - [frontend] [finish] video page below section
 - [frontend/backend] Redo dashboard (minimal)
+- [backend] figure out way to toggle NoCacheMiddleware for dev/prod purposes
 
 LONG_TERM:
 - [admin] promote to others/get others to test
@@ -35,9 +36,10 @@ FAR_FUTURE:
 - [db] migrate to proper column structure
 - [backend] rewrite in Go
 
-MILESTONES:
+COLLECTION:
 - [media] Generate preview media for entire collection
-
+- [collection] Handle PMVHaven collection
+- [collection] Handle collisions (Curated v. PH)
 
 OPTIONAL:
 - [backend] Add method of seeing tf-idf tokens
@@ -53,6 +55,7 @@ THEORETICAL:
 
 
 
+<!-- - [frontend] [finish] related videos section -->
 <!-- - [media] Convert entire collection to mp4 -->
 <!-- - [media] Transcode non remuxable -->
 <!-- - [backend] Review collection ignore/include folder step -->
@@ -78,6 +81,24 @@ THEORETICAL:
 <!-- - Get seek thumbs sprite sheets working -->
 <!-- - Get media generation working -->
 
+
+
+## GO REWRITE PATH
+
+0. Migrate DB
+1. Minimal Viable Product:
+  - serve media (no ensures)
+  - api router
+  - interact router
+2. Add non-TFIDF search
+  - search videos
+  - get catalogue
+3. Add media ensuring (w/ python)
+4. Add TFIDF search stuff (w/ python)
+5. Frontend scan/media control (w/ python)
+6. (Optional, Discouraged) Backend manager
+  - scanning
+  - media generation (ffmpeg + porting opencv implementations)
 
 
 ## VIDEO PAGE
