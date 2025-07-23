@@ -7,6 +7,7 @@ export class MyCard extends HTMLElement {
 
     constructor() {
         super();
+        /* attributes */
         this.USE_VIDEO_TEASERS = (this.getAttribute('use_video_teasers') == 'true')
         this.video_hash = this.getAttribute('video_hash');
 
@@ -31,6 +32,13 @@ export class MyCard extends HTMLElement {
         this.card_class = (this.getAttribute('highlighted') == 'true') ? "card highlighted" : "card";
         this.card_width = this.getAttribute('width') || "24rem";
         this.aspect_ratio = this.getAttribute('aspect_ratio') || "16/9";
+
+        /* variables */
+        this.actors = this.actors_str.split(',').filter(x => x !== '');
+        this.max_initial_actors = 4;
+
+        this.tags = this.tags_str.split(',').filter(x => x !== '')
+        this.max_initial_tag_chars = 50;
 
     }
 
@@ -187,8 +195,40 @@ export class MyCard extends HTMLElement {
 
         })
 
+        /* add remaining actors/tags */
+        const add_actors_button = $shadow.find('.add-remaining-actors-button');
+        add_actors_button.on('click', async () => {
+            add_actors_button.remove();
+            const actors_to_add = this.actors.slice(this.max_initial_actors);
+            for (let i = 0; i < actors_to_add.length; i++) {
+                const actor = actors_to_add[i];
+                $shadow.find('.actors-bar').append(/* html */`
+                    ${ (i === 0) ? "" : "<span></span>" }
+                    <a href="/pages/search/page.html?actor=${actor}">
+                        ${actor}
+                    </a>
+                `);
+                await this.sleep(25);
+            }
+        });
+
+        const add_tags_button = $shadow.find('.add-remaining-tags-button');
+        add_tags_button.on('click', async () => {
+            add_tags_button.remove();
+            const [_, tags_to_add] = this.filter_tags(this.tags, this.max_initial_tag_chars);
+            // tags_to_add.forEach(async (x) => {
+            for (let x of tags_to_add) {
+                $shadow.find('.tags-bar').append(/* html */ `
+                    <a href="/pages/search/page.html?include_terms=${x}">
+                        ${x}
+                    </a>
+                `);
+                await this.sleep(25);
+            }
+        });
+
     }
-    
+
 
     // #endregion
     
@@ -211,20 +251,39 @@ export class MyCard extends HTMLElement {
         ).join('\n')
         
         // actors html
-        const actors_html = this.actors_str.split(',').filter(x => x !== '').map((x, idx) =>
-            `
+        const actors_to_add = this.actors.slice(0, this.max_initial_actors);
+        let actors_html = actors_to_add.map((x, idx) => /* html */`
             ${ (idx === 0) ? "" : "<span></span>" }
             <a href="/pages/search/page.html?actor=${x}">
                 ${x}
-            </a>`
-        ).join('\n')
-        
+            </a>
+        `).join('\n');
+        if (this.actors.length > this.max_initial_actors) {
+            actors_html += /* html */`
+                <span></span>
+                <a style="cursor: pointer; color: #888;" class="add-remaining-actors-button">
+                    ${this.actors.length - this.max_initial_actors} more
+                </a>
+            `;
+        }
+
         // tags html
-        const tags_html = this.tags_str.split(',').filter(x => x !== '').map((x, idx) =>
-            `<a href="/pages/search/page.html?include_terms=${x}">
+        const [tags_to_add, tags_to_add_later] = this.filter_tags(this.tags, this.max_initial_tag_chars)
+        let tags_html = tags_to_add.map((x, idx) => /* html */`
+            <a href="/pages/search/page.html?include_terms=${x}">
                 ${x}
-            </a>`
-        ).join('\n')
+            </a>
+        `).join('\n')
+        if (tags_to_add_later.length > 0) {
+            tags_html += /* html */ `
+                <a 
+                    class="add-remaining-tags-button"
+                    style="cursor: pointer; background: #222; color: #ccc !important;"
+                >
+                    ${tags_to_add_later.length} more
+                </a>
+            `;
+        }
 
         // title
         let title = this.video_title.replace(';', ':');
@@ -272,45 +331,6 @@ export class MyCard extends HTMLElement {
                             </span>
                             <span class="rating">B+</span>
                             <span style="display: none" class="has-subs">subs</span>
-                            <style>
-                                .details-bar {
-                                    font-size: 0.71rem;
-                                    justify-content: space-between;
-                                    color: #999;
-                                    padding: 0.25rem 0.7rem;
-                                }
-                                .left-side {
-                                    gap: 0.65rem;
-                                }
-                                .likes-span {
-                                    display: none;
-                                    align-items: center;
-                                    gap: 1.5px;
-                                    text-align: center;
-                                }
-                                .amount {
-                                    /* margin-bottom: 2px; */
-                                    background: purple;
-                                }
-                                .likes-span svg {
-                                    height: 10px;
-                                    width: auto;
-                                }
-                                .likes-span svg path {
-                                    fill: rgba(255, 0, 0, 0.774);
-                                }
-                                .rating {
-                                    font-family: 'Jaro';
-                                    font-size: 0.8rem;
-                                    color: #bb9;
-                                }
-                                .has-subs {
-                                    border: 1px solid grey;
-                                    border-radius: 4px;
-                                    padding: 0.5px 2px;
-                                    padding-top: 0;
-                                }
-                            </style>
                         </div>
                         <div>${this.format_date_added(this.date_added)} ago</div>
                     </div>
@@ -327,29 +347,6 @@ export class MyCard extends HTMLElement {
                                 </g></g>
                             </svg>
 
-                            <style>
-                                .is-fav-button {
-                                    all: unset;
-                                    height: 1.3rem;
-                                    min-width: 1.2rem;
-                                    margin: 0.1rem 0.6rem;
-                                    padding: 0.2rem;
-                                    cursor: pointer;
-                                }
-                                .is-fav-button svg {
-                                    display: none;
-                                    height: 100%;
-                                    width: auto;
-                                }
-                                .is-fav-button .off path { fill: rgba(245, 245, 220, 0.801); }
-                                .is-fav-button .on path  { fill: rgba(236, 195, 59, 0.801); }
-                                
-                                .is-fav-button.loaded.is-fav       svg.on  { display: block; }
-                                .is-fav-button.loaded:not(.is-fav) svg.off { display: block; }
-                                .is-fav-button:active svg {
-                                    opacity: 0.8;
-                                }
-                            </style>
                         </button>
                         <a class="title" href="/pages/video/page.html?hash=${this.video_hash}">
                             <h2>${title}</h2>
@@ -502,6 +499,23 @@ export class MyCard extends HTMLElement {
         }
     }
 
+    filter_tags(tags, max_chars) {
+        const initial = [];
+        let i = 0;
+        let cumu = 0;
+        while (i < tags.length && cumu + tags[i].length < max_chars) {
+            initial.push(tags[i]);
+            cumu += tags[i].length;
+            i++;
+        }
+        const remaining = tags.slice(i);
+        return [initial, remaining];
+    }
+
+    async sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
     
     // #endregion
     
@@ -652,6 +666,46 @@ export class MyCard extends HTMLElement {
                     align-items: center;
                 }
 
+                /* details bar */
+                .details-bar {
+                    font-size: 0.71rem;
+                    justify-content: space-between;
+                    color: #999;
+                    padding: 0.25rem 0.7rem;
+                }
+                .left-side {
+                    gap: 0.65rem;
+                }
+                .likes-span {
+                    display: none;
+                    align-items: center;
+                    gap: 1.5px;
+                    text-align: center;
+                }
+                .amount {
+                    /* margin-bottom: 2px; */
+                    background: purple;
+                }
+                .likes-span svg {
+                    height: 10px;
+                    width: auto;
+                }
+                .likes-span svg path {
+                    fill: rgba(255, 0, 0, 0.774);
+                }
+                .rating {
+                    font-family: 'Jaro';
+                    font-size: 0.8rem;
+                    color: #bb9;
+                }
+                .has-subs {
+                    border: 1px solid grey;
+                    border-radius: 4px;
+                    padding: 0.5px 2px;
+                    padding-top: 0;
+                }
+
+                /* title bar */
                 .title-bar {
                     padding: 0 4px;
                     align-items: start;
@@ -667,6 +721,30 @@ export class MyCard extends HTMLElement {
                     }
                 }
 
+                /* is-favourite button */
+                .is-fav-button {
+                    all: unset;
+                    height: 1.3rem;
+                    min-width: 1.2rem;
+                    margin: 0.1rem 0.6rem;
+                    padding: 0.2rem;
+                    cursor: pointer;
+                }
+                .is-fav-button svg {
+                    display: none;
+                    height: 100%;
+                    width: auto;
+                }
+                .is-fav-button .off path { fill: rgba(245, 245, 220, 0.801); }
+                .is-fav-button .on path  { fill: rgba(236, 195, 59, 0.801); }
+                
+                .is-fav-button.loaded.is-fav       svg.on  { display: block; }
+                .is-fav-button.loaded:not(.is-fav) svg.off { display: block; }
+                .is-fav-button:active svg {
+                    opacity: 0.8;
+                }
+                
+                /* studio-actors container */
                 .studio-actors-container {
                     margin: 0.1rem 1rem;
                     margin-left: 2rem;
