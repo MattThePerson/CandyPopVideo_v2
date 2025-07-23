@@ -53,6 +53,7 @@ THEORETICAL:
 
 
 
+<!-- - [frontend] add actor cards -->
 <!-- - [backend] figure out way to toggle NoCacheMiddleware for dev/prod purposes -->
 <!-- - [frontend] [result_card] add initial limit to actors & tags -->
 <!-- - [frontend] [finish] related videos section -->

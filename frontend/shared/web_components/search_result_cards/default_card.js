@@ -308,10 +308,14 @@ export class MyCard extends HTMLElement {
                     <img class="teaser-thumbs" alt="">
                     <video class="teaser-video" preload="none" muted loop autoplay></video>
                     <div class="stats">
-                        <div class="collection">${this.collection}</div>
+                        <div title="collection" class="collection">${this.collection}</div>
                         <div class="top-right">
-                            <div class="resolution">${this.resolution}p</div>
-                            <div class="bitrate">${Math.round(this.bitrate/100)/10}mb</div>
+                            <div class="resolution" title="vertical resolution">
+                                ${this.resolution}p
+                            </div>
+                            <div class="bitrate" title="bitrate mb/s">
+                                ${Math.round(this.bitrate/100)/10}mb
+                            </div>
                             <div class="fps" style="display: none;">${this.fps}</div>
                         </div>
                         <div class="duration">${this.duration}</div>
@@ -322,20 +326,24 @@ export class MyCard extends HTMLElement {
                 <div class="card-info-container">
                     <div class="details-bar">
                         <div class="left-side">
-                            <span class="viewtime">vt unknown</span>
+                            <span title="view time" class="viewtime">vt unknown</span>
                             <span class="likes-span">
                                 <div class="likes">-1</div>
                                 <svg width="32px" height="32px" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M1.24264 8.24264L8 15L14.7574 8.24264C15.553 7.44699 16 6.36786 16 5.24264V5.05234C16 2.8143 14.1857 1 11.9477 1C10.7166 1 9.55233 1.55959 8.78331 2.52086L8 3.5L7.21669 2.52086C6.44767 1.55959 5.28338 1 4.05234 1C1.8143 1 0 2.8143 0 5.05234V5.24264C0 6.36786 0.44699 7.44699 1.24264 8.24264Z" fill="#000000"/>
                                 </svg>
                             </span>
-                            <span class="rating">B+</span>
-                            <span style="display: none" class="has-subs">subs</span>
+                            <span title="rating" class="rating">
+                                B+
+                            </span>
+                            <span title="subtitles available" class="has-subs" style="display: none">subs</span>
                         </div>
-                        <div>${this.format_date_added(this.date_added)} ago</div>
+                        <div title="time ago added">
+                            ${this.format_date_added(this.date_added)} ago
+                        </div>
                     </div>
                     <div class="title-bar">
-                        <button class="is-fav-button">
+                        <button title="toggle favourite" class="is-fav-button">
                             <svg class="off" width="32px" height="32px" viewBox="-4 0 30 30" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:sketch="http://www.bohemiancoding.com/sketch/ns">
                                 <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd" sketch:type="MSPage"><g id="Icon-Set" sketch:type="MSLayerGroup" transform="translate(-417.000000, -151.000000)" fill="#000000">
                                     <path d="M437,177 C437,178.104 436.104,179 435,179 L428,172 L421,179 C419.896,179 419,178.104 419,177 L419,155 C419,153.896 419.896,153 421,153 L435,153 C436.104,153 437,153.896 437,155 L437,177 L437,177 Z M435,151 L421,151 C418.791,151 417,152.791 417,155 L417,177 C417,179.209 418.791,181 421,181 L428,174 L435,181 C437.209,181 439,179.209 439,177 L439,155 C439,152.791 437.209,151 435,151 L435,151 Z" id="bookmark" sketch:type="MSShapeGroup"></path>
@@ -354,8 +362,10 @@ export class MyCard extends HTMLElement {
                     </div>
                     <div class="studio-actors-container">
                         <div class="year-studio-bar">
-                            <div class="year" style="${year_el_style}">${date_released_fmt}</div>
-                            <div class="studios-bar">
+                            <div title="date released" class="year" style="${year_el_style};">
+                                ${date_released_fmt}
+                            </div>
+                            <div title="studio" class="studios-bar">
                                 ${studios_html}
                             </div>
                         </div>
@@ -536,6 +546,7 @@ export class MyCard extends HTMLElement {
                     outline: 0.5px solid #4441;
                     background: black;
                     display: block;
+                    cursor: default;
                 }
                 .card.highlighted {
                     box-shadow: 0 0 10px yellow;

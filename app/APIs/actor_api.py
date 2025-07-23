@@ -19,7 +19,7 @@ REQUEST_HEADERS = {
 #region - PUBLIC -------------------------------------------------------------------------------------------------------
 
 
-def get_actor_info(name):
+def get_actor_info(name: str) -> dict|None:
     
     info_file = f'{ACTOR_INFO_DIR}/{name}/info.json'
     
@@ -53,6 +53,7 @@ def _scrape_actor_info(name, save_dir, download_media=True) -> dict|None:
         'name': name,
         'date_of_birth': None,
         'galleries': [],
+        'aka': [],
     }
 
     info_bp = _scrape_babepedia(name, save_dir, download_media=download_media)
@@ -61,6 +62,7 @@ def _scrape_actor_info(name, save_dir, download_media=True) -> dict|None:
     
     if 'Born' in info_bp:
         info['date_of_birth'] = _format_date_of_birth(info_bp['Born'])
+    info['aka'] = info_bp.get('aka', [])
     info['babepedia'] = info_bp
     
     # save json
@@ -128,8 +130,8 @@ def _parse_babepedia_info(soup):
     galls = []
     for gall in soup.select('.gallery'):
         for a_el in gall.select('a'):
-            # print(a_el['href'])
-            galls.append(a_el['href'])
+            if '.php?' not in a_el['href']:
+                galls.append(a_el['href'])
     info['galleries'] = galls
     
     return info

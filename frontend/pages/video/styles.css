@@ -15,7 +15,7 @@ section { width: 100%; }
 
 section.video-player-section {
     width: 100%;
-    height: 45rem;
+    height: 42rem;
 }
 
 section.related-videos-section {
@@ -69,18 +69,19 @@ section.video-info-section {
     font-size: 20px;
 }
 
-.actors-container, .studios-container {
+.studios-container {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     font-size: 20px;
     color: #bbb;
 }
-.actors-container div, .studios-container div {
-    background: #eee;
-    width: 5px;
-    height: 5px;
-    transform: rotate(45deg);
+
+.actors-container {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
 }
 
 .video-info-section a {

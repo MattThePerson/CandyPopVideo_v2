@@ -2,6 +2,7 @@ import { injectComponents } from '../../shared/util/component.js'
 import { makeApiRequestGET } from '../../shared/util/request.js';
 import { load_video_player } from './player_old.js';
 import { load_recommended_videos } from './recommended_videos.js';
+import { get_actor_card } from './components.js';
 
 injectComponents();
 
@@ -19,7 +20,6 @@ function main(video_hash) {
         
         /* load video player */
         load_video_player(video_hash, video_data, urlParams);
-        
     
         /* Hydrate video about section */
         const info_section = $('section.video-info-section');
@@ -36,7 +36,7 @@ function main(video_hash) {
         );
         
     });
-
+    
     
     /* - video interactions ------------------------------------------------- */
 
@@ -79,11 +79,10 @@ function hydrate_info_section(section, vd) {
     section.find('.title-bar h1').text( vd.title );
     section.find('.year').text( vd.date_released );
 
-    
     section.find('.collection').text( vd.collection );
     section.find('.collection').attr('href', `/pages/search/page.html?collection=${vd.collection}`)
 
-    // add studios
+    /* add studios */
     const studios_cont = section.find('.studios-container');
     [vd.studio, vd.line].forEach((studio, idx) => {
         if (studio) {
@@ -94,29 +93,32 @@ function hydrate_info_section(section, vd) {
         }
     })
     
-    // add actors
+    /* add actors */
+    let video_dr = vd.date_released;
+    if (video_dr && video_dr.length == 4) video_dr = video_dr + '-06-01';
     const actors_cont = section.find('.actors-container');
-    vd.actors.forEach((actor, idx) => {
-        const actor_id = 'actor_link-' + actor.replace(/ /g, '_');
-        if (idx !== 0) actors_cont.append('<div></div>');
-        actors_cont.append(/* html */`
-            <a id="${actor_id}" href="/pages/search/page.html?actor=${actor}">${actor}</a>
-        `);
-
-        /* request */
-        $.get('/api/get/actor/'+actor, (data, status, response) => {
-            if (response.status === 200) {
-                let video_dr = vd.date_released;
-                if (video_dr && video_dr.length == 4) {
-                    video_dr = video_dr + '-06-01';
-                }
+    vd.actors.forEach((actor) => {
+        const [actor_card, callback] = get_actor_card(actor);
+        actors_cont.append(actor_card);
+        $.get('/api/get/actor/'+actor, (data, status) => {
+            console.log(actor, status, data);
+            if (status === 'success') {
                 const age_its = get_year_difference_between_dates(data.date_of_birth, video_dr);
-                if (age_its) {
-                    document.getElementById(actor_id).innerText += ` (${age_its} y/o ITS)`
-                }
+                let pp;
+                try {
+                    const pp_rel = data.galleries[0];
+                    pp = '/static/actor-store' + pp_rel;
+                } catch {}
+
+                callback({
+                    video_count: null, // TODO: figure out faster way to get video count at this point
+                    age_its: age_its || null,
+                    profile_pic: pp,
+                    aka: data.aka,
+                });
             }
-        })
-    })
+        });
+    });
 
     /* event listeners */
 
@@ -157,6 +159,7 @@ function get_video_page_title(video_data)  {
     title += ` - ${video_data.title}`;
     return title;
 }
+
 
 
 function get_year_difference_between_dates(date1, date2) {

@@ -77,6 +77,11 @@
     src: url('../../static/fonts/Inria_Serif/InriaSerif-Bold.ttf');
 }
 
+@font-face {
+    font-family: "Nunito";
+    src: url('../../static/fonts/Nunito/Nunito-VariableFont_wght.ttf');
+}
+
 
 /* ALL & BODY */
 

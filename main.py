@@ -32,8 +32,7 @@ app = FastAPI(lifespan=lifespan)
 
 if os.getenv("DEV_MODE") == "1":
     print('[main] DEV_MODE: Using NoCacheMiddleware')
-    # Prevent caching of html, js, css
-    class NoCacheMiddleware(BaseHTTPMiddleware):
+    class NoCacheMiddleware(BaseHTTPMiddleware): # Prevent caching of html, js, css
         async def dispatch(self, request, call_next):
             response = await call_next(request)
             if request.url.path.endswith((".html", ".js", ".css")):

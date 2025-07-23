@@ -69,8 +69,8 @@ def ROUTE_get_random_spotlight_video():
 
 
 # GET ALL PERFORMERS
-@api_router.get("/get/all-performers")
-def ROUTE_get_performers():
+@api_router.get("/get/all-actors")
+def ROUTE_get_actors():
     raise HTTPException(status_code=501, detail='Not implemented')
     print(len(state.videos_dict))
     items = ff.getPerformers(state.videos_dict)
@@ -78,6 +78,16 @@ def ROUTE_get_performers():
     if items:
         return jsonify(generateReponse(items)), 200
     return jsonify(), 500
+
+
+# GET ACTOR SCENE COUNT   TODO: Figure out better way to do this shit
+@api_router.get("/get/actor-video-count/{name}")
+def ROUTE_get_actor_video_count(name: str):
+    video_count = 0
+    for video_data in db.read_table_as_dict('videos').values():
+        if name.lower() in [ act.lower() for act in video_data.get('actors', []) ]:
+            video_count += 1
+    return { 'video_count': video_count }
 
 
 # GET ALL STUDIOS
@@ -138,11 +148,12 @@ def ROUTE_get_line(line: str):
 # GET ACTOR
 @api_router.get("/get/actor/{name}")
 def ROUTE_get_actor(name: str):
-    info = actor_api.get_actor_info(name)
-    if info is None:
-        info = actor_api.fetch_actor_info(name)
-        if info is None:
-            return Response(status_code=204)
+    api_info = actor_api.get_actor_info(name)
+    if api_info is None:
+        api_info = actor_api.fetch_actor_info(name)
+    info = {}
+    if api_info:
+        info = api_info
     return info
 
 
