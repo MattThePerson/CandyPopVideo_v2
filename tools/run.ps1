@@ -9,23 +9,26 @@ Set-Location ..
 
 # Check if .venv exists
 if (-Not (Test-Path ".venv\Scripts\activate.ps1")) {
-    Write-Host "[VENV] No venv created, run tools\install.bat"
+    Write-Host "[.ps1] No venv created, run tools\install.bat"
     exit 1
 }
 
 # [DEV] Handle .ps1 script options
 $forwardArgs = @()
-# $env:USE_OLD_FRONTEND = "1"
+$env:DEV_MODE = "0"
 
 foreach ($arg in $args) {
     if ($arg -eq "--use-new-frontend") {
-        # Write-Host "[DEV] Captured '--use-new-frontend' command"
-        # $env:USE_OLD_FRONTEND = "0"
+        # Write-Host "[.ps1] Captured '--use-new-frontend' command"
+        
+    } elseif ($arg -eq "--dev") {
+        Write-Host "[.ps1] Captured '--dev' command"
+        $env:DEV_MODE = "1"
     } else {
         $forwardArgs += $arg
     }
 }
 
 # Start uvicorn
-Write-Host "[START] Starting uvicorn on port $BACKEND_PORT and extra args: '$forwardArgs'"
+Write-Host "[.ps1] Starting uvicorn on port $BACKEND_PORT and extra args: '$forwardArgs'"
 & .\.venv\Scripts\python.exe -m uvicorn main:app --host 0.0.0.0 --workers 1 --port $BACKEND_PORT @forwardArgs

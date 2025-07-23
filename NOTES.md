@@ -7,13 +7,13 @@
 
 TINY_TERM:
 - [frontend] [add] dated marker button/ui
-- [frontend] catalogue page: add thresh and item counts
+- [frontend] add video rating
 
 SHORT_TERM:
+- [frontend] figure out why middle click drag opens results card hrefs
+- [frontend] catalogue page: add thresh and item counts
 - [media_gen] [fix] seek thumbs alignment
 - [frontend] create PassionPlayer MVP
-- [frontend] figure out why middle click drag opens results card hrefs
-- [frontend] add video rating
 
 MEDIUM_TERM:
 - [data] port old favourites
@@ -25,7 +25,6 @@ MEDIUM_TERM:
 - [backend] Get performer (and studio) embeddings working
 - [frontend] [finish] video page below section
 - [frontend/backend] Redo dashboard (minimal)
-- [backend] figure out way to toggle NoCacheMiddleware for dev/prod purposes
 
 LONG_TERM:
 - [admin] promote to others/get others to test
@@ -54,7 +53,8 @@ THEORETICAL:
 
 
 
-
+<!-- - [backend] figure out way to toggle NoCacheMiddleware for dev/prod purposes -->
+<!-- - [frontend] [result_card] add initial limit to actors & tags -->
 <!-- - [frontend] [finish] related videos section -->
 <!-- - [media] Convert entire collection to mp4 -->
 <!-- - [media] Transcode non remuxable -->
