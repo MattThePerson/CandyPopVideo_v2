@@ -30,8 +30,6 @@ export function get_actor_card(name) {
                 .actor-card {
                     display: flex;
                     align-items: center;
-                    min-width: 10rem;
-                    min-height: 5rem;
                     height: fit-content;
                     background: black;
                     text-decoration: none;
@@ -40,7 +38,7 @@ export function get_actor_card(name) {
                 }
                 /* profile pic */
                 .pic-container {
-                    --size: 5rem;
+                    --size: 4.5rem;
                     width: var(--size);
                     height: var(--size);
                     min-width: var(--size);
@@ -91,7 +89,7 @@ export function get_actor_card(name) {
             $shadow.find('.age-its').text(age_its + ' y/o ITS');
         }
         if (aka) {
-            $shadow.find('.name').attr('title', 'aka: '+aka);
+            $shadow.find('.name').attr('title', 'aka: '+ aka);
         }
 
         /* add profile pic */

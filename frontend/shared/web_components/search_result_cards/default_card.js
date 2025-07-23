@@ -286,9 +286,9 @@ export class MyCard extends HTMLElement {
         }
 
         // title
-        let title = this.video_title.replace(';', ':');
-        if (this.dvd_code !== 'null') title = `[${this.dvd_code}] ` + title;
-        if (title.length > 80) title = title.slice(0, 78) + '...';
+        let title_fmt = this.video_title.replace(';', ':');
+        if (this.dvd_code !== 'null') title_fmt = `[${this.dvd_code}] ` + title_fmt;
+        const title_short = (title_fmt.length > 80) ? title_fmt.slice(0, 78) + '...' : title_fmt;
         
         const year_el_style = (date_released_fmt !== 'null') ? '' : 'display: none;';
         
@@ -357,7 +357,7 @@ export class MyCard extends HTMLElement {
 
                         </button>
                         <a class="title" href="/pages/video/page.html?hash=${this.video_hash}">
-                            <h2>${title}</h2>
+                            <h2 title="${title_fmt}">${title_short}</h2>
                         </a>
                     </div>
                     <div class="studio-actors-container">

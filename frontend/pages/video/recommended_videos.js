@@ -192,7 +192,7 @@ async function get_filtered_similar_videos(videos_to_ignore, target_video_hash) 
         related_vid_hashes.add(vid_obj.hash);
     }
     similar_videos = similar_videos.filter(vid => !related_vid_hashes.has(vid.hash));
-    console.log('similar videos removed:', (query_amount-similar_videos.length));
+    console.debug('similar videos removed:', (query_amount-similar_videos.length));
     return similar_videos;
 }
 
@@ -269,7 +269,6 @@ function configure_carousel(videos, target_video_hash, section, identifier, titl
     let carousel_content = '';
     videos.forEach((video, idx) => {
         const placeholder_id = identifier + '-placeholder-' + idx;
-        // console.log(placeholder_id);
         carousel_content += _get_placeholder_html(placeholder_id, card_width, video.title);
         card_html_store[placeholder_id] = video;
         if (video.hash === target_video_hash) {
@@ -393,7 +392,6 @@ function _carousel_first_load(carouselContainer, card_html_store, card_width) {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
                 observer.unobserve(entry.target);
-                console.log(card_html_store[entry.target.id]);
                 const card_html = _get_video_card_html({
                     vd: card_html_store[entry.target.id],
                     card_width: card_width,

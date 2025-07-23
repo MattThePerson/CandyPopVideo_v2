@@ -80,16 +80,6 @@ def ROUTE_get_actors():
     return jsonify(), 500
 
 
-# GET ACTOR SCENE COUNT   TODO: Figure out better way to do this shit
-@api_router.get("/get/actor-video-count/{name}")
-def ROUTE_get_actor_video_count(name: str):
-    video_count = 0
-    for video_data in db.read_table_as_dict('videos').values():
-        if name.lower() in [ act.lower() for act in video_data.get('actors', []) ]:
-            video_count += 1
-    return { 'video_count': video_count }
-
-
 # GET ALL STUDIOS
 @api_router.get("/get/all-studios")
 def ROUTE_get_studios():
@@ -155,6 +145,32 @@ def ROUTE_get_actor(name: str):
     if api_info:
         info = api_info
     return info
+
+
+
+# TEMP TODO: Find better solution
+
+
+# GET ACTOR SCENE COUNT
+@api_router.get("/get/actor-video-count/{name}")
+def ROUTE_get_actor_video_count(name: str):
+    video_count = 0
+    for video_data in db.read_table_as_dict('videos').values():
+        if name.lower() in [ act.lower() for act in video_data.get('actors', []) ]:
+            video_count += 1
+    return { 'video_count': video_count }
+
+# GET ACTOR SCENE COUNT
+@api_router.get("/get/studio-video-count/{name}")
+def ROUTE_get_studio_video_count(name: str):
+    name = name.lower()
+    video_count = 0
+    for video_data in db.read_table_as_dict('videos').values():
+        for x in ['studio', 'line']:
+            if name == (video_data.get(x) or '').lower():
+                video_count += 1
+    return { 'video_count': video_count }
+
 
 
 

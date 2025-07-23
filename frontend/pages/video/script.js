@@ -14,7 +14,7 @@ function main(video_hash) {
     /* - video data --------------------------------------------------------- */
 
     makeApiRequestGET('/api/get/video-data', [video_hash], async (video_data) => {
-        console.log('videodata:', video_data);
+        console.debug('VIDEO DATA:', video_data);
         
         document.title = get_video_page_title(video_data);
         
@@ -42,7 +42,7 @@ function main(video_hash) {
 
     makeApiRequestGET('/api/interact/get', [video_hash], vi => {
 
-        console.log('video_interactions:', vi);
+        console.debug('INTERACTIONS:', vi);
         
         /* viewtime */
         $('.viewtime').text('viewtime: ' + _format_seconds(vi.viewtime));
@@ -74,9 +74,16 @@ function main(video_hash) {
 // #region - METHODS ---------------------------------------------------------------------------------------------------
 
 
+/**
+ * 
+ * @param {JQuery<HTMLElement>} section 
+ * @param {Object} vd 
+ */
 function hydrate_info_section(section, vd) {
     
-    section.find('.title-bar h1').text( vd.title );
+    let title_fmt = vd.title.replace(';', ':');
+    if (vd.dvd_code) title_fmt = `[${vd.dvd_code}] ` + title_fmt;
+    section.find('.title-bar h1').text( title_fmt );
     section.find('.year').text( vd.date_released );
 
     section.find('.collection').text( vd.collection );
@@ -87,9 +94,15 @@ function hydrate_info_section(section, vd) {
     [vd.studio, vd.line].forEach((studio, idx) => {
         if (studio) {
             if (idx !== 0) studios_cont.append(`<div></div>`);
-            studios_cont.append(/* html */`
-                <a href="/pages/search/page.html?studio=${studio}">${studio}</a>
-            `);
+            const el = document.createElement('a');
+            el.href = '/pages/search/page.html?studio=' + studio;
+            el.innerText = studio;
+            studios_cont.append(el);
+            $.get('/api/get/studio-video-count/' + studio, (data, status) => {
+                if (status === "success") {
+                    el.innerText += ` (${data.video_count} vids)`
+                }
+            })
         }
     })
     
@@ -101,7 +114,7 @@ function hydrate_info_section(section, vd) {
         const [actor_card, callback] = get_actor_card(actor);
         actors_cont.append(actor_card);
         $.get('/api/get/actor/'+actor, (data, status) => {
-            console.log(actor, status, data);
+            console.debug('ACTOR DATA:', actor, data);
             if (status === 'success') {
                 const age_its = get_year_difference_between_dates(data.date_of_birth, video_dr);
                 let pp;
@@ -114,7 +127,7 @@ function hydrate_info_section(section, vd) {
                     video_count: null, // TODO: figure out faster way to get video count at this point
                     age_its: age_its || null,
                     profile_pic: pp,
-                    aka: data.aka,
+                    aka: data.aka ? data.aka.join(', ') : null,
                 });
             }
         });
@@ -125,7 +138,6 @@ function hydrate_info_section(section, vd) {
     /* check favourite */
     const is_fav_button = section.find('button.is-fav-button');
     $.get(`/api/interact/favourites/check/${vd.hash}`, (data, status) => {
-        // console.log(status);
         if (status === 'success') {
             is_fav_button.addClass('loaded');
             if (data.is_favourite) {
@@ -166,7 +178,6 @@ function get_year_difference_between_dates(date1, date2) {
     if (!date1 || !date2) {
         return null;
     }
-    // console.log(date1, date2);
     if (date1.length < 4 || date2.length < 4) {
         return null;
     }

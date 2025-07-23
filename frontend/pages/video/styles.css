@@ -35,10 +35,11 @@ section.video-info-section {
     width: 100%;
     /* max-width: 80rem; */
     justify-content: space-between;
-    padding: 0.8rem 10%;
-    background: #111;
+    padding: 0.8rem 8%;
+    background: #080808;
     padding-bottom: 1.5rem;
     border-bottom: 1px solid #fff3;
+    border-top: 1px solid #fff5;
 }
 
 .info-container {
@@ -52,11 +53,13 @@ section.video-info-section {
     margin-bottom: 0.8rem;
 }
 
+/* year-studio bar */
 .year-studio-bar {
     display: flex;
     gap: 0.9rem;
     align-items: center;
     margin-bottom: 0.3rem;
+    margin-left: 1.5rem;
 }
 .collection {
     border: 1px solid #eee;
@@ -66,22 +69,29 @@ section.video-info-section {
 }
 .year {
     font-weight: bold;
-    font-size: 20px;
+    font-size: 19px;
 }
-
 .studios-container {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 20px;
+    font-size: 18px;
     color: #bbb;
 }
+.studios-container > div {
+    background: #f51d;
+    width: 5px;
+    height: 5px;
+    transform: rotate(45deg);
+}
 
+/* actors-container */
 .actors-container {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     margin-top: 0.5rem;
+    margin-left: 1.8rem;
 }
 
 .video-info-section a {
