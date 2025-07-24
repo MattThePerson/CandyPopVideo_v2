@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 # from http.cookiejar import MozillaCookieJar
 from urllib.parse import unquote
 
-from src.config import ACTOR_INFO_DIR
+from src.util.config import ACTOR_INFO_DIR
 
 
 REQUEST_HEADERS = {

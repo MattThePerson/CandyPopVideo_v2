@@ -5,12 +5,11 @@ from fastapi import APIRouter, Response, HTTPException
 from fastapi.responses import FileResponse
 from pathlib import Path
 
-# from handymatt_media import media_generator
-
-from src import db
-from src.config import PREVIEW_MEDIA_DIR, SUBTITLE_FOLDERS
-from ..schemas import VideoData
-from ..media import generators, checkers
+from src.media import generators
+from src.util import db
+from src.util.config import PREVIEW_MEDIA_DIR, SUBTITLE_FOLDERS
+from src.schemas import VideoData
+from src.media import checkers
 
 
 media_router = APIRouter()
@@ -135,7 +134,7 @@ def confirm_seek_thumbnails(video_hash: str):
         print('[MEDIA] running subprocess:', script)
         try:
             cmd = [
-                './.venv/Scripts/python.exe',
+                './.venv/Scripts/python.exe', # TODO: Test running with sys.executable
                 script,
                 '-path', video_data.path,
                 '-mediadir', vid_media_dir,
@@ -171,7 +170,7 @@ def ROUTER_ensure_teaser_thumbs_small(video_hash: str):
         print('[MEDIA] running subprocess:', script)
         try:
             cmd = [
-                './.venv/Scripts/python.exe',
+                './.venv/Scripts/python.exe', # TODO: Test running with sys.executable
                 script,
                 '-path', video_data.path,
                 '-mediadir', vid_media_dir,

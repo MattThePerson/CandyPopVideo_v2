@@ -42,4 +42,4 @@ if (-Not (Test-Path ".venv\Scripts\activate.ps1") -or $REINSTALL_VENV -eq 1) {
 
 # Start uvicorn
 Write-Host "[.ps1] Starting uvicorn on port $BACKEND_PORT and extra args: '$forwardArgs'"
-& .\.venv\Scripts\python.exe -m uvicorn main:app --host 0.0.0.0 --workers 1 --port $BACKEND_PORT @forwardArgs
+& .\.venv\Scripts\uvicorn.exe src.main:app --host 0.0.0.0 --workers 1 --port $BACKEND_PORT @forwardArgs

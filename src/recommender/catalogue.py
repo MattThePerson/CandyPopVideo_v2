@@ -1,5 +1,5 @@
 """ Functions for getting specific things from collection, eg. performers, studios, ... """
-from ..schemas import VideoData, CatalogueQuery
+from src.schemas import VideoData, CatalogueQuery
 
 
 def get_catalogue(videos_list: list[VideoData], query: CatalogueQuery) -> dict[str, list[tuple[str, int]]]:

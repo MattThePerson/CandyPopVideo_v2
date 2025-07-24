@@ -4,11 +4,10 @@ import time
 
 from handymatt.wsl_paths import convert_to_wsl_path
 
-from .. import db
-from src.config import SCENE_FILENAME_FORMATS, VIDEO_EXTENSIONS
-from ..util.process import process_videos, combine_loaded_and_existing_videos
-from ..schemas import VideoData
-# from .helpers import aprint
+from src.util import db
+from src.util.config import SCENE_FILENAME_FORMATS, VIDEO_EXTENSIONS
+from src.schemas import VideoData
+from .process import process_videos, combine_loaded_and_existing_videos
 
 
 #region main

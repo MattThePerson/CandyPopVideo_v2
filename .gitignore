@@ -27,5 +27,11 @@ data/
 holdPages/
 frontend_svelte/
 
+# pyinstaller
+build
+*.exe
+
+
 *.png
 *.jpg
+!assets/*

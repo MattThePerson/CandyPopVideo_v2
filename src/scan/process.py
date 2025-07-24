@@ -8,10 +8,10 @@ from handymatt import StringParser, json_metadata
 from handymatt_media import video_analyser
 from handymatt_media.metadata import video_metadata
 
-from ..loggers import LOGGER_HASHING_FAILED, LOGGER_COLLISIONS, LOADING_FAILED
-from ..schemas.video_data import VideoData
-from .metadata import set_NTFS_ADS_tag, get_NTFS_ADS_tag
-from ..util.general import extract_number_from_term
+from src.util.loggers import LOGGER_HASHING_FAILED, LOGGER_COLLISIONS, LOADING_FAILED
+from src.util.general import extract_number_from_term
+from src.schemas import VideoData
+from .ntfs_ads import set_NTFS_ADS_tag, get_NTFS_ADS_tag
 
 
 #region - PUBLIC -------------------------------------------------------------------------------------------------------

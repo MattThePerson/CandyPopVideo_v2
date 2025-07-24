@@ -177,11 +177,11 @@ info:
 |   |   |-- api_media_router.py     `// `
 |   |   |-- api_router.py           `// `
 |   |   |-- search_router.py        `// `
-|   |-- recommender/                 `// search & similarity`
+|   |-- recommender/            `// search & similarity`
 |   |   |-- search.py               `// `
 |   |   |-- similarity.py           `// `
 |   |   |-- tfidf.py                `// `
-|   |-- schemas/                   `// dataclasses to represent different objects`
+|   |-- schemas/                   `// dataclasses to represent different objects` **Main & Manager**
 |   |   |-- video_data.py              `// `
 |   |   |-- video_interactions.py      `// `
 |   |-- util/                     `// `
@@ -193,6 +193,7 @@ info:
 |-- frontend/      `// static js+html+css frontend`
 |-- launcher/      `// `
 |   |-- launcher.py         `// `
+|   |-- ProcessManager.py   `// `
 |-- tools/         `// shell scripts for installing/running`
 |   |-- run.ps1             `// `
 |   |-- run.sh              `// `
@@ -202,3 +203,36 @@ info:
 |-- config.py               `// reads config.yaml into importable global variables`
 |-- requirements.txt        `// `
 
+### ALT STRUCTURE
+
+
+#   |   |   |   |   |   |   |   |   |
+|-- .venv/
+|-- .logs/
+|-- data/
+|-- frontend/               `// `
+|-- src/                    `// app src`
+|   |-- backend/                `// Use by worker`
+|   |   |-- recommender/            `// `
+|   |   |   |-- search.py
+|   |   |   |-- similarity.py
+|   |   |   |-- tfidf.py
+|   |   |-- schemas/                `// `
+|   |   |   |-- queries.py
+|   |   |   |-- video_data.py
+|   |   |   |-- video_interact.py
+|   |-- server/                    `// Used by Main`
+|   |   |-- api/                    `// `
+|   |   |   |-- actor_api.py
+|   |   |-- routers/                `// `
+|   |   |   |-- api_router.py
+|   |   |   |-- query_router.py
+|   |   |   |-- media_router.py
+|   |-- main.py                 `// Main entrypoint, starts fastAPI`
+|   |-- backend_worker.py       `// Worker, run manually or by main as subprocess`
+|   |-- db.py
+|   |-- config.py
+|   |-- logging.py
+|   |-- general_util.py
+|-- tools/       `// `
+|-- tray_app/       `// `

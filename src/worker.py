@@ -1,17 +1,16 @@
 import argparse
-# from fastapi import WebSocket
 
 GENERATE_MEDIA_OPTIONS = [ 'all', 'teasers', 'teasers_large', 'teaser_thumbs', 'teaser_thumbs_large', 'preview_thumbs', 'seek_thumbs' ]
 
 
 def backend_manager(args: argparse.Namespace, ws=None):
     import yaml
-    from src import db
     import random
-    from src.schemas import VideoData, SearchQuery, TFIDFModel
+    
+    from src.util import db
+    from src.util.config import PREVIEW_MEDIA_DIR, TFIDF_MODEL_PATH
     from src.util.general import pickle_save
-    from src.config import PREVIEW_MEDIA_DIR, TFIDF_MODEL_PATH
-    # from backend.helpers import aprint
+    from src.schemas import VideoData, SearchQuery, TFIDFModel
 
     from src.recommender.search import filterVideoObjects
     
@@ -80,7 +79,7 @@ def backend_manager(args: argparse.Namespace, ws=None):
     
     if args.scan_libraries: # - SCAN ---------------------------------------------------------------
         from src.recommender.tfidf import generate_tfidf_model
-        from src.backend import scan
+        from src.scan import scan
     
     
         print('[MAIN] Scanning videos ...')
@@ -106,7 +105,7 @@ def backend_manager(args: argparse.Namespace, ws=None):
 
     if args.generate_media: # - MEDIA --------------------------------------------------------------
         print('[LOAD] Importing warm imports')
-        from src.backend import generate
+        from src.media import mass_generators
         # filter videos
         print('[GET] getting and filtering linked videos')
         videos_list = get_linked_videos()
@@ -124,19 +123,19 @@ def backend_manager(args: argparse.Namespace, ws=None):
         opt = args.generate_media
         succs, fails = {}, {}
         if opt == 'all' or opt == 'teaser_thumbs': 
-            succ, fail = generate.mass_generate_teaser_thumbs_small( *alist, **kdict )
+            succ, fail = mass_generators.mass_generate_teaser_thumbs_small( *alist, **kdict )
             succs['teaser_thumbs'] = succ
             fails['teaser_thumbs'] = fail
         if opt == 'all' or opt == 'teasers':       
-            succ, fail = generate.mass_generate_teasers_small( *alist, **kdict )
+            succ, fail = mass_generators.mass_generate_teasers_small( *alist, **kdict )
             succs['teasers'] = succ
             fails['teasers'] = fail
         if opt == 'all' or opt == 'seek_thumbs':   
-            succ, fail = generate.mass_generate_seek_thumbs( *alist, **kdict )
+            succ, fail = mass_generators.mass_generate_seek_thumbs( *alist, **kdict )
             succs['seek_thumbs'] = succ
             fails['seek_thumbs'] = fail
         if opt == 'all' or opt == 'preview_thumbs':
-            succ, fail = generate.mass_generate_preview_thumbs( *alist, **kdict )
+            succ, fail = mass_generators.mass_generate_preview_thumbs( *alist, **kdict )
             succs['preview_thumbs'] = succ
             fails['preview_thumbs'] = fail
         # if opt == 'all' or opt == 'teasers_large': 
@@ -181,7 +180,7 @@ def backend_manager(args: argparse.Namespace, ws=None):
         
 
     if args.media_status: # - MEDIA STATUS ---------------------------------------------------------
-        from src.backend import generate
+        from src.media import mass_generators
         print("filtering videos ...")
         videos_list = get_linked_videos()
         filtered_videos = filter_videos_with_args(videos_list, args)
@@ -191,7 +190,7 @@ def backend_manager(args: argparse.Namespace, ws=None):
         print('{:<20} : {}'.format("filters", args.path_include_filters))
         print('{:<20} : {}'.format("select_collection", args.select_collection))
         print(f"\nPREVIEW MEDIA STATUS FOR {len(filtered_videos)} VIDEOS:")
-        generate.checkPreviewMediaStatus(filtered_videos, PREVIEW_MEDIA_DIR, args.media_status, print_without=args.print_without)
+        mass_generators.checkPreviewMediaStatus(filtered_videos, PREVIEW_MEDIA_DIR, args.media_status, print_without=args.print_without)
         
 
     elif args.status: # - STATUS -------------------------------------------------------------------

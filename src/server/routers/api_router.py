@@ -3,10 +3,10 @@ import os
 from datetime import datetime
 from fastapi import APIRouter, Response, HTTPException
 
-from src import db
-from ..schemas import VideoData
-from ..APIs import actor_api
-from ..util.general import get_sortable_string_tuple
+from src.util import db
+from src.util.general import get_sortable_string_tuple
+from src.schemas import VideoData
+from ..api import actor_api
 
 
 api_router = APIRouter()
@@ -25,7 +25,6 @@ def ROUTE_get_video(video_hash: str):
     response = video_data.to_dict()
     return response
 
-# get("/get/video-metadata/{video_hash}")
 
 
 # GET RANDOM VIDEO

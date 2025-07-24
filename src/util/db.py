@@ -2,7 +2,7 @@ import sqlite3
 import json
 import os
 
-from src.config import DB_PATH
+from .config import DB_PATH
 
 
 #region DICT-OF-DICTS WRITERS

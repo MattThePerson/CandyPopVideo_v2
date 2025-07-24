@@ -4,7 +4,7 @@ from ..recommender import tfidf  # Weird import
 from scipy.sparse import csr_matrix, vstack
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-from ..schemas import TFIDFModel, VideoData
+from src.schemas import TFIDFModel, VideoData
 
 def get_similar_videos(video_hash: str, startfrom: int, limit: int, videos_list: list[VideoData], tfidf_model: TFIDFModel) -> tuple[list[VideoData], int]:
     sims = tfidf.get_similar_videos_for_hash_TFIDF(video_hash, tfidf_model)

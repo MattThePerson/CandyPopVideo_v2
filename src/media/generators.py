@@ -1,16 +1,7 @@
 """ 
-Functions for handling confirming and generation of preview media
-Contents of videos mediadir:
-    seekthumbs/
-    stills/
-    teaser_thumbs/
-    poster.png
-    poster_small.png
-    teaser_small.mp4
-    teaser_large.mp4
+A few simple generators (when handymatt-media is not needed)
 """
 import os
-from pathlib import Path
 import subprocess
 
 from handymatt_media.media_generator import generateVideoTeaser
@@ -48,21 +39,21 @@ def generateTeaserSmall(path: str, video_hash: str, mediadir: str, duration_sec:
     os.makedirs(outfolder, exist_ok=True)
     clip_amount = int( ( 584/119 + (11/5355)*duration_sec ) * 2 )
     if not quiet: print("clip amount:", clip_amount)
-    return generateVideoTeaser(
-        path,
-        outfolder,
-        'teaser_small.mp4',
-        abs_amount_mode=True,
-        n=clip_amount,
-        clip_len=1.3,
-        skip=2,
-        small_resolution=True,
-        end_perc=98,
-    )
-    # try:
-    # except Exception as e:
-    #     print("[ERROR] generateTeasersSmall:\n", e)
-    #     return ""
+    try:
+        return generateVideoTeaser(
+            path,
+            outfolder,
+            'teaser_small.mp4',
+            abs_amount_mode=True,
+            n=clip_amount,
+            clip_len=1.3,
+            skip=2,
+            small_resolution=True,
+            end_perc=98,
+        )
+    except Exception as e:
+        print("[ERROR] generateTeasersSmall:\n", e)
+        return ""
 
 
 
@@ -73,39 +64,20 @@ def generateTeaserLarge(path, hash, mediadir, duration_sec):
         os.makedirs(outfolder)
     clip_amount = int( ( 584/119 + (11/5355)*duration_sec ) * 2 )
     try:
-        return generateVideoTeaser(path, outfolder, 'teaser_large.mp4', abs_amount_mode=True, n=clip_amount, clip_len=1.65, skip=1, small_resolution=False, end_perc=98)
+        return generateVideoTeaser(
+            path,
+            outfolder,
+            'teaser_large.mp4',
+            abs_amount_mode=True,
+            n=clip_amount,
+            clip_len=1.65,
+            skip=1,
+            small_resolution=False,
+            end_perc=98,
+        )
     except Exception as e:
-        print("[ERROR] generateTeasersSmall:\n", e)
+        print("[ERROR] generateTeasersLarge:\n", e)
         return "NULL_PATH"
-
-
-
-
-# TODO: Determine if needs removal
-def link_custom_thumbs(videos_dict: dict[str, dict], custom_thumbs_dir: str) -> dict[str, dict]:
-    """ Connects *unconnected* custom thumbs to videos, adds to video object and renames thumbnail """
-    fn_to_hash = { vid['filename']: hash for hash, vid in videos_dict.items() }
-    connected_suffix = 'CONN '
-    unlinked_custom_thumbs = [ t for t in os.listdir(custom_thumbs_dir) if not t.startswith(connected_suffix) ]
-    for i, thumb in enumerate(unlinked_custom_thumbs):
-        print('  ({}/{}) thumb: "{}"'.format(i+1, len(unlinked_custom_thumbs), thumb))
-        thumb_obj = Path(thumb)
-        linked = False
-        for fn in fn_to_hash.keys():
-            if thumb_obj.stem.lower() in fn.lower():
-                hash = fn_to_hash[fn]
-                newname = '{}{} [{}]{}'.format(connected_suffix, thumb_obj.stem, hash, thumb_obj.suffix)
-                old_path = os.path.join(custom_thumbs_dir, thumb)
-                new_path = os.path.join(custom_thumbs_dir, newname)
-                os.rename(old_path, new_path)
-                videos_dict[hash]['custom_thumb'] = new_path
-                print('Linked to video!\n:"{}"'.format(videos_dict[hash]['path']))
-                linked = True
-                break
-        if not linked:
-            print('Failed to link: "{}"'.format(thumb))
-    return videos_dict
-
 
 
 

@@ -6,8 +6,8 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from contextlib import asynccontextmanager
 
-from src.config import PREVIEW_MEDIA_DIR, ACTOR_INFO_DIR
-from src.routers import api_router, media_router, query_router, interact_router # dashboard_router
+from src.util.config import PREVIEW_MEDIA_DIR, ACTOR_INFO_DIR
+from src.server.routers import api_router, media_router, query_router, interact_router # dashboard_router
 
 
 

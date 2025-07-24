@@ -1,5 +1,6 @@
 #!/bin/bash
 # Installs npm and python deps
+# TODO: Update to match install.ps1
 
 # cd into scripts parent parent directory
 
