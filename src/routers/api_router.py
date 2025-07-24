@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from fastapi import APIRouter, Response, HTTPException
 
-from .. import db
+from src import db
 from ..schemas import VideoData
 from ..APIs import actor_api
 from ..util.general import get_sortable_string_tuple
@@ -151,7 +151,15 @@ def ROUTE_get_actor(name: str):
 # TEMP TODO: Find better solution
 
 
-# GET ACTOR SCENE COUNT
+# GET VIDEO COUNT
+@api_router.get("/get/video-count")
+def ROUTE_get_video_count():
+    videos_dict = db.read_table_as_dict('videos')
+    return { 'video_count': len(videos_dict) }
+
+
+
+# GET ACTOR VIDEO COUNT
 @api_router.get("/get/actor-video-count/{name}")
 def ROUTE_get_actor_video_count(name: str):
     video_count = 0
@@ -160,7 +168,8 @@ def ROUTE_get_actor_video_count(name: str):
             video_count += 1
     return { 'video_count': video_count }
 
-# GET ACTOR SCENE COUNT
+
+# GET ACTOR VIDEO COUNT
 @api_router.get("/get/studio-video-count/{name}")
 def ROUTE_get_studio_video_count(name: str):
     name = name.lower()

@@ -2,8 +2,8 @@
 import time
 from fastapi import APIRouter, HTTPException
 
-from .. import db
-from config import TFIDF_MODEL_PATH
+from src import db
+from src.config import TFIDF_MODEL_PATH
 from ..schemas import SearchQuery, VideoData, VideoInteractions, CatalogueQuery
 from ..recommender import search, similarity
 from ..recommender.catalogue import get_catalogue

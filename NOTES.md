@@ -11,7 +11,7 @@ TINY_TERM:
 
 SHORT_TERM:
 - [frontend] figure out why middle click drag opens results card hrefs
-- [frontend] catalogue page: add thresh and item counts
+- [frontend] catalogue page: add thresh and item counts (and numbered count view)
 - [media_gen] [fix] seek thumbs alignment
 - [frontend] create PassionPlayer MVP
 
@@ -109,8 +109,12 @@ buttons:
 - like
 - add dated marker
 - make gif
+- extract frame (as thumbnail or something)
 - chapter nav
 - edit filename
+
+
+
 - open d18 page
 - open external link (ph)
 
@@ -165,24 +169,36 @@ info:
 
 ### STRUCTURE
 
-|-- src/
-|   |-- routes/                 `// api routes`
-|   |   |-- __init__.py
+|-- .venv/
+|-- .logs/
+|-- data/
+|-- src/        `// bulk of python files`
+|   |-- routers/                 `// api routers`
 |   |   |-- api_media_router.py     `// `
 |   |   |-- api_router.py           `// `
 |   |   |-- search_router.py        `// `
-|   |-- search/                 `// search & similarity`
-|   |   |--__init__.py
+|   |-- recommender/                 `// search & similarity`
 |   |   |-- search.py               `// `
 |   |   |-- similarity.py           `// `
 |   |   |-- tfidf.py                `// `
-|   |-- util/                   `// `
-|   |   |--__init__.py
+|   |-- schemas/                   `// dataclasses to represent different objects`
+|   |   |-- video_data.py              `// `
+|   |   |-- video_interactions.py      `// `
+|   |-- util/                     `// `
 |   |   |-- media.py                `// `
 |   |   |-- meta.py                 `// `
 |   |   |-- process.py              `// `
-|   |-- db.py               `// `
+|   |-- db.py               `// databass stuff`
 |   |-- logging.py          `// `
-|-- config.py               `// global config variables`
-|-- main.py                 `// app starting point`
+|-- frontend/      `// static js+html+css frontend`
+|-- launcher/      `// `
+|   |-- launcher.py         `// `
+|-- tools/         `// shell scripts for installing/running`
+|   |-- run.ps1             `// `
+|   |-- run.sh              `// `
+|-- main.py                 `// fastapi backend`
+|-- manager.py              `// script for scanning libraries and generating media`
+|-- config.yaml             `// config (appdata dir, library dirs, ...)`
+|-- config.py               `// reads config.yaml into importable global variables`
+|-- requirements.txt        `// `
 

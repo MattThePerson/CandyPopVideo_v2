@@ -7,8 +7,8 @@ from pathlib import Path
 
 # from handymatt_media import media_generator
 
-from config import PREVIEW_MEDIA_DIR, SUBTITLE_FOLDERS
-from .. import db
+from src import db
+from src.config import PREVIEW_MEDIA_DIR, SUBTITLE_FOLDERS
 from ..schemas import VideoData
 from ..media import generators, checkers
 
@@ -131,7 +131,7 @@ def confirm_seek_thumbnails(video_hash: str):
         if video_data is None:
             return Response('No video with that hash', 404)
 
-        script = 'app/media/scripts/generateVideoSpritesheet.py'
+        script = 'src/media/scripts/generateVideoSpritesheet.py'
         print('[MEDIA] running subprocess:', script)
         try:
             cmd = [
@@ -167,7 +167,7 @@ def ROUTER_ensure_teaser_thumbs_small(video_hash: str):
     vid_media_dir = checkers.get_video_media_dir(PREVIEW_MEDIA_DIR, video_hash)
     media_path = vid_media_dir + '/teaser_thumbs_small.jpg'
     if not os.path.exists( media_path ):
-        script = 'app/media/scripts/generateVideoSpritesheet.py'
+        script = 'src/media/scripts/generateVideoSpritesheet.py'
         print('[MEDIA] running subprocess:', script)
         try:
             cmd = [

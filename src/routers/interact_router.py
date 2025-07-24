@@ -2,8 +2,8 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException
 from datetime import datetime
 
-from .. import db
-from config import DATETIME_FORMAT
+from src import db
+from src.config import DATETIME_FORMAT
 from ..schemas import VideoInteractions
 
 
@@ -100,6 +100,11 @@ def ROUTE_add_viewtime(video_hash: str, viewtime: float):
     vid_inter = get_video_interactions(video_hash)
     vid_inter.viewtime += viewtime
     db.write_object_to_db(video_hash, vid_inter.to_dict(), 'interactions')
+    db.write_to_table({
+        "timestamp": str(datetime.now())[:-7].replace(' ', 'T'),
+        'video_hash': video_hash,
+        'duration_sec': viewtime,
+    }, 'views')
     return { 'msg': 'added view time' }
 
 

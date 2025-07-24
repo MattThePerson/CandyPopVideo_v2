@@ -18,9 +18,9 @@ ACTOR_INFO_DIR = APP_DATA_DIR + '/actors'
 os.makedirs(APP_DATA_DIR, exist_ok=True)
 
 # GIFS
-GIFS_DIR = CONFIG.get('gifs_dir')
-if GIFS_DIR:
-    GIFS_DIR = convert_to_wsl_path(GIFS_DIR)
+# GIFS_DIR = CONFIG.get('gifs_dir')
+# if GIFS_DIR:
+#     GIFS_DIR = convert_to_wsl_path(GIFS_DIR)
 
 VIDEO_EXTENSIONS = CONFIG.get('video_extensions')
 

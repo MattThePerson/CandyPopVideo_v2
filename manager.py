@@ -6,14 +6,14 @@ GENERATE_MEDIA_OPTIONS = [ 'all', 'teasers', 'teasers_large', 'teaser_thumbs', '
 
 def backend_manager(args: argparse.Namespace, ws=None):
     import yaml
-    from app import db
+    from src import db
     import random
-    from app.schemas import VideoData, SearchQuery, TFIDFModel
-    from app.util.general import pickle_save
-    from config import PREVIEW_MEDIA_DIR, TFIDF_MODEL_PATH
-    from app.backend.helpers import aprint
+    from src.schemas import VideoData, SearchQuery, TFIDFModel
+    from src.util.general import pickle_save
+    from src.config import PREVIEW_MEDIA_DIR, TFIDF_MODEL_PATH
+    # from backend.helpers import aprint
 
-    from app.recommender.search import filterVideoObjects
+    from src.recommender.search import filterVideoObjects
     
     """
     Backend manager for CandyPop Video. Can be used from CL or via websocket
@@ -79,8 +79,8 @@ def backend_manager(args: argparse.Namespace, ws=None):
     # HANDLE
     
     if args.scan_libraries: # - SCAN ---------------------------------------------------------------
-        from app.recommender.tfidf import generate_tfidf_model
-        from app.backend import scan
+        from src.recommender.tfidf import generate_tfidf_model
+        from src.backend import scan
     
     
         print('[MAIN] Scanning videos ...')
@@ -106,7 +106,7 @@ def backend_manager(args: argparse.Namespace, ws=None):
 
     if args.generate_media: # - MEDIA --------------------------------------------------------------
         print('[LOAD] Importing warm imports')
-        from app.backend import generate
+        from src.backend import generate
         # filter videos
         print('[GET] getting and filtering linked videos')
         videos_list = get_linked_videos()
@@ -166,7 +166,7 @@ def backend_manager(args: argparse.Namespace, ws=None):
         
 
     if args.generate_tfidf:
-        from app.recommender.tfidf import generate_tfidf_model
+        from src.recommender.tfidf import generate_tfidf_model
         
         print('Generating tfidf model for videos')
         videos_list = get_linked_videos()
@@ -181,7 +181,7 @@ def backend_manager(args: argparse.Namespace, ws=None):
         
 
     if args.media_status: # - MEDIA STATUS ---------------------------------------------------------
-        from app.backend import generate
+        from src.backend import generate
         print("filtering videos ...")
         videos_list = get_linked_videos()
         filtered_videos = filter_videos_with_args(videos_list, args)

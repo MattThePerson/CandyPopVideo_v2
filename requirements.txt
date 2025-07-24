@@ -1,12 +1,23 @@
-uvicorn>=0.34.0
 fastapi>=0.115.8
+uvicorn>=0.34.0
+uvicorn[standard]
+pyyaml>=6.0.2
+send2trash==1.8.3
+
+# media gen deps
 scipy>=1.12.0
 scikit-learn>=1.5.2
 nltk>=3.9.1
 imagehash>=4.3.1
-pyyaml>=6.0.2
-handymatt>=1.2.0
-handymatt-media>=0.4.3
-uvicorn[standard]
 requests==2.32.4
 beautifulsoup4==4.13.4
+
+handymatt>=1.2.0
+handymatt-media>=0.4.3
+
+# launcher deps
+pillow==11.3.0
+pystray==0.19.5
+six==1.17.0
+pyinstaller==6.14.2
+

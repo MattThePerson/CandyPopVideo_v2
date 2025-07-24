@@ -2,13 +2,15 @@ import sqlite3
 import json
 import os
 
-from config import DB_PATH
+from src.config import DB_PATH
 
+
+#region DICT-OF-DICTS WRITERS
 
 def write_object_to_db(entry_id: str, data: dict, table: str):
     """ Write a single dictionary (JSON object) into a specified SQLite table. """
     with sqlite3.connect(DB_PATH) as conn:
-        _ensure_table_exists(conn, table)
+        _ensure_serial_table_exists(conn, table)
         cur = conn.cursor()
         cur.execute(f"INSERT OR REPLACE INTO {table} (id, data) VALUES (?, ?)", (entry_id, json.dumps(data),))
         conn.commit()
@@ -17,7 +19,7 @@ def write_object_to_db(entry_id: str, data: dict, table: str):
 def write_dict_of_objects_to_db(objects_dict: dict[str, dict], table: str):
     """ Write a dictionary of objects into a specified SQLite table. """
     with sqlite3.connect(DB_PATH) as conn:
-        _ensure_table_exists(conn, table)
+        _ensure_serial_table_exists(conn, table)
         values = [ (id_, json.dumps(data)) for id_, data in objects_dict.items() ]
         conn.executemany(
             f"INSERT OR REPLACE INTO {table} (id, data) VALUES (?, ?)",
@@ -28,7 +30,7 @@ def write_dict_of_objects_to_db(objects_dict: dict[str, dict], table: str):
 def read_object_from_db(entry_id: str, table: str) -> dict|None:
     """ Read a single JSON entry from the database by ID. """
     with sqlite3.connect(DB_PATH) as conn:
-        _ensure_table_exists(conn, table)
+        _ensure_serial_table_exists(conn, table)
         conn.row_factory = sqlite3.Row  # Enable column access by name
         cur = conn.cursor()
         cur.execute(f"SELECT data FROM {table} WHERE id = ?", (entry_id,))
@@ -39,15 +41,29 @@ def read_object_from_db(entry_id: str, table: str) -> dict|None:
 def read_table_as_dict(table: str) -> dict[str, dict]:
     """ Read all JSON entries from the specified table and return as a dict of objects """
     with sqlite3.connect(DB_PATH) as conn:
-        _ensure_table_exists(conn, table)
+        _ensure_serial_table_exists(conn, table)
         cur = conn.cursor()
         cur.execute(f"SELECT id, data FROM {table}")
         return { row[0]: json.loads(row[1]) for row in cur }
 
 
-# HELPERS
+#region PURE WRITERS
 
-def _ensure_table_exists(conn: sqlite3.Connection, table: str) -> None:
+def write_to_table(data: dict, table: str):
+    """ Insert data into an sqlite table """
+    with sqlite3.connect(DB_PATH) as conn:
+        cur = conn.cursor()
+        columns = ', '.join(data.keys())
+        placeholders = ', '.join(['?'] * len(data))
+        values = tuple(data.values())
+        query = f'INSERT INTO {table} ({columns}) VALUES ({placeholders})'
+        cur.execute(query, values)
+        conn.commit()
+
+
+#region HELPERS
+
+def _ensure_serial_table_exists(conn: sqlite3.Connection, table: str) -> None:
     """ Ensures the specified table exists in the database with the correct schema. """
     if not os.path.exists(DB_PATH):
         print('[DB] Creating db at: "{}"'.format(DB_PATH))
