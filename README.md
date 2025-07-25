@@ -38,7 +38,24 @@ You have 2 options:
 
 ### 2. Using Docker:
 
-- TBA
+(Temp manual method)
+
+#### **Build:**
+
+Clone the repo then run: `docker build -t cpop-vids .`
+
+#### **Run:**
+You must mount volumes for AppData, Video Libraries and config.yaml. 
+
+
+*PowerShell example:*
+```
+docker run `
+-v "A:/videos:/app/videos" `
+-v "A:/.AppData/CandyPopVideo:/app/appdata" `
+-v "${PWD}/config.yaml:/app/config.yaml" `
+-p 8013:8013 cpop-vids
+```
 
 
 ## Configuration
@@ -47,12 +64,4 @@ After installing and running, edit `config.yaml` to set:
 - Desired `AppData` location
 - List of video library folders (organized into collections)
 - *(Optional)* edit filename formats
-
-
-## Improvements from v1:
-- switched from Flask --> FastApi + Uvicorn for the backend
-- improved frontend UI
-- using proper db (SQLite)
-- better shell scripts for installing/running
-- better backend manager
 

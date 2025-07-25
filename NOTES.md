@@ -1,7 +1,6 @@
 # NOTES
 
 
-
 ## TODO
 
 
@@ -47,6 +46,7 @@ OPTIONAL:
 - [frontend] Make list view search result component
 - [frontend] date_added/date_released dist extension
 - [frontend] word cloud
+- [frontend] watch history page
 
 THEORETICAL:
 - [app] Add way to make gifs
