@@ -21,53 +21,97 @@ import platform
 #     os.environ["PATH"] = os.path.join(venv_path, "bin") + os.pathsep + os.environ["PATH"]
 
 
-# ...
+#region - MAIN ---------------------------------------------------------------------------------------------------------
 
-PORT = 8010
-APP_URL = f'http://localhost:{PORT}'
+def main():
+    
+    icon = Icon(
+        "CandyPop Video",
+        Image.open("assets/icon.png"),
+    )
+    icon.title = 'CandyPop Video Launcher'
+    update_tray_icon_menu(icon)
+
+    icon_thread = threading.Thread(target=icon.run)
+
+    print('Starting tray icon thread')
+    icon_thread.start()
+
+    # INTERRUPT STUFF
+    signal.signal(signal.SIGINT, lambda sig, frm: icon.stop())
+    try:
+        while icon_thread.is_alive():
+            icon_thread.join(timeout=0.5)
+    except KeyboardInterrupt:
+        print("Keyboard interrupt caught in main thread")
+        icon.stop()
+        icon_thread.join()
+
+    print('Done.')
+    
+
+#region - GLOBALS ------------------------------------------------------------------------------------------------------
 
 # load config
 with open('config.yaml', 'r') as f:
     CONFIG = yaml.safe_load(f)
 
+os.environ["DEV_MODE"] = "1"
 
 # PROCESSES
 
-backend_proc = ProcessManager([sys.executable, '-m', 'uvicorn', 'src.main:app', '--host', '0.0.0.0', '--port', str(PORT)])
+PORT = 8011
+APP_URL = f'http://localhost:{PORT}'
+SERVER_PROC = ProcessManager(
+    [sys.executable, '-m', 'uvicorn', 'src.main:app', '--host', '0.0.0.0', '--port', str(PORT)],
+    '.logs/tray_app/server.log',
+)
+
+
+#region - METHODS ------------------------------------------------------------------------------------------------------
 
 def start_backend(icon):
     icon.title = 'Starting backend ...'
     print('Starting backend ...')
-    backend_proc.start()
+    SERVER_PROC.start()
     icon.title = 'Backend running!'
     print('Backend running!')
     update_tray_icon_menu(icon)
 
-def restart_backend():
-    subprocess.run(['where.exe', 'python'])
+def restart_backend(icon):
+    print('Stopping')
+    SERVER_PROC.stop()
+    print('Starting')
+    SERVER_PROC.start()
+    print('Done')
 
-def stop_backend():
+def stop_backend(icon):
     icon.title = 'Stopping backend ...'
     print('Stopping backend ...')
-    backend_proc.stop()
+    SERVER_PROC.stop()
     icon.title = 'Backend stopped'
     print('Backend stopped')
     update_tray_icon_menu(icon)
 
-backend_proc_is_running = False
+SERVER_PROC_is_running = False
 def backend_is_running():
-    return backend_proc.is_running() or False
+    return SERVER_PROC.is_running() or False
+
+
+def quit_app(icon):
+    SERVER_PROC.stop()
+    icon.stop()
 
 
 #region - OPEN RESOURCES -----------------------------------------------------------------------------------------------
 
-def open_app():
+def open_app(icon):
     webbrowser.open(APP_URL)
 
-def copy_app_url():
+def copy_app_url(icon):
     ...
 
-def scan_libraries():
+def scan_libraries(icon):
     icon.title = 'Scanning ...'
 
 
@@ -95,17 +139,11 @@ def toggle_start_on_login():
     start_on_login = not start_on_login
 
 
-#region - HELPERS ------------------------------------------------------------------------------------------------------
-
-def get_self_path():
-    return os.path.dirname(os.path.abspath(sys.executable if getattr(sys, 'frozen', False) else __file__))
-
-
 #region - TRAY ICON MENU -----------------------------------------------------------------------------------------------
 
 def update_tray_icon_menu(icon):
     icon.menu = Menu(
-        MenuItem("Open App", open_app),
+        MenuItem("Open App",                    lambda icon, item: open_app(icon)),
         MenuItem("Open App in ...", Menu(
             MenuItem('Brave',                   lambda: ...),
             MenuItem('Firefox',                 lambda: ...),
@@ -114,9 +152,9 @@ def update_tray_icon_menu(icon):
         MenuItem("Copy App URL",                lambda: ...),
         Menu.SEPARATOR,
         MenuItem("Start App",                   lambda icon, item: start_backend(icon),             enabled=not backend_is_running()),
-        MenuItem("Restart App",                 restart_backend,                                    enabled=backend_is_running()),
-        MenuItem("Stop App",                    stop_backend,                                       enabled=backend_is_running()),
-        MenuItem("Restart on Crash",            toggle_start_on_login,                              checked=lambda item: start_on_login),
+        MenuItem("Restart App",                 lambda icon, item: restart_backend(icon),           enabled=backend_is_running()),
+        MenuItem("Stop App",                    lambda icon, item: stop_backend(icon),              enabled=backend_is_running()),
+        MenuItem("Restart on Crash",            lambda icon, item: toggle_start_on_login(),         checked=lambda item: start_on_login),
         Menu.SEPARATOR,
         MenuItem("Scan Libraries", Menu(
             MenuItem('Quick Scan',              lambda: ...),
@@ -133,43 +171,40 @@ def update_tray_icon_menu(icon):
         ), enabled=True),
         MenuItem("Interrupt worker",            lambda icon, item: ...,                             enabled=False),
         Menu.SEPARATOR,
-        MenuItem("Open config.yaml",            lambda icon, item: open_file('config.yaml')),
-        MenuItem("Open folder", Menu(
+        MenuItem("Open config.yaml",            lambda: open_file('config.yaml')),
+        MenuItem("Open Folder", Menu(
             MenuItem('App Data folder',         lambda: open_folder( CONFIG.get('app_data_dir') )),
-            MenuItem('Project folder',          lambda: open_folder( get_self_path() )), 
-            MenuItem('Logs folder',             lambda: ...), 
+            MenuItem('Project folder',          lambda: open_folder( get_root_path() )), 
+            MenuItem('Logs folder',             lambda: open_folder( get_logsdir_path() )), 
         )),
-        # MenuItem("Open Logs", Menu(
-        #     MenuItem('Server Logs',             lambda: ...),
-        #     MenuItem('Manager LOgs',            lambda: ...),
-        # )),
+        MenuItem("Open Logs", Menu(
+            MenuItem('Server Logs',             lambda: open_file( get_latest_logfile('server') )),
+            MenuItem('Worker Logs',             lambda: ...),
+        )),
         Menu.SEPARATOR,
-        MenuItem("Quit",                        lambda icon, item: icon.stop()),
+        MenuItem("Quit",                        lambda icon, item: quit_app(icon)),
     )
 
 
+#region - HELPERS ------------------------------------------------------------------------------------------------------
+
+def get_root_path():
+    if getattr(sys, 'frozen', False):
+        file = sys.executable
+    else:
+        file = os.path.dirname(__file__)
+    return os.path.dirname(os.path.abspath(file))
+
+def get_logsdir_path():
+    return os.path.join( get_root_path(), '.logs', 'tray_app' )
+
+def get_latest_logfile(root):
+    logsdir = get_logsdir_path()
+    return [ os.path.join(logsdir, f) for f in os.listdir(logsdir) if f.startswith(root) ][0]
+
 #region - START --------------------------------------------------------------------------------------------------------
 
-icon = Icon(
-    "CandyPop Video",
-    Image.open("assets/icon.png"),
-)
-icon.title = 'CandyPop Video Launcher'
-update_tray_icon_menu(icon)
 
-icon_thread = threading.Thread(target=icon.run)
-
-print('Starting tray icon thread')
-icon_thread.start()
-
-# INTERRUPT STUFF
-signal.signal(signal.SIGINT, lambda sig, frm: icon.stop())
-try:
-    while icon_thread.is_alive():
-        icon_thread.join(timeout=0.5)
-except KeyboardInterrupt:
-    print("Keyboard interrupt caught in main thread")
-    icon.stop()
-    icon_thread.join()
-
-print('Done.')
+if __name__ == '__main__':
+    main()
+    

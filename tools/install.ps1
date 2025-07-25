@@ -23,6 +23,6 @@ pyinstaller tray_app/tray_app.py `
 --onefile `
 --noconsole --icon=assets/icon.ico `
 --distpath . `
---name "CandyPopVideo Tray App"
+--name "CandyPopVideoTrayApp"
 Remove-Item .\*.spec
 Write-Host "[pyinstaller] Done"

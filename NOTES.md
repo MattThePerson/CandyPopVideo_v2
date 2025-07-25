@@ -6,10 +6,11 @@
 
 
 TINY_TERM:
-- [frontend] [add] dated marker button/ui
+- [frontend] add dated marker button/ui
 - [frontend] add video rating
 
 SHORT_TERM:
+- [app] flesh out tray icon app
 - [frontend] figure out why middle click drag opens results card hrefs
 - [frontend] catalogue page: add thresh and item counts (and numbered count view)
 - [media_gen] [fix] seek thumbs alignment
@@ -53,6 +54,7 @@ THEORETICAL:
 
 
 
+<!-- - [app] create tray icon app MVP -->
 <!-- - [frontend] add actor cards -->
 <!-- - [backend] figure out way to toggle NoCacheMiddleware for dev/prod purposes -->
 <!-- - [frontend] [result_card] add initial limit to actors & tags -->
@@ -130,6 +132,50 @@ info:
 
 
 
+### ALT STRUCTURE
+
+#   |   |   |   |   |   |   |   |   |
+|-- .venv/
+|-- .logs/
+|-- data/
+|-- frontend/               `// `
+|-- backend/               `// (Empty) Future go server rewrite`
+|-- src/                    `// app src`
+|   |-- media/            `// `
+|   |   |-- checkers.py
+|   |   |-- mass_generators.py
+|   |-- recommender/            `// `
+|   |   |-- search.py
+|   |   |-- similarity.py
+|   |   |-- tfidf.py
+|   |-- scan/            `// `
+|   |   |-- scan.py
+|   |   |-- process.py
+|   |-- schemas/                `// `
+|   |   |-- queries.py
+|   |   |-- video_data.py
+|   |   |-- video_interact.py
+|   |-- server/                    `// Used by Main`
+|   |   |-- api/                    `// `
+|   |   |   |-- actor_api.py
+|   |   |-- routers/                `// `
+|   |   |   |-- api_router.py
+|   |   |   |-- query_router.py
+|   |   |   |-- media_router.py
+|   |-- util/                    `// General utilities`
+|   |   |-- db.py
+|   |   |-- config.py
+|   |   |-- logging.py
+|   |   |-- general.py
+|   |-- worker_scripts/             `// Isolated scripts run as subprocess`
+|   |   |-- generateSomeMedia.py
+|   |-- __init__.py
+|   |-- main.py                 `// Main entrypoint, starts fastAPI`
+|   |-- worker.py               `// Worker, run manually or by main as subprocess`
+|-- tools/          `// Shell scripts for installing/running`
+|-- tray_app/       `// Launcher App (Tray Icon)`
+
+
 ## Routes
 
   `/`   // frontend
@@ -167,72 +213,3 @@ info:
 
 
 
-### STRUCTURE
-
-|-- .venv/
-|-- .logs/
-|-- data/
-|-- src/        `// bulk of python files`
-|   |-- routers/                 `// api routers`
-|   |   |-- api_media_router.py     `// `
-|   |   |-- api_router.py           `// `
-|   |   |-- search_router.py        `// `
-|   |-- recommender/            `// search & similarity`
-|   |   |-- search.py               `// `
-|   |   |-- similarity.py           `// `
-|   |   |-- tfidf.py                `// `
-|   |-- schemas/                   `// dataclasses to represent different objects` **Main & Manager**
-|   |   |-- video_data.py              `// `
-|   |   |-- video_interactions.py      `// `
-|   |-- util/                     `// `
-|   |   |-- media.py                `// `
-|   |   |-- meta.py                 `// `
-|   |   |-- process.py              `// `
-|   |-- db.py               `// databass stuff`
-|   |-- logging.py          `// `
-|-- frontend/      `// static js+html+css frontend`
-|-- launcher/      `// `
-|   |-- launcher.py         `// `
-|   |-- ProcessManager.py   `// `
-|-- tools/         `// shell scripts for installing/running`
-|   |-- run.ps1             `// `
-|   |-- run.sh              `// `
-|-- main.py                 `// fastapi backend`
-|-- manager.py              `// script for scanning libraries and generating media`
-|-- config.yaml             `// config (appdata dir, library dirs, ...)`
-|-- config.py               `// reads config.yaml into importable global variables`
-|-- requirements.txt        `// `
-
-### ALT STRUCTURE
-
-
-#   |   |   |   |   |   |   |   |   |
-|-- .venv/
-|-- .logs/
-|-- data/
-|-- frontend/               `// `
-|-- src/                    `// app src`
-|   |-- backend/                `// Use by worker`
-|   |   |-- recommender/            `// `
-|   |   |   |-- search.py
-|   |   |   |-- similarity.py
-|   |   |   |-- tfidf.py
-|   |   |-- schemas/                `// `
-|   |   |   |-- queries.py
-|   |   |   |-- video_data.py
-|   |   |   |-- video_interact.py
-|   |-- server/                    `// Used by Main`
-|   |   |-- api/                    `// `
-|   |   |   |-- actor_api.py
-|   |   |-- routers/                `// `
-|   |   |   |-- api_router.py
-|   |   |   |-- query_router.py
-|   |   |   |-- media_router.py
-|   |-- main.py                 `// Main entrypoint, starts fastAPI`
-|   |-- backend_worker.py       `// Worker, run manually or by main as subprocess`
-|   |-- db.py
-|   |-- config.py
-|   |-- logging.py
-|   |-- general_util.py
-|-- tools/       `// `
-|-- tray_app/       `// `

@@ -1,13 +1,19 @@
 import subprocess
 import threading
+import logging
+from logging.handlers import RotatingFileHandler
+import os
+
 
 class ProcessManager:
-    def __init__(self, cmd):
+    def __init__(self, cmd, logfile=None):
         self.cmd = cmd
         self.process: None|subprocess.Popen = None
         self.status = "stopped"
         self._stdout_thread = None
         self._stop_reading = threading.Event()
+        if logfile:
+            self.logger = self._initLogger(logfile)
 
     def start(self):
         if self.process and self.process.poll() is None:
@@ -20,11 +26,14 @@ class ProcessManager:
         self._stdout_thread.start()
 
     def _read_stdout(self):
-        for line in self.process.stdout:
-            if self._stop_reading.is_set():
-                break
-            print(f"[{self.cmd[0]}] {line.strip()}")
-            # Optionally parse lines to update status here
+        if self.process and self.process.stdout:
+            for line in self.process.stdout:
+                if self._stop_reading.is_set():
+                    break
+                print(f"[{self.cmd[0]}] {line.strip()}")
+                if self.logger:
+                    self.logger.info(line.strip())
+                # Optionally parse lines to update status here
 
     def stop(self):
         if self.process and self.process.poll() is None:
@@ -47,3 +56,12 @@ class ProcessManager:
 
     def get_status(self):
         return self.status
+
+    def _initLogger(self, file):
+        os.makedirs(os.path.dirname(file), exist_ok=True)
+        logger = logging.getLogger('tray-app-server')
+        logger.setLevel(logging.INFO)
+        handler = RotatingFileHandler(file, maxBytes=1_000_000, backupCount=5)
+        handler.setFormatter( logging.Formatter('%(asctime)s %(message)s') )
+        logger.addHandler(handler)
+        return logger
