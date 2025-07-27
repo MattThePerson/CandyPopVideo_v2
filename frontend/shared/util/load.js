@@ -146,6 +146,10 @@ function _get_card_options() {
             card_options.card_width = "33rem";
             card_options.aspect_ratio = "18/9";
             break;
+        case "extra-large":
+            card_options.card_width = "40rem";
+            card_options.aspect_ratio = "19/9";
+            break;
     }
     
     return card_options;

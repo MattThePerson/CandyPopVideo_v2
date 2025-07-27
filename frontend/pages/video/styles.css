@@ -35,14 +35,14 @@ section.video-info-section {
     width: 100%;
     /* max-width: 80rem; */
     justify-content: space-between;
-    padding: 0.8rem 8%;
+    padding: 0.4rem 9%;
     background: #080808;
     padding-bottom: 1.5rem;
     border-bottom: 1px solid #fff3;
     border-top: 1px solid #fff5;
 }
 
-.info-container {
+.about-container {
     display: flex;
     flex-direction: column;
 }
@@ -50,7 +50,7 @@ section.video-info-section {
 .title-bar {
     display: flex;
     align-items: center;
-    margin-bottom: 0.8rem;
+    margin-bottom: 0.3rem;
 }
 
 /* year-studio bar */
@@ -59,24 +59,28 @@ section.video-info-section {
     gap: 0.9rem;
     align-items: center;
     margin-bottom: 0.3rem;
-    margin-left: 1.5rem;
+    margin-left: 3.4rem;
 }
 .collection {
-    border: 1px solid #eee;
+    border: 1px solid #ddd;
     border-radius: 5px;
-    padding: 2.5px 8px 0 8px;
+    padding: 2px 8px 1px 8px;
     font-weight: 600;
+    font-size: 15px;
 }
 .year {
     font-weight: bold;
-    font-size: 19px;
+    font-size: 17px;
+    color: #ddd;
 }
 .studios-container {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 18px;
-    color: #bbb;
+    font-size: 17px;
+}
+.studios-container a {
+    color: #ccc;
 }
 .studios-container > div {
     background: #f51d;
@@ -125,22 +129,7 @@ section.video-info-section {
 }
 
 /* interactions buttons */
-
-.interactions-container {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    height: fit-content;
-}
-
-.interactions-container button {
-    background:slateblue;
-    color: white;
-    height: fit-content;
-    padding: 3px 6px;
-    border-radius: 4px;
-    cursor: pointer;
-}
+/* ... */
 
 
 /* - RELATED VIDEOS (CAROUSEL) ---------------------------------------------- */

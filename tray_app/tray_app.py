@@ -10,6 +10,7 @@ import subprocess
 import os
 import sys
 import platform
+import pyperclip
 
 # Add python venv binaries to PATH (if ever switching to go)
 # base_dir = os.path.dirname(os.path.abspath(sys.executable))
@@ -21,34 +22,6 @@ import platform
 #     os.environ["PATH"] = os.path.join(venv_path, "bin") + os.pathsep + os.environ["PATH"]
 
 
-#region - MAIN ---------------------------------------------------------------------------------------------------------
-
-def main():
-    
-    icon = Icon(
-        "CandyPop Video",
-        Image.open("assets/icon.png"),
-    )
-    icon.title = 'CandyPop Video Launcher'
-    update_tray_icon_menu(icon)
-
-    icon_thread = threading.Thread(target=icon.run)
-
-    print('Starting tray icon thread')
-    icon_thread.start()
-
-    # INTERRUPT STUFF
-    signal.signal(signal.SIGINT, lambda sig, frm: icon.stop())
-    try:
-        while icon_thread.is_alive():
-            icon_thread.join(timeout=0.5)
-    except KeyboardInterrupt:
-        print("Keyboard interrupt caught in main thread")
-        icon.stop()
-        icon_thread.join()
-
-    print('Done.')
-    
 
 #region - GLOBALS ------------------------------------------------------------------------------------------------------
 
@@ -70,7 +43,7 @@ SERVER_PROC = ProcessManager(
 
 #region - METHODS ------------------------------------------------------------------------------------------------------
 
-def start_backend(icon):
+def start_backend():
     icon.title = 'Starting backend ...'
     print('Starting backend ...')
     SERVER_PROC.start()
@@ -78,14 +51,14 @@ def start_backend(icon):
     print('Backend running!')
     update_tray_icon_menu(icon)
 
-def restart_backend(icon):
+def restart_backend():
     print('Stopping')
     SERVER_PROC.stop()
     print('Starting')
     SERVER_PROC.start()
     print('Done')
 
-def stop_backend(icon):
+def stop_backend():
     icon.title = 'Stopping backend ...'
     print('Stopping backend ...')
     SERVER_PROC.stop()
@@ -98,20 +71,60 @@ def backend_is_running():
     return SERVER_PROC.is_running() or False
 
 
-def quit_app(icon):
+def quit_app():
     SERVER_PROC.stop()
     icon.stop()
 
 
 #region - OPEN RESOURCES -----------------------------------------------------------------------------------------------
 
-def open_app(icon):
+def open_url(url):
     webbrowser.open(APP_URL)
 
-def copy_app_url(icon):
+def open_url_in_browser(url, browser):
+    browser_paths = {
+        'Brave': {
+            'win32': [
+                r"C:\Program Files\BraveSoftware\Brave-Browser\Application\brave.exe",
+                r"C:\Program Files (x86)\BraveSoftware\Brave-Browser\Application\brave.exe"
+            ],
+            'darwin': ["/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"],
+            'linux': ["brave-browser", "brave"],
+        },
+        'Firefox': {
+            'win32': [
+                r"C:\Program Files\Mozilla Firefox\firefox.exe",
+                r"C:\Program Files (x86)\Mozilla Firefox\firefox.exe"
+            ],
+            'darwin': ["/Applications/Firefox.app/Contents/MacOS/firefox"],
+            'linux': ["firefox"],
+        },
+        'Chrome': {
+            'win32': [
+                r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+                r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
+            ],
+            'darwin': ["/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"],
+            'linux': ["google-chrome", "chrome", "chromium-browser", "chromium"],
+        }
+    }
+    for path in browser_paths[browser].get(sys.platform, []):
+        try:
+            if sys.platform == 'win32':
+                subprocess.Popen([path, APP_URL])
+            elif sys.platform == 'darwin':
+                subprocess.Popen([path, APP_URL])
+            else: # Linux or others
+                subprocess.Popen([path, APP_URL])
+            return True
+        except FileNotFoundError:
+            continue
+
+
+def copy_app_url():
     ...
 
-def scan_libraries(icon):
+def scan_libraries():
     icon.title = 'Scanning ...'
 
 
@@ -143,17 +156,17 @@ def toggle_start_on_login():
 
 def update_tray_icon_menu(icon):
     icon.menu = Menu(
-        MenuItem("Open App",                    lambda icon, item: open_app(icon)),
+        MenuItem("Open App",                    lambda icon, item: open_url(APP_URL)),
         MenuItem("Open App in ...", Menu(
-            MenuItem('Brave',                   lambda: ...),
-            MenuItem('Firefox',                 lambda: ...),
-            MenuItem('Chrome',                  lambda: ...),
+            MenuItem('Brave',                   lambda: open_url_in_browser(APP_URL, 'Brave')),
+            MenuItem('Firefox',                 lambda: open_url_in_browser(APP_URL, 'Firefox')),
+            MenuItem('Chrome',                  lambda: open_url_in_browser(APP_URL, 'Chrome')),
         )),
-        MenuItem("Copy App URL",                lambda: ...),
+        MenuItem("Copy App URL",                lambda: pyperclip.copy(APP_URL)),
         Menu.SEPARATOR,
-        MenuItem("Start App",                   lambda icon, item: start_backend(icon),             enabled=not backend_is_running()),
-        MenuItem("Restart App",                 lambda icon, item: restart_backend(icon),           enabled=backend_is_running()),
-        MenuItem("Stop App",                    lambda icon, item: stop_backend(icon),              enabled=backend_is_running()),
+        MenuItem("Start App",                   lambda icon, item: start_backend(),             enabled=not backend_is_running()),
+        MenuItem("Restart App",                 lambda icon, item: restart_backend(),           enabled=backend_is_running()),
+        MenuItem("Stop App",                    lambda icon, item: stop_backend(),              enabled=backend_is_running()),
         MenuItem("Restart on Crash",            lambda icon, item: toggle_start_on_login(),         checked=lambda item: start_on_login),
         Menu.SEPARATOR,
         MenuItem("Scan Libraries", Menu(
@@ -182,7 +195,7 @@ def update_tray_icon_menu(icon):
             MenuItem('Worker Logs',             lambda: ...),
         )),
         Menu.SEPARATOR,
-        MenuItem("Quit",                        lambda icon, item: quit_app(icon)),
+        MenuItem("Quit",                        lambda icon, item: quit_app()),
     )
 
 
@@ -202,9 +215,31 @@ def get_latest_logfile(root):
     logsdir = get_logsdir_path()
     return [ os.path.join(logsdir, f) for f in os.listdir(logsdir) if f.startswith(root) ][0]
 
+
 #region - START --------------------------------------------------------------------------------------------------------
 
-
 if __name__ == '__main__':
-    main()
+    icon = Icon(
+        "CandyPop Video",
+        Image.open("assets/icon.png"),
+    )
+    icon.title = 'CandyPop Video Launcher'
+    update_tray_icon_menu(icon)
+
+    icon_thread = threading.Thread(target=icon.run)
+
+    print('Starting tray icon thread')
+    icon_thread.start()
+
+    # INTERRUPT STUFF
+    signal.signal(signal.SIGINT, lambda sig, frm: icon.stop())
+    try:
+        while icon_thread.is_alive():
+            icon_thread.join(timeout=0.5)
+    except KeyboardInterrupt:
+        print("Keyboard interrupt caught in main thread")
+        icon.stop()
+        icon_thread.join()
+
+    print('Done.')
     

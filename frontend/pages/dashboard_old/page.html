@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en"> <!-- DASHBOARD PAGE -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catalogue Page</title>
+    <link rel="icon" type="image/x-icon" href="/static/icons/donut-pngs/donut_pink_inner.png">
+
+    <script type="module" src="script.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="/global.css">
+    
+</head>
+<body>
+    <custom-header></custom-header>
+    
+    <main>
+
+        <div class="terminal-container">
+            <div class="buttons-bar">
+                <div class="buttons-container">
+                    <button id="help-button">help</button>
+                    <button id="clear-button">clear history</button>
+                    <button id="interrupt-button">send interrupt</button>
+                    <button id="websocket-status-button" class="connecting">connecting</button>
+                </div>
+                <div class="buttons-container">
+                    <button class="common-option-button">--scan-libraries</button>
+                    <button class="common-option-button">--generate-media all</button>
+                    <button class="common-option-button added-within-option">--generate-media all</button>
+                </div>
+            </div>
+            <div id="terminal">
+                <div class="text-box"></div>
+                <div class="input-bar">
+                    <div class="line-start-arrow">></div>
+                    <input type="text" autocomplete="off" placeholder="">
+                </div>
+            </div>
+            
+        </div>
+        
+    </main>
+    
+    <custom-footer></custom-footer>
+</body>
+</html>

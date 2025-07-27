@@ -168,7 +168,7 @@ export class MyCard extends HTMLElement {
         $shadow.find('.thumb-container').one('mouseenter', () => {
             
             if (this.USE_VIDEO_TEASERS) {
-                console.log('ensuring teaser video');
+                console.debug('ensuring teaser video');
                 $.get('/media/ensure/teaser-small/'+this.video_hash, (data, status) => {
                     if (status === 'success') {
                         const teaser_el = $shadow.find('.teaser-media');
@@ -177,7 +177,7 @@ export class MyCard extends HTMLElement {
                 })
 
             } else {
-                console.log('ensuring teaser thumbs');
+                console.debug('ensuring teaser thumbs');
                 $.get('/media/ensure/teaser-thumbs-small/'+this.video_hash, (data, status) => {
                     if (status === 'success') {
                         // console.log('teaser_thumbs ensured!');
@@ -292,6 +292,7 @@ export class MyCard extends HTMLElement {
         
         const year_el_style = (date_released_fmt !== 'null') ? '' : 'display: none;';
         
+        const is_new = this._second_from_now(this.date_added) < 60*60*24*7;
 
         // #endregion
     
@@ -308,7 +309,12 @@ export class MyCard extends HTMLElement {
                     <img class="teaser-thumbs" alt="">
                     <video class="teaser-video" preload="none" muted loop autoplay></video>
                     <div class="stats">
-                        <div title="collection" class="collection">${this.collection}</div>
+                        <div class="collection-container">
+                            <div title="collection" class="collection">${this.collection}</div>
+                            <div title="added in last week" class="is-new-indicator"
+                                style="display: ${is_new ? "block;" : "none;"}"
+                            >NEW</div>
+                        </div>
                         <div class="top-right">
                             <div class="resolution" title="vertical resolution">
                                 ${this.resolution}p
@@ -526,6 +532,10 @@ export class MyCard extends HTMLElement {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    _second_from_now(date) {
+        return (Date.now() - Date.parse(date)) / 1000;
+    }
+    
     
     // #endregion
     
@@ -619,10 +629,16 @@ export class MyCard extends HTMLElement {
                         width: fit-content;
                     }
 
-                    .collection {
-                        position: relative;
+                    .collection-container {
+                        position: absolute;
                         top: 4px;
                         left: 7px;
+                        display: flex;
+                        gap: 3px;
+                        width: fit-content;
+                    }
+                    .collection {
+                        position: relative;
                         font-family: "Exo 2";
                         font-weight: 500;
                         font-size: 13px;
@@ -634,6 +650,19 @@ export class MyCard extends HTMLElement {
                     }
                     .collection:hover { opacity: 0.8; }
                     .collection:active { opacity: 1.0; }
+
+                    .is-new-indicator {
+                        display: none;
+                        position: relative;
+                        font-family: "Exo 2";
+                        font-weight: 500;
+                        font-size: 11px;
+                        padding: 2px 5px 0px 5px;
+                        color: rgb(255, 27, 27);
+                        border: 1.8px solid rgb(255, 32, 32);
+                        border-radius: 7px;
+                        background: #000b;
+                    }
 
                     .top-right {
                         top: 3px;

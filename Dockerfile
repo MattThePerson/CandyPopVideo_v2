@@ -1,7 +1,8 @@
 FROM python:3.11-slim
 
 # Install system deps
-RUN apt-get update && apt-get install -y libgl1 ffmpeg
+RUN apt-get update && apt-get install -y libgl1 ffmpeg && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
 WORKDIR /app
@@ -10,12 +11,11 @@ WORKDIR /app
 COPY . .
 
 # Install pip requirements in a local venv
-RUN python -m venv .venv && \
-    ./.venv/bin/pip install --upgrade pip && \
-    ./.venv/bin/pip install -r requirements.txt
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
 
 # Expose port (change if needed)
 EXPOSE 8013
 
 # Run using uvicorn from the venv
-CMD ["./.venv/bin/uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8013"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8013"]

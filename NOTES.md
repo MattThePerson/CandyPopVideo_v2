@@ -3,7 +3,6 @@
 
 ## TODO
 
-
 TINY_TERM:
 - [frontend] add dated marker button/ui
 - [frontend] add video rating
@@ -11,7 +10,6 @@ TINY_TERM:
 SHORT_TERM:
 - [app] flesh out tray icon app
 - [frontend] figure out why middle click drag opens results card hrefs
-- [frontend] catalogue page: add thresh and item counts (and numbered count view)
 - [media_gen] [fix] seek thumbs alignment
 - [frontend] create PassionPlayer MVP
 
@@ -54,6 +52,8 @@ THEORETICAL:
 
 
 
+<!-- - [frontend] [catalogue_page] Sort by newest added video -->
+<!-- - [frontend] [catalogue_page] add thresh and item counts (and numbered count view) -->
 <!-- - [app] create tray icon app MVP -->
 <!-- - [frontend] add actor cards -->
 <!-- - [backend] figure out way to toggle NoCacheMiddleware for dev/prod purposes -->

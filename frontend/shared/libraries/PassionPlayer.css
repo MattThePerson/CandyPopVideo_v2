@@ -17,9 +17,9 @@ video {
     user-select: none;
 }
 
-/* PROGRESS BAR */
+/* - VIDEO CONTROLS --------------------------------------------------------- */
 
-/* progress bad default */
+/* PROGRESS BAR DEFAULT */
 
 #progress-bar-default {
     /* display: none; */
@@ -44,7 +44,7 @@ video {
     background: pink;
 }
 
-/* progress bar alt */
+/* PROGRESS BAR ALT */
 
 #progress-bar-alt {
     display: none;
@@ -69,7 +69,21 @@ video {
 }
 
 
-/* PLAY PAUSE INDICATOR */
+/* other video controls */
+
+.time-duration-container {
+    position: absolute;
+    bottom: 3rem;
+    left: 4rem;
+    display: flex;
+    gap: 4px;
+    background: #0007;
+    padding: 2px 4px;
+    border-radius: 2px;
+}
+
+
+/* PLAY/PAUSE INDICATOR */
 
 .play-pause-indicator {
     width: fit-content;
@@ -123,5 +137,15 @@ video {
 
 .seek-thumbnail {
     height: 100%;
+}
+
+#seek-thumbs-container .time {
+    position: absolute;
+    left: 3px;
+    /* background: green; */
+    font-size: 12px;
+    padding: 1px 5px;
+    background: #0008;
+    border-radius: 3px;
 }
 

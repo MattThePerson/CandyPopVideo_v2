@@ -130,10 +130,10 @@ def backend_manager(args: argparse.Namespace, ws=None):
             succ, fail = mass_generators.mass_generate_teasers_small( *alist, **kdict )
             succs['teasers'] = succ
             fails['teasers'] = fail
-        if opt == 'all' or opt == 'seek_thumbs':   
-            succ, fail = mass_generators.mass_generate_seek_thumbs( *alist, **kdict )
-            succs['seek_thumbs'] = succ
-            fails['seek_thumbs'] = fail
+        # if opt == 'all' or opt == 'seek_thumbs':   
+        #     succ, fail = mass_generators.mass_generate_seek_thumbs( *alist, **kdict )
+        #     succs['seek_thumbs'] = succ
+        #     fails['seek_thumbs'] = fail
         if opt == 'all' or opt == 'preview_thumbs':
             succ, fail = mass_generators.mass_generate_preview_thumbs( *alist, **kdict )
             succs['preview_thumbs'] = succ

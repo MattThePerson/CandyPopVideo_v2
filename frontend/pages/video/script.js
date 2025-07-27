@@ -25,10 +25,11 @@ function main(video_hash) {
         const info_section = $('section.video-info-section');
         hydrate_info_section(info_section, video_data);
     
+        // return;
+        
         /* load recommended (related & similar) videos */
         const related_videos_section = $('section.related-videos-section').get(0);
         const similar_videos_section = $('.similar-videos-section').get(0);
-        
         load_recommended_videos(
             video_data,
             related_videos_section,
@@ -37,6 +38,7 @@ function main(video_hash) {
         
     });
     
+    // return;
     
     /* - video interactions ------------------------------------------------- */
 
@@ -81,6 +83,14 @@ function main(video_hash) {
  */
 function hydrate_info_section(section, vd) {
     
+    /* quick stats section */
+    section.find('.duration').text(_format_seconds(vd.duration_seconds));
+    section.find('.resolution').text(vd.resolution + 'p');
+    section.find('.fps').text(vd.fps + 'fps');
+    section.find('.bitrate').text(Math.floor(vd.bitrate/100)/10 + ' MB/s');
+    section.find('.filesize').text(_format_filesize(vd.filesize_mb));
+
+    /* title/year */
     let title_fmt = vd.title.replace(';', ':');
     if (vd.dvd_code) title_fmt = `[${vd.dvd_code}] ` + title_fmt;
     section.find('.title-bar h1').text( title_fmt );
@@ -160,6 +170,7 @@ function hydrate_info_section(section, vd) {
         }
     });
     
+
 }
 
 
@@ -211,6 +222,14 @@ function _format_seconds(seconds) {
         return `${secs} secs`;
     }
     
+}
+
+
+function _format_filesize(mb) {
+    if (mb >= 1000) {
+        return (Math.floor(mb/100)/10).toString() + ' GB';
+    }
+    return (Math.floor(mb)).toString() + ' MB';
 }
 
 

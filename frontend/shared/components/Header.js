@@ -131,6 +131,7 @@ export function Header(){
                             <button id="card-size-small">small</button>
                             <button id="card-size-medium">medium</button>
                             <button id="card-size-large">large</button>
+                            <button id="card-size-extra-large">extra large</button>
                         </div>
                     </section>
                     <section class="card-style">

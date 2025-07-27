@@ -9,8 +9,8 @@ async function main() {
 
     /* Ensure catalogue type in url */
     const default_type = 'actor';
-    const default_sortby = 'alphabetic';
-    
+    const default_sortby = 'newest-video';
+
     
     /* REQUEST CATALOGUE */
     const query = {
@@ -30,16 +30,17 @@ async function main() {
         data: JSON.stringify(query),
     });
 
-    // console.log('catalogue:', response);
+    console.log('catalogue:', response);
 
     const catalogue_nav_buttons = $('.catalogue-page-nav button')
     const sortby_buttons = $('.sortby-options-bar button');
     
+    /* RENDER CATALOGUE */
     const renderCatalogue = () => {
         const urlParams = new URLSearchParams(window.location.search);
         const catalogue_type = urlParams.get('type') || default_type;
         const catalogue_sortby = urlParams.get('sortby') || default_sortby;
-        const scene_count_thresh = 10;
+        const scene_count_thresh = $('.count-thresh-slider').val();
 
         /* page changes */
         catalogue_nav_buttons.each((_, button) => button.classList.remove('selected') );
@@ -87,6 +88,25 @@ async function main() {
     });
 
     window.addEventListener('popstate', renderCatalogue);
+
+    /* count thresh inputs */
+    const count_thresh_slider = $('.count-thresh-slider');
+    const count_thresh_input = $('.count-thresh-input');
+    count_thresh_slider.on('input', () => {
+        count_thresh_input.val(count_thresh_slider.val());
+    });
+    count_thresh_slider.on('change', () => {
+        renderCatalogue();
+    });
+
+    count_thresh_input.on('keydown', () => {
+        count_thresh_slider.val(count_thresh_input.val());
+        renderCatalogue();
+    })
+    
+    
+    
+    
     
 }
 
@@ -97,25 +117,35 @@ async function main() {
 
 function renderCatalogueList(catalogue, type, sortby, count_thresh) {
 
-    const key = type + '_counts';
+    const key = type + '_info';
     const items = catalogue[key].filter(item => item[1] >= count_thresh);
     const list_container = $('.catalogue-list');
     list_container.html('');
+    $('.item-count-display').text(`${items.length} ${type}s with at least ${count_thresh} videos`);
     
     if (items.length === 0) return;
+
+    const letter_nav = $('.letter-nav');
+    letter_nav.hide();
     
-    if (sortby === 'alphabetic') {
-        items.sort();
-        renderCatalogueList_alphabetic(items, list_container, type);
-    } else if (sortby === 'count') {
-        renderCatalogueList_count(items, list_container, type);
+    switch (sortby) {
+        case "alphabetic":
+            items.sort((a, b) => a[0].localeCompare(b[0]));
+            renderCatalogueList_alphabetic(items, list_container, type, letter_nav);
+            break;
+        case "count":
+            renderCatalogueList_count(items, list_container, type);
+            break;
+        case "newest-video":
+            items.sort((a, b) => b[2].localeCompare(a[2]));
+            renderCatalogueList_count(items, list_container, type)
+            break;
     }
     
 }
 
-function renderCatalogueList_alphabetic(items, container, type) {
+function renderCatalogueList_alphabetic(items, container, type, letter_nav) {
 
-    const letter_nav = $('.letter-nav');
     letter_nav.html('');
     letter_nav.css('display', 'flex');
     
@@ -146,11 +176,23 @@ function renderCatalogueList_alphabetic(items, container, type) {
 function renderCatalogueList_count(items, container, type) {
     
     let inner_html = '';
-    for (let [name, count] of items) {
-        inner_html += get_item_span(name, count, type);
+    for (let [name, count, newest, new_vids] of items) {
+        inner_html += get_item_span(name, count, newest, new_vids, type);
     }
-    // padding: 0 1rem 0.5rem 1rem;
-    // margin-left: 1rem;
+    container.append(/* html */`
+        <div class="item-group">
+            ${inner_html}
+        </div>
+    `)
+    
+}
+
+function renderCatalogueList_newestVideo(items, container, type) {
+    
+    let inner_html = '';
+    for (let [name, count, newest, new_vids] of items) {
+        inner_html += get_item_span(name, count, newest, new_vids, type);
+    }
     container.append(/* html */`
         <div class="item-group">
             ${inner_html}
@@ -169,7 +211,7 @@ function get_letter_nav_button(letter) {
                 const el = $('.alphabetic-group.group-'+letter).get(0)
                 el.classList.add('alph-group-highlighted');
                 window.scrollTo({
-                        top: el.getBoundingClientRect().top + window.scrollY - 170,
+                        top: el.getBoundingClientRect().top + window.scrollY - 190,
                         behavior: 'smooth',
                     })
                 document.addEventListener('wheel', () => {
@@ -184,31 +226,67 @@ function get_alphabetic_group_html(letter, items, type) {
 
     let inner_html = '';
 
-    for (let [name, count] of items) {
-        inner_html += get_item_span(name, count, type);
+    for (let [name, count, newest, new_vids] of items) {
+        inner_html += get_item_span(name, count, newest, new_vids, type);
     }
     
     return /* html */`
         <div class="alphabetic-group group-${letter.toUpperCase()}">
             <h2>${letter.toUpperCase()}</h2>
-            ${inner_html}
+            <div class="item-group">
+                ${inner_html}
+            </div>
         </div>
     `;
 }
 
-function get_item_span(name, count, type) {
+function get_item_span(name, count, newest, new_vids, type) {
+    const newest_ago = _format_date_added(newest);
     return /* html */`
-        <a class="item-span" href="/pages/search/page.html?${type}=${name}">
-            <div class="name">${titleCase(name)}</div>
-            <div class="separator"></div>
-            <div class="count">${count}</div>
-        </a>
+        <div class="item-span">
+            <div title="videos added in last 7 days" class="new-vids">
+                ${(new_vids) ? new_vids + " new" : ""}
+            </div>
+            <a class="item-link" href="/pages/search/page.html?${type}=${name}">
+                <div class="name-container">
+                    <div class="name">${titleCase(name)}</div>
+                    <div class="separator"></div>
+                    <div class="count">${count} vids</div>
+                </div>
+            </a>
+            <div class="newest-container">
+                <div title="newest video added: ${newest}" class="newest">updated ${newest_ago} ago</div>
+            </div>
+        </div>
     `
 }
 
 
+// #endregion
+
+// #region - HELPERS ---------------------------------------------------------------------------------------------------
+
 const titleCase = str =>
     str.replace(/\b\w/g, char => char.toUpperCase());
+
+
+function _format_date_added(date_added) {
+    let diff_ms = (new Date()).getTime() - (new Date(date_added.replace(' ', 'T'))).getTime();
+    let string = ['sec', 'min', 'hour', 'day', 'week', 'month', 'year'];
+    let mult =  [60, 60, 24, 7, 4.345, 12, 10];
+    let limit = [60, 60, 24, 7, 3*4.345, 12*3, 10];
+    let ms = 1000;
+    for (let i = 0; i < mult.length; i++) {
+        if (diff_ms < ms*limit[i]) {
+            let unit = Math.floor(diff_ms / ms);
+            let ret = unit + ' ' + string[i];
+            if (unit > 1)
+                ret = ret + 's';
+            return ret;
+        }
+        ms *= mult[i];
+    }
+}
 
 
 // #endregion

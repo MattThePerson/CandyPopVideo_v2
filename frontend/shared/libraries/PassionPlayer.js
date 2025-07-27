@@ -63,6 +63,8 @@ export class PassionPlayer {
         this.video = this.shadow.querySelector('video');
         this.log('video loaded');
         
+        this.hydrate();
+        
         // add keybinds ...
         this.addKeybinds(this.keybind_override_elements);
 
@@ -105,6 +107,13 @@ export class PassionPlayer {
 
     // #region - HANDLERS ----------------------------------------------------------------------------------------------
     
+    
+    hydrate() {
+
+        /* set video duration */
+        this.$('.time-duration-container .duration').text( this.format_time(this.video.duration) );
+        
+    }
     
     addEventListeners() {
 
@@ -159,6 +168,8 @@ export class PassionPlayer {
             const ts = this.video.currentTime;
             const perc = ts / video_duration * 100;
             progress_bar.width( perc+'%' );
+
+            this.$('.time-duration-container .current').text( this.format_time(this.video.currentTime) );
         })
 
         /* toggle container height */
@@ -196,17 +207,25 @@ export class PassionPlayer {
                 preload="metadata"
             ></video>
 
-            <!-- video controls -->
+            <!-- video controls (things that go invisible) -->
             <div class="video-controls">
                 
-                <div id="progress-bar-default" class="progress-bar-interact-zone"> <!-- default progress bar -->
+                <!-- default progress bar -->
+                <div id="progress-bar-default" class="progress-bar-interact-zone">
                     <div class="progress-bar-wrapper">
                         <div class="progress-bar"></div>
                     </div>
                 </div>
 
-                <div id="progress-bar-alt"> <!-- alt progress bar -->
+                <!-- alt progress bar -->
+                <div id="progress-bar-alt">
                     <div id="playhead"></div>
+                </div>
+
+                <div class="time-duration-container">
+                    <div class="current">xx.xx.xx</div>
+                    <span>/</span>
+                    <div class="duration"></div>
                 </div>
 
             </div>
@@ -228,6 +247,7 @@ export class PassionPlayer {
 
             <!-- seek thumbs container -->
             <div id="seek-thumbs-container">
+                <div class="time"></div>
                 <div class="seek-thumbnail"></div>
             </div>
             
@@ -272,66 +292,7 @@ export class PassionPlayer {
     
     // #endregion
     
-    // #region - HELPERS -----------------------------------------------------------------------------------------------
-
-    $(selector) {
-        return $(this.shadow).find(selector);
-    }
-
-    log(msg) {
-        if (!this.quiet) {
-            console.log(msg);
-        }
-    }
-
-    /* get playback time as perc between 0 -> 1 */
-    setPlaybackTime(perc, progress_bar) {
-        const newTime = this.video.duration * perc;
-        this.video.currentTime = newTime;
-        progress_bar.style.width = `${perc * 100}%`;
-    }
-
-    toggle_playback() {
-        (this.video.paused) ? this.playVideo() : this.pauseVideo();
-    }
-
-    pauseVideo() {
-        this.video.pause();
-        this.flashPPIndicator('.pause-icon');
-    }
-
-    playVideo() {
-        this.video.play();
-        this.flashPPIndicator('.play-icon');
-    }
-
-    flashPPIndicator(selector) {
-        const play_icon = this.$('.play-icon');
-        const pause_icon = this.$('.pause-icon');
-        play_icon.hide();
-        pause_icon.hide();
-        void play_icon.get(0).offsetWidth; // Force reflow
-        void pause_icon.get(0).offsetWidth; // Force reflow
-        
-        const flash_icon = this.$(selector);
-        flash_icon.show();
-        flash_icon.addClass('shown');
-        setTimeout(() => flash_icon.removeClass('shown'), 1);
-    }
-
-    toggle_fullscreen() {
-        const container = this.video.parentElement;
-        if (!document.fullscreenElement) {
-            container.requestFullscreen().catch(err => console.error(err));
-        } else {
-            document.exitFullscreen();
-        }
-    }
-
-    
-    // #endregion
-
-    // #region - seek thumbs ---------------------------------------------------------------------------------------------------
+    // #region - SEEK THUMBS ---------------------------------------------------------------------------------------------------
     
     updateSeekThumbnail(mouse_x, video_perc) {
         if (this.seekThumbsContainer) {
@@ -363,7 +324,10 @@ export class PassionPlayer {
                 `-${sprite.x*scaleFactor}px -${sprite.y*scaleFactor}px`
             )
 
-            console.table(thumbIndex, video_perc);
+            /* update time */
+            this.$('#seek-thumbs-container .time').text( this.format_time(this.video.duration * video_perc/100) );
+
+            // console.table(thumbIndex, video_perc);
             
         }
     }
@@ -443,6 +407,89 @@ export class PassionPlayer {
     
     // #endregion
 
+    // #region - HELPERS -----------------------------------------------------------------------------------------------
+
+    $(selector) {
+        return $(this.shadow).find(selector);
+    }
+
+    log(msg) {
+        if (!this.quiet) {
+            console.log(msg);
+        }
+    }
+
+    /* get playback time as perc between 0 -> 1 */
+    setPlaybackTime(perc, progress_bar) {
+        const newTime = this.video.duration * perc;
+        this.video.currentTime = newTime;
+        progress_bar.style.width = `${perc * 100}%`;
+    }
+
+    toggle_playback() {
+        (this.video.paused) ? this.playVideo() : this.pauseVideo();
+    }
+
+    pauseVideo() {
+        this.video.pause();
+        this.flashPPIndicator('.pause-icon');
+    }
+
+    playVideo() {
+        this.video.play();
+        this.flashPPIndicator('.play-icon');
+    }
+
+    flashPPIndicator(selector) {
+        const play_icon = this.$('.play-icon');
+        const pause_icon = this.$('.pause-icon');
+        play_icon.hide();
+        pause_icon.hide();
+        void play_icon.get(0).offsetWidth; // Force reflow
+        void pause_icon.get(0).offsetWidth; // Force reflow
+        
+        const flash_icon = this.$(selector);
+        flash_icon.show();
+        flash_icon.addClass('shown');
+        setTimeout(() => flash_icon.removeClass('shown'), 1);
+    }
+
+    toggle_fullscreen() {
+        const container = this.video.parentElement;
+        if (!document.fullscreenElement) {
+            container.requestFullscreen().catch(err => console.error(err));
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
+    format_time(seconds_float) {
+
+        const hours = Math.floor( seconds_float/3600 );
+        const minutes = Math.floor( (seconds_float - hours*3600)/60 );
+        const seconds = Math.floor( seconds_float - hours*3600 - minutes*60 );
+        
+        let hours_str = hours.toString();
+        let minutes_str = minutes.toString();
+        let seconds_str = seconds.toString();
+        
+        hours_str = (hours_str.length == 2) ? hours_str : '0' + hours_str;
+        minutes_str = (minutes_str.length == 2) ? minutes_str : '0' + minutes_str;
+        seconds_str = (seconds_str.length == 2) ? seconds_str : '0' + seconds_str;
+        
+        let fmt = minutes_str + ':' + seconds_str;
+
+        if (hours > 0) {
+            fmt = hours_str + ':' + fmt;
+        }
+
+        return fmt;
+        
+    }
+
+    
+    // #endregion
+
     // #region - css ---------------------------------------------------------------------------------------------------
     
     getStyles() {
@@ -466,35 +513,4 @@ export class PassionPlayer {
 }
 
 
-
-
-
-
-
-
-/* load subtitles */
-async function loadSRTasVTT(srtUrl, video_el) {
-    const response = await fetch(srtUrl);
-    let srt = await response.text();
-
-    // console.log(srt);
-    
-    // Basic .srt → .vtt conversion
-    let vtt = 'WEBVTT\n\n' + srt
-        .replace(/\r/g, '')
-        .replace(/(\d+)\n(\d{2}:\d{2}:\d{2}),(\d{3}) --> (\d{2}:\d{2}:\d{2}),(\d{3})/g,
-                '$1\n$2.$3 --> $4.$5');
-
-    const blob = new Blob([vtt], { type: 'text/vtt' });
-    const url = URL.createObjectURL(blob);
-
-    const track = document.createElement('track');
-    track.kind = 'subtitles';
-    track.label = 'English';
-    track.srclang = 'en';
-    track.src = url;
-    track.default = true;
-
-    video_el.appendChild(track);
-}
 

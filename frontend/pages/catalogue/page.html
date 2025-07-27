@@ -31,7 +31,11 @@
             <div class="quick-filters-container">
                 <h2>QUICK FILTERS</h2>
                 <div class="holder">
-
+                    <span class="count-thresh-span">
+                        <h4>count threshold</h4>
+                        <input class="count-thresh-slider" type="range" min="1" max="50" value="5">
+                        <input class="count-thresh-input" type="text" value="5">
+                    </span>
                 </div>
             </div>
 
@@ -58,12 +62,14 @@
                 <div class="sortby-bar">
                     <h3>sort</h3>
                     <div class="sortby-options-bar">
+                        <button id="sortby-button-newest-video">newest video</button>
                         <button id="sortby-button-alphabetic" class="selected">alphabetic</button>
-                        <button id="sortby-button-count" >number of scenes</button>
+                        <button id="sortby-button-count">number of scenes</button>
                         <input class="relevance-query-input" type="text" placeholder="relevance">
                     </div>
                 </div>
 
+                <div class="item-count-display"></div>
                 <div class="letter-nav"></div>
             </div>
             
