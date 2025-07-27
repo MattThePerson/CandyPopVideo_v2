@@ -1,0 +1,22 @@
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Build output
+/dist/
+/bin/
+/build/
+
+# Dependency directories (optional)
+vendor/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Custom
+test*
