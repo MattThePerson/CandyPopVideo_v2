@@ -9,11 +9,12 @@ import (
 
 var (
 	cachedVideos map[string]schemas.VideoData
-	cacheTime time.Time
+	cacheTime time.Time // time when cache was created
+	cacheLastAccess time.Time
 	cacheMutex sync.Mutex
 )
 
-func GetCachedVideos(db_path string, cache_timeout int) (map[string]schemas.VideoData, error) {
+func GetCachedVideos(db_path string, cache_base_timeout int, cache_access_timeout int) (map[string]schemas.VideoData, error) {
 
 	mpfil := map[string]schemas.VideoData{}
 	
@@ -21,8 +22,11 @@ func GetCachedVideos(db_path string, cache_timeout int) (map[string]schemas.Vide
 	cacheMutex.Lock()
 	defer cacheMutex.Unlock()
 
-	if time.Since(cacheTime) < time.Duration(cache_timeout)*time.Second && cachedVideos != nil {
-		fmt.Println("Using cache!!!")
+	baseTimeout :=   time.Since(cacheTime)       > time.Duration(cache_base_timeout)*time.Second
+	accessTimeout := time.Since(cacheLastAccess) > time.Duration(cache_access_timeout)*time.Second
+	if !(baseTimeout && accessTimeout) && cachedVideos != nil {
+		cacheLastAccess = time.Now()
+		fmt.Printf("___USING CACHE___ cacheTime: %.2fs  lastAccess: %.2fs\n", time.Since(cacheTime).Seconds(), time.Since(cacheLastAccess).Seconds())
 		return cachedVideos, nil
 	}
 	
@@ -40,6 +44,7 @@ func GetCachedVideos(db_path string, cache_timeout int) (map[string]schemas.Vide
 
 	cachedVideos = mp
     cacheTime = time.Now()
+	cacheLastAccess = time.Now()
 	
 	return mpfil, nil
 

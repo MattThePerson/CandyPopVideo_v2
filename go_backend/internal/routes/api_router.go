@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"encoding/json"
 	"log"
 	"math/rand"
 
@@ -13,7 +12,6 @@ import (
 
 func IncludeApiRoutes(e *echo.Group, db_path string) {
 
-
 	// Get video data
 	e.GET("/get/video-data/:hash", func(c echo.Context) error {
 		hash := c.Param("hash")
@@ -23,13 +21,7 @@ func IncludeApiRoutes(e *echo.Group, db_path string) {
 			return c.String(500, "Unable to get data for hash: "+hash)
 		}
 		
-		d, err := json.Marshal(vd)
-		if err != nil {
-			log.Printf("🚨🚨 ERROR 🚨🚨: %v", err)
-			return c.String(500, "Unable to get marshal data: "+hash)
-		}
-		
-		return c.JSON(200, string(d))
+		return c.JSON(200, vd)
 	})
 
 
@@ -37,7 +29,7 @@ func IncludeApiRoutes(e *echo.Group, db_path string) {
 	e.GET("/get/random-video-hash", func(c echo.Context) error {
 
 		// get videos
-		mp, err := db.GetCachedVideos(db_path, 15)
+		mp, err := db.GetCachedVideos(db_path, 15, 3)
 		if err != nil {
 			log.Printf("🚨🚨 ERROR 🚨🚨: %v", err)
 			return c.String(500, "Unable to read table")

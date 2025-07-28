@@ -1,14 +1,20 @@
-// build: go build -ldflags="-s -w" -o main.exe main.go
+// build: go build -ldflags="-s -w" -o main.exe .
 package main
 
 import (
-	"os"
+	"flag"
+	"fmt"
 	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
 	"cpv_backend/internal/routes"
+)
+
+var (
+	devMode 	= flag.Bool("dev", false, "use dev mode")
+    serverPort	= flag.Int("port", 8010, "server port")
 )
 
 func NoCacheMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
@@ -26,6 +32,8 @@ func NoCacheMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 
 func main() {
 
+	flag.Parse()
+
 	// Get config variables
 	var config Config = GetConfig("../config.yaml")
 
@@ -36,15 +44,16 @@ func main() {
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "${method} ${uri} ${status} ${latency_human}\n",
 	}))
-	
+
 	e.Use(middleware.Recover())
 
-	if os.Getenv("DEV_MODE") == "1" {
+	if *devMode {
+		fmt.Println("Using NoCacheMiddleware")
 		e.Use(NoCacheMiddleware)
 	}
 
 	// Include routes
-	routes.IncludeMediaRoutes( 	  e.Group("/media"))
+	routes.IncludeMediaRoutes( 	  e.Group("/media"), config.DBPath, config.PreviewMediaDir)
 	routes.IncludeApiRoutes( 	  e.Group("/api"), config.DBPath)
 	routes.IncludeQueryRoutes( 	  e.Group("/api/query"))
 	routes.IncludeInteractRoutes( e.Group("/api/interact"))
@@ -56,7 +65,7 @@ func main() {
 
 	// Simple text endpoint
 	e.GET("/api/get-port", func(c echo.Context) error {
-		return c.String(200, "69 probs idgaf")
+		return c.String(200, "6969 probably idgaf")
 	})
 
 	// Simple JSON endpoint TODO: remove
@@ -70,6 +79,7 @@ func main() {
 	e.Static("/static/preview-media", config.PreviewMediaDir)
 	e.Static("/static/actor-store", config.ActorInfoDir)
 
-	e.Logger.Fatal(e.Start(":8080"))
+	addr := fmt.Sprintf(":%d", *serverPort)
+	e.Logger.Fatal(e.Start(addr))
 
 }
