@@ -88,7 +88,6 @@ THEORETICAL:
 
 ## GO REWRITE PATH
 
-0. Migrate DB
 1. Minimal Viable Product:
   - serve media (no ensures)
   - api router
@@ -139,7 +138,7 @@ info:
 |-- .logs/
 |-- data/
 |-- frontend/               `// `
-|-- backend/               `// (Empty) Future go server rewrite`
+|-- go_backend/               `// (Empty) Future go server rewrite`
 |-- src/                    `// app src`
 |   |-- media/            `// `
 |   |   |-- checkers.py

@@ -23,14 +23,14 @@ func GetConfig(fn string) Config {
 	// Read file
 	data, err := os.ReadFile(fn)
 	if err != nil {
-		log.Fatal("Unable to read file: " + fn)
+		log.Fatal(err)
 	}
 
 	// Parse into Config
 	c := Config{}
 
 	if err := yaml.Unmarshal([]byte(data), &c); err != nil {
-		log.Fatal("Unable to Unmarshal data to Config struct")
+		log.Fatal(err)
 	}
 
 	c.DBPath = 			c.AppDataDir + "/app.db"

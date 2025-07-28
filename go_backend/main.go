@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
-	"cpv_backend/routes"
+	"cpv_backend/internal/routes"
 )
 
 func NoCacheMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
@@ -24,33 +24,28 @@ func NoCacheMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-// #region - MAIN ------------------------------------------------------------------------------------------------------
-
 func main() {
 
 	// Get config variables
-	// PREVIEW_MEDIA_DIR, ACTOR_INFO_DIR, SUBTITLE_FOLDERS, TFIDF_MODEL_PATH, DATETIME_FORMAT
-	config := GetConfig("../config.yaml")
-
-	// d, _ := json.MarshalIndent(config, "", "    ")
-	// fmt.Println(reflect.TypeOf(d))
-	// fmt.Println(string(d))
+	var config Config = GetConfig("../config.yaml")
 
 	// Echo instance
 	e := echo.New()
 
-	// Use NoCache Middleware
-	if os.Getenv("MY_ENV_VAR") == "1" {
+	// Middleware
+	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Format: "${method} ${uri} ${status} ${latency_human}\n",
+	}))
+	
+	e.Use(middleware.Recover())
+
+	if os.Getenv("DEV_MODE") == "1" {
 		e.Use(NoCacheMiddleware)
 	}
 
-	// Middleware
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
-
 	// Include routes
 	routes.IncludeMediaRoutes( 	  e.Group("/media"))
-	routes.IncludeApiRoutes( 	  e.Group("/api"))
+	routes.IncludeApiRoutes( 	  e.Group("/api"), config.DBPath)
 	routes.IncludeQueryRoutes( 	  e.Group("/api/query"))
 	routes.IncludeInteractRoutes( e.Group("/api/interact"))
 

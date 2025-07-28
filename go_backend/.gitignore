@@ -19,4 +19,4 @@ vendor/
 Thumbs.db
 
 # Custom
-test*
+_test*
