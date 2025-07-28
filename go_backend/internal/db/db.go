@@ -25,7 +25,8 @@ func ReadSerializedRowFromTable[S any](db_path string, table string, id string) 
 	var data_serialized string
 	err = db.QueryRow("SELECT data FROM "+table+" WHERE id = ?", id).Scan(&data_serialized)
 	if err != nil {
-		return data, err
+		return data, nil
+		// return data, err
 	}
 	
 	// Unmarshal to schema

@@ -14,7 +14,7 @@ export function configure_page_nav(videos_filtered_count, time_taken, results_pe
     /** @type {HTMLElement} */
     const page_number = document.querySelector('#search-page-info .page-number')
     if (page_number) {
-        page_number.innerText += ' of ' + number_of_pages + ' (' + amount_of_results + ' search results, took ' + time_taken + ' seconds)';
+        page_number.innerText += ' of ' + number_of_pages + ' (' + amount_of_results + ' search results, took ' + Math.floor(time_taken*100)/100 + ' ms)';
     }
     
     const current_page = Math.floor(startfrom_index / results_per_page);

@@ -34,7 +34,7 @@ def ROUTE_search_videos(query: SearchQuery):
         'search_results': results,
         'videos_filtered_count': videos_filtered_count,
         'word_cloud': word_cloud,
-        'time_taken': round( time.time()-start, 3 ),
+        'time_taken': (time.time()-start)*1000,
     }
 
 

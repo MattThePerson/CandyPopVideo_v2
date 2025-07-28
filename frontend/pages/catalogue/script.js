@@ -17,7 +17,7 @@ async function main() {
         query_type: 'actors',        //  str = [ actors | studios ]
         query_string: null,          //  str|None
         use_primary_actors: true,    //  bool
-        filter_performer: null,      //  str|None
+        filter_actor: null,          //  str|None
         filter_studio: null,         //  str|None
         filter_collection: null,     //  str|None
         filter_tag: null,            //  str|None

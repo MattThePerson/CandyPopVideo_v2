@@ -53,10 +53,10 @@ func main() {
 	}
 
 	// Include routes
-	routes.IncludeMediaRoutes( 	  e.Group("/media"), config.DBPath, config.PreviewMediaDir)
-	routes.IncludeApiRoutes( 	  e.Group("/api"), config.DBPath)
-	routes.IncludeQueryRoutes( 	  e.Group("/api/query"))
-	routes.IncludeInteractRoutes( e.Group("/api/interact"))
+	routes.IncludeMediaRoutes( 	  e.Group("/media"), 		config.DBPath, config.PreviewMediaDir)
+	routes.IncludeApiRoutes( 	  e.Group("/api"), 			config.DBPath)
+	routes.IncludeQueryRoutes( 	  e.Group("/api/query"), 	config.DBPath)
+	routes.IncludeInteractRoutes( e.Group("/api/interact"), config.DBPath)
 
 	// hello there
 	e.GET("/api/hello-there", func(c echo.Context) error {

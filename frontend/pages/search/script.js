@@ -243,7 +243,8 @@ if (query.only_favourites)  onlyFavsCheckbox.checked = true;
 if (urlParams.size > 0) {
     makeApiRequestPOST_JSON('/api/query/search-videos', query, (results) => {
         
-        // console.log('search_results:', results);
+        console.log('search_results:', results);
+        // return;
 
         const card_type = "search-result-card-default"; // TODO: Replace with local storage
         

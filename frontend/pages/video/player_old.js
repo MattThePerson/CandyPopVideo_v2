@@ -5,6 +5,8 @@ import { loadSRTasVTT } from "../../shared/util/vtt.js";
 export function load_video_player(video_hash, video_data, url_params) {
     
     
+    // console.log("CREATING VIDEO PLAYER");
+    
     /* CREATE PLAYER */
 
     // @ts-ignore
@@ -48,10 +50,11 @@ export function load_video_player(video_hash, video_data, url_params) {
     let thumbActivateThickness = thumbActivateThickness_default;
 
     
-    // console.log('requesting seek thumbs');
-    makeApiRequestGET('/media/ensure/seek-thumbnails', [video_hash], () => {
-        loadThumbnails(playerContainer, thumbnailContainer, video_hash, video_data, thumbActivateThickness);
-    });
+    $.get("/media/ensure/seek-thumbnails/"+video_hash, (data, status) => {
+        if (status === "success") {
+            loadThumbnails(playerContainer, thumbnailContainer, video_hash, video_data, thumbActivateThickness);
+        }
+    })
 
     /** @type {HTMLElement} */
     const video_el = document.querySelector('#player video');
@@ -152,7 +155,7 @@ export function load_video_player(video_hash, video_data, url_params) {
 
 async function loadThumbnails(playerContainer, thumbnailContainer, video_hash, video_data, thumbActivateThickness) {
 
-    // console.log('loading seek thumbs');
+    console.debug('loading seek thumbs');
 
     const videoElement = document.querySelector('#player video');
     const videoDuration = video_data.duration_seconds;
