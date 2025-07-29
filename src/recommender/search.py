@@ -79,9 +79,12 @@ def filterVideoObjects(filtered: list[VideoData], search_query: SearchQuery):
     if q.date_released_to:    filtered = [ vid for vid in filtered if ( (vid.date_released and vid.date_released < q.date_released_to) ) ]
 
     include_terms = [ t.lower() for t in q.include_terms ]
-    for t_lower in include_terms:  filtered = [ vid for vid in filtered if ( t_lower in vid.path.lower() ) ]
+    for t_lower in include_terms:
+        filtered = [ vid for vid in filtered if ( t_lower in vid.path.lower() ) ]
+        
     exclude_terms = [ t.lower() for t in q.exclude_terms ]
-    for t_lower in exclude_terms:  filtered = [ vid for vid in filtered if ( t_lower not in vid.path.lower() ) ]
+    for t_lower in exclude_terms:
+        filtered = [ vid for vid in filtered if ( t_lower not in vid.path.lower() ) ]
     
     return filtered
 

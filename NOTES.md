@@ -4,19 +4,18 @@
 ## TODO
 
 TINY_TERM:
+- [media_gen] [fix] seek thumbs alignment
 - [frontend] add dated marker button/ui
 - [frontend] add video rating
 
 SHORT_TERM:
-- [app] flesh out tray icon app
+- [app] flesh out (and fix) tray icon app
 - [frontend] figure out why middle click drag opens results card hrefs
-- [media_gen] [fix] seek thumbs alignment
 - [frontend] create PassionPlayer MVP
 
 MEDIUM_TERM:
 - [data] port old favourites
 - [frontend] [finish] search panel
-
 - [frontend] [finish] catalogue page
 - [frontend] [finish] PassionPlayer
 - [frontend] [add] search panel: list/compact list view & page result count
@@ -87,6 +86,14 @@ THEORETICAL:
 
 
 ## GO REWRITE PATH
+
+- [go] get all non TFIDF stuff working
+- [go] get interactions working
+- [go] get search page working
+- [go] get catalogue page working
+- [go] get enforce media working
+<!-- - [go] get recommender working -->
+<!-- - [go] write go backend demo -->
 
 1. Minimal Viable Product:
   - serve media (no ensures)
@@ -173,6 +180,8 @@ info:
 |   |-- worker.py               `// Worker, run manually or by main as subprocess`
 |-- tools/          `// Shell scripts for installing/running`
 |-- tray_app/       `// Launcher App (Tray Icon)`
+
+
 
 
 ## Routes

@@ -1,4 +1,5 @@
 """ Functions for getting specific things from collection, eg. performers, studios, ... """
+import time
 from datetime import datetime
 
 from src.schemas import VideoData, CatalogueQuery
@@ -10,6 +11,7 @@ def get_catalogue(videos_list: list[VideoData], query: CatalogueQuery) -> dict[s
     category return map of scene counts. 
     """
     
+    start = time.time()
     q = query
     
     # apply sort performers choice
@@ -37,8 +39,9 @@ def get_catalogue(videos_list: list[VideoData], query: CatalogueQuery) -> dict[s
             # tf-idf stuff
             ...
         else:
-            result[item_type] = sorted(tuple_list, reverse=True, key=lambda x: x[1])
+            result[item_type] = sorted(tuple_list, reverse=True, key=lambda x: x["VideoCount"])
     
+    result["time_taken_ms"] = (time.time() - start) * 1000
     return result
 
 
@@ -57,10 +60,15 @@ def _get_item_info(videos_list: list[VideoData], selector_func) -> list[tuple]:
             oldest_video[item] = min( oldest_video.get(item, '2100'), video_data.date_added )
             if seconds_from_now(video_data.date_added) < (60*60*24*7): # a week old
                 new_videos[item] = new_videos.get(item, 0) + 1
-    return [
-        (item, item_counts.get(item), newest_video.get(item), new_videos.get(item))
-        for item in item_counts.keys()
-    ]
+    item_infos = []
+    for k in item_counts.keys():
+        item_infos.append({
+            "Name": 			k,
+            "VideoCount": 	    item_counts[k],
+            "NewestVideo": 	    newest_video[k],
+            "NewVideoCount": 	new_videos.get(k, 0),
+        })
+    return item_infos
 
 
 def get_video_actors_all(vd: VideoData) -> list[str]:

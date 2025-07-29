@@ -3,7 +3,6 @@ package routes
 import (
 	"cpv_backend/internal/db"
 	"cpv_backend/internal/schemas"
-	"log"
 
 	"github.com/labstack/echo/v4"
 )
@@ -15,8 +14,7 @@ func IncludeMediaRoutes(e *echo.Group, db_path string, preview_media_dir string)
 		video_hash := c.Param("video_hash")
 		vd, err := db.ReadSerializedRowFromTable[schemas.VideoData](db_path, "videos", video_hash)
 		if err != nil {
-			log.Printf("🚨🚨 ERROR 🚨🚨: %v", err)
-			return c.String(500, "Unable to get data for hash: "+video_hash)
+			handleServerError(c, 500, "Unable to get data for hash: "+video_hash, err)
 		}
 		return c.File(vd.Path)
 	})

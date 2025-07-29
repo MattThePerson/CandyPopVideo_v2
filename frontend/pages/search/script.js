@@ -208,7 +208,7 @@ const query = {
     date_released_to: null,     // str,
     only_favourites: false,     // bool,
     sortby: null,               // str|None,
-    limit: null,                // int,
+    limit: null,                  // int,
     startfrom: -1,              // int,
 }
 

@@ -3,7 +3,6 @@ package routes
 import (
 	"encoding/json"
 	"log"
-	"time"
 
 	"github.com/labstack/echo/v4"
 
@@ -31,6 +30,7 @@ func IncludeQueryRoutes(e *echo.Group, db_path string) {
 	// Get videodata
 	e.POST("/search-videos", func(c echo.Context) error {
 		
+		// query
 		var q schemas.SearchQuery
 		if err := StrictBind(c, &q); err != nil {
 			return c.String(400, "Invalid JSON: "+err.Error())
@@ -39,27 +39,24 @@ func IncludeQueryRoutes(e *echo.Group, db_path string) {
 		// get vidoes
 		mp, err := db.GetCachedVideos(db_path, 15, 3)
 		if err != nil {
-			log.Printf("🚨🚨 ERROR 🚨🚨: %v", err)
-			return c.String(500, "Unable to read table")
+			return handleServerError(c, 500, "Unable to read videos table", err)
+		}
+		vids := extractValuesFromMap(mp)
+
+		// interactions
+		i, err := db.ReadSerializedMapFromTable[schemas.VideoInteractions](db_path, "interactions")
+		// i, err := db.GetCachedInteractions(db_path, 5, 1)
+		if err != nil {
+			return handleServerError(c, 500, "Unable to read interactions table", err)
 		}
 
 		// get search results TODO: Replace with search logic
-		start := time.Now()
-		results := []schemas.VideoData{}
-		i := 0
-		for _, vd := range mp {
-			results = append(results, vd)
-			if i++; i >= 20 {
-				break
-			}
+		results, err := query.FilterAndSortVideos(vids, q, i)
+		if err != nil {
+			return handleServerError(c, 500, "Unable to filter and sort videos", err)
 		}
 		
-		return c.JSON(200, map[string]any{
-			"search_results": results,
-			"videos_filtered_count": i,
-			"word_cloud": nil,
-			"time_taken": float64(time.Since(start).Microseconds())/1000,
-		})
+		return c.JSON(200, results)
 	})
 
 
@@ -73,24 +70,15 @@ func IncludeQueryRoutes(e *echo.Group, db_path string) {
 		// get vidoes
 		mp, err := db.GetCachedVideos(db_path, 15, 3)
 		if err != nil {
-			log.Printf("🚨🚨 ERROR 🚨🚨: %v", err)
-			return c.String(500, "Unable to read table: "+err.Error())
+			return handleServerError(c, 500, "Unable to read videos table", err)
 		}
-		
-		// get values
-		videos_list := []schemas.VideoData{}
-		for _, vd := range mp {
-			videos_list = append(videos_list, vd)
-		}
+		vids := extractValuesFromMap(mp)
 
 		// get catalogue
-		start := time.Now()
-		cat, err := query.GetCatalogue(videos_list, q)
+		cat, err := query.GetCatalogue(vids, q)
 		if err != nil {
-			log.Printf("🚨🚨 ERROR 🚨🚨: %v", err)
-			return c.String(500, "GetCatalogue failed:"+err.Error())
+			return handleServerError(c, 500, "Unable to get catalogue", err)
 		}
-		cat.TimeTakenMS = float64(time.Since(start).Microseconds())/1000
 		return c.JSON(200, cat)
 	})
 
@@ -113,4 +101,23 @@ func IncludeQueryRoutes(e *echo.Group, db_path string) {
 	})
 
 
+}
+
+
+// #region - HELPERS ---------
+
+
+func extractValuesFromMap[S any](mp map[string]S) []S {
+	values := []S{}
+	for _, v := range mp {
+		values = append(values, v)
+	}
+	return values
+}
+
+func handleServerError(c echo.Context, status int, msg string, err error) error {
+	server_prefix := "🚨🚨 ERROR 🚨🚨: "
+	err_msg := msg + ": " + err.Error()
+	log.Println(server_prefix + err_msg)
+	return c.String(status, err_msg)
 }

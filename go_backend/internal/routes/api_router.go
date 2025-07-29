@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"log"
 	"math/rand"
 
 	"github.com/labstack/echo/v4"
@@ -17,8 +16,7 @@ func IncludeApiRoutes(e *echo.Group, db_path string) {
 		hash := c.Param("hash")
 		vd, err := db.ReadSerializedRowFromTable[schemas.VideoData](db_path, "videos", hash)
 		if err != nil {
-			log.Printf("🚨🚨 ERROR 🚨🚨: %v", err)
-			return c.String(500, "Unable to get data for hash: "+hash)
+			handleServerError(c, 500, "Unable to get data for hash: "+hash, err)
 		}
 		
 		return c.JSON(200, vd)
@@ -31,8 +29,7 @@ func IncludeApiRoutes(e *echo.Group, db_path string) {
 		// get videos
 		mp, err := db.GetCachedVideos(db_path, 15, 3)
 		if err != nil {
-			log.Printf("🚨🚨 ERROR 🚨🚨: %v", err)
-			return c.String(500, "Unable to read table")
+			handleServerError(c, 500, "Unable to read table", err)
 		}
 
 		// get linked keys

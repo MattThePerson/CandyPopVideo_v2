@@ -3,7 +3,6 @@ package routes
 import (
 	"cpv_backend/internal/db"
 	"cpv_backend/internal/schemas"
-	"log"
 
 	"github.com/labstack/echo/v4"
 )
@@ -16,8 +15,7 @@ func IncludeInteractRoutes(e *echo.Group, db_path string) {
 		video_hash := c.Param("video_hash")
 		inter, err := db.ReadSerializedRowFromTable[schemas.VideoInteractions](db_path, "interactions", video_hash)
 		if err != nil {
-			log.Printf("🚨🚨 ERROR 🚨🚨: %v", err)
-			return c.String(500, "Unable to read table")
+			handleServerError(c, 500, "Unable to read interactions row", err)
 		}
 		return c.JSON(200, inter)
 	})

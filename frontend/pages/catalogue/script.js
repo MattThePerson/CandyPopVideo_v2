@@ -22,6 +22,7 @@ async function main() {
         filter_collection: null,     //  str|None
         filter_tag: null,            //  str|None
     }
+    console.debug("QUERY:", query);
     
     const response = await $.ajax({
         url: '/api/query/get/catalogue',
@@ -30,7 +31,7 @@ async function main() {
         data: JSON.stringify(query),
     });
 
-    console.log('catalogue:', response);
+    console.debug('CATALOGUE:', response);
 
     const catalogue_nav_buttons = $('.catalogue-page-nav button')
     const sortby_buttons = $('.sortby-options-bar button');
@@ -118,7 +119,8 @@ async function main() {
 function renderCatalogueList(catalogue, type, sortby, count_thresh) {
 
     const key = type + '_info';
-    const items = catalogue[key].filter(item => item[1] >= count_thresh);
+    const items = catalogue[key].filter(item => item.VideoCount >= count_thresh);
+    // console.log(key, items);
     const list_container = $('.catalogue-list');
     list_container.html('');
     $('.item-count-display').text(`${items.length} ${type}s with at least ${count_thresh} videos`);
@@ -130,14 +132,15 @@ function renderCatalogueList(catalogue, type, sortby, count_thresh) {
     
     switch (sortby) {
         case "alphabetic":
-            items.sort((a, b) => a[0].localeCompare(b[0]));
+            items.sort((a, b) => a.Name.localeCompare(b.Name));
             renderCatalogueList_alphabetic(items, list_container, type, letter_nav);
             break;
         case "count":
+            items.sort((a, b) => b.VideoCount - a.VideoCount);
             renderCatalogueList_count(items, list_container, type);
             break;
         case "newest-video":
-            items.sort((a, b) => b[2].localeCompare(a[2]));
+            items.sort((a, b) => b.NewestVideo.localeCompare(a.NewestVideo));
             renderCatalogueList_count(items, list_container, type)
             break;
     }
@@ -148,19 +151,25 @@ function renderCatalogueList_alphabetic(items, container, type, letter_nav) {
 
     letter_nav.html('');
     letter_nav.css('display', 'flex');
+
+    console.log(items);
     
-    const null_item = 'NULL_ITEM_12323434';
+    // const null_item = 'NULL_ITEM_12323434';
     let current_letter = null;
     let group = [];
     for (let i = 0; i <= items.length; i++) {
-        const item = items[i] || null_item;
-        const first_letter = item[0][0];
-        if (!current_letter) {
-            current_letter = first_letter;
+        let first_letter, item;
+        if (i !== items.length) {
+            item = items[i];
+            first_letter = item.Name[0];
+            if (!current_letter) {
+                current_letter = first_letter;
+            }
         }
         
-        if (item !== null_item && current_letter == first_letter) {
+        if (i !== items.length && current_letter == first_letter) {
             group.push(item);
+            
         } else  { // render group
             if (group.length > 0) {
                 container.append(  get_alphabetic_group_html(current_letter, group, type) );
@@ -176,8 +185,14 @@ function renderCatalogueList_alphabetic(items, container, type, letter_nav) {
 function renderCatalogueList_count(items, container, type) {
     
     let inner_html = '';
-    for (let [name, count, newest, new_vids] of items) {
-        inner_html += get_item_span(name, count, newest, new_vids, type);
+    for (let item of items) {
+        inner_html += get_item_span(
+            item.Name,
+            item.VideoCount,
+            item.NewestVideo,
+            item.NewVideoCount,
+            type,
+        );
     }
     container.append(/* html */`
         <div class="item-group">
@@ -190,8 +205,14 @@ function renderCatalogueList_count(items, container, type) {
 function renderCatalogueList_newestVideo(items, container, type) {
     
     let inner_html = '';
-    for (let [name, count, newest, new_vids] of items) {
-        inner_html += get_item_span(name, count, newest, new_vids, type);
+    for (let item of items) {
+        inner_html += get_item_span(
+            item.Name,
+            item.VideoCount,
+            item.NewestVideo,
+            item.NewVideoCount,
+            type,
+        );
     }
     container.append(/* html */`
         <div class="item-group">
@@ -226,8 +247,14 @@ function get_alphabetic_group_html(letter, items, type) {
 
     let inner_html = '';
 
-    for (let [name, count, newest, new_vids] of items) {
-        inner_html += get_item_span(name, count, newest, new_vids, type);
+    for (let item of items) {
+        inner_html += get_item_span(
+            item.Name,
+            item.VideoCount,
+            item.NewestVideo,
+            item.NewVideoCount,
+            type,
+        );
     }
     
     return /* html */`
@@ -272,9 +299,9 @@ const titleCase = str =>
 
 function _format_date_added(date_added) {
     let diff_ms = (new Date()).getTime() - (new Date(date_added.replace(' ', 'T'))).getTime();
-    let string = ['sec', 'min', 'hour', 'day', 'week', 'month', 'year'];
-    let mult =  [60, 60, 24, 7, 4.345, 12, 10];
-    let limit = [60, 60, 24, 7, 3*4.345, 12*3, 10];
+    let string = ['sec', 'min', 'hour', 'day', 'week', 'month', 'year', 'decade', 'century', 'millenia'];
+    let mult =  [60, 60, 24, 7, 4.345, 12, 10, 10, 10];
+    let limit = [60, 60, 24, 7, 3*4.345, 12*3, 10, 10, 10, 10];
     let ms = 1000;
     for (let i = 0; i < mult.length; i++) {
         if (diff_ms < ms*limit[i]) {
