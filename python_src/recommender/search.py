@@ -2,7 +2,7 @@
 import random
 import time
 
-from src.schemas import SearchQuery, VideoData, TFIDFModel, VideoInteractions
+from python_src.schemas import SearchQuery, VideoData, TFIDFModel, VideoInteractions
 from .tfidf import get_related_videos_from_query_TFIDF, STOPWORDS_ENG
 
 # search, filter and sort videos

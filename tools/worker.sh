@@ -9,4 +9,4 @@ cd "$TOOLS_DIR/.."
 # TODO: Needs testing!!
 
 # Run worker
-./.venv/bin/python -m src.worker "$@"
+./.venv/bin/python -m python_src.worker "$@"

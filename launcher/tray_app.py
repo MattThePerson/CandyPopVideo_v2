@@ -36,7 +36,7 @@ os.environ["DEV_MODE"] = "1"
 PORT = 8011
 APP_URL = f'http://localhost:{PORT}'
 SERVER_PROC = ProcessManager(
-    [sys.executable, '-m', 'uvicorn', 'src.main:app', '--host', '0.0.0.0', '--port', str(PORT)],
+    [sys.executable, '-m', 'uvicorn', 'python_src.main:app', '--host', '0.0.0.0', '--port', str(PORT)],
     '.logs/tray_app/server.log',
 )
 
@@ -48,7 +48,6 @@ def start_backend():
     print('Starting backend ...')
     SERVER_PROC.start()
     icon.title = 'Backend running!'
-    print('Backend running!')
     update_tray_icon_menu(icon)
 
 def restart_backend():

@@ -2,7 +2,7 @@
 import time
 from datetime import datetime
 
-from src.schemas import VideoData, CatalogueQuery
+from python_src.schemas import VideoData, CatalogueQuery
 
 
 def get_catalogue(videos_list: list[VideoData], query: CatalogueQuery) -> dict[str, list[tuple[str, int]]]:

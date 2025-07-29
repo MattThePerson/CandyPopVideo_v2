@@ -4,7 +4,6 @@
 ## TODO
 
 TINY_TERM:
-- [media_gen] [fix] seek thumbs alignment
 - [frontend] add dated marker button/ui
 - [frontend] add video rating
 
@@ -14,6 +13,7 @@ SHORT_TERM:
 - [frontend] create PassionPlayer MVP
 
 MEDIUM_TERM:
+- [backend] rewrite in Go
 - [data] port old favourites
 - [frontend] [finish] search panel
 - [frontend] [finish] catalogue page
@@ -29,8 +29,7 @@ LONG_TERM:
 - [app] dockerize
 
 FAR_FUTURE:
-- [db] migrate to proper column structure
-- [backend] rewrite in Go
+...
 
 COLLECTION:
 - [media] Generate preview media for entire collection
@@ -50,7 +49,7 @@ THEORETICAL:
 - [app] Figure out way to link to d18 (or other 18+ db)
 
 
-
+<!-- - [media_gen] [fix] seek thumbs alignment -->
 <!-- - [frontend] [catalogue_page] Sort by newest added video -->
 <!-- - [frontend] [catalogue_page] add thresh and item counts (and numbered count view) -->
 <!-- - [app] create tray icon app MVP -->

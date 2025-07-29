@@ -2,9 +2,9 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException
 from datetime import datetime
 
-from src.util import db
-from src.util.config import DATETIME_FORMAT
-from src.schemas import VideoInteractions
+from python_src.util import db
+from python_src.util.config import DATETIME_FORMAT
+from python_src.schemas import VideoInteractions
 
 
 def get_video_interactions(video_hash: str):

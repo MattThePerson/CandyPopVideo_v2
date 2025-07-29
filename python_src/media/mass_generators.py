@@ -8,10 +8,10 @@ import gc
 
 from handymatt_media import media_generator
 
-from src.media import generators
-from src.util.loggers import MEDIA_GEN, MEDIA_GEN_FAILED
-from src.schemas import VideoData
-from src.media import checkers
+from python_src.media import generators
+from python_src.util.loggers import MEDIA_GEN, MEDIA_GEN_FAILED
+from python_src.schemas import VideoData
+from python_src.media import checkers
 
 
 def mass_generate_preview_thumbs(videos_list: list[VideoData], mediadir: str, redo=False, limit=None, n_frames=30*10, ws=None):

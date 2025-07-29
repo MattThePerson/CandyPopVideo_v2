@@ -43,4 +43,4 @@ fi
 
 # START
 echo "[bash] Starting uvicorn on port "$BACKEND_PORT" with extra args: '"${forward_args[@]}"'"
-./.venv/bin/uvicorn main:app --host 0.0.0.0 --workers 1 --port $BACKEND_PORT "${forward_args[@]}"
+# ./.venv/bin/uvicorn main:app --host 0.0.0.0 --workers 1 --port $BACKEND_PORT "${forward_args[@]}"

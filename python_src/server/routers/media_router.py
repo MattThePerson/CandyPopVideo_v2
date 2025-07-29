@@ -6,11 +6,11 @@ from fastapi import APIRouter, Response, HTTPException
 from fastapi.responses import FileResponse
 from pathlib import Path
 
-from src.media import generators
-from src.util import db
-from src.util.config import PREVIEW_MEDIA_DIR, SUBTITLE_FOLDERS
-from src.schemas import VideoData
-from src.media import checkers
+from python_src.media import generators
+from python_src.util import db
+from python_src.util.config import PREVIEW_MEDIA_DIR, SUBTITLE_FOLDERS
+from python_src.schemas import VideoData
+from python_src.media import checkers
 
 
 media_router = APIRouter()
@@ -89,7 +89,7 @@ def ROUTER_ensure_teaser_thumbs_small(video_hash: str):
     vid_media_dir = checkers.get_video_media_dir(PREVIEW_MEDIA_DIR, video_hash)
     media_path = vid_media_dir + '/teaser_thumbs_small.jpg'
     if not os.path.exists( media_path ):
-        script = 'src/worker_scripts/generateVideoSpritesheet.py'
+        script = 'python_src/worker_scripts/generateVideoSpritesheet.py'
         print('[MEDIA] running subprocess:', script)
         try:
             cmd = [
@@ -129,7 +129,7 @@ def confirm_seek_thumbnails(video_hash: str):
         if video_data is None:
             return Response('No video with that hash', 404)
 
-        script = 'src/worker_scripts/generateVideoSpritesheet.py'
+        script = 'python_src/worker_scripts/generateVideoSpritesheet.py'
         print('[MEDIA] running subprocess:', script)
         try:
             cmd = [

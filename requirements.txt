@@ -13,7 +13,7 @@ requests==2.32.4
 beautifulsoup4==4.13.4
 
 handymatt>=1.2.0
-handymatt-media>=0.4.3
+handymatt-media>=0.4.7
 
 # launcher deps
 pillow==11.3.0

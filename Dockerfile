@@ -18,4 +18,4 @@ RUN pip install --upgrade pip && \
 EXPOSE 8013
 
 # Run using uvicorn from the venv
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8013"]
+CMD ["uvicorn", "python_src.main:app", "--host", "0.0.0.0", "--port", "8013"]

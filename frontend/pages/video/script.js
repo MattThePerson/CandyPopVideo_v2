@@ -25,7 +25,7 @@ function main(video_hash) {
         const info_section = $('section.video-info-section');
         hydrate_info_section(info_section, video_data);
     
-        return;
+        // return;
         
         /* load recommended (related & similar) videos */
         const related_videos_section = $('section.related-videos-section').get(0);
@@ -38,7 +38,7 @@ function main(video_hash) {
         
     });
     
-    return;
+    // return;
     
     /* - video interactions ------------------------------------------------- */
 

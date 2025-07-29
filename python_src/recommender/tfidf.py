@@ -7,7 +7,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from scipy.sparse import csr_matrix
 from sklearn.metrics.pairwise import cosine_similarity
 
-from src.schemas import TFIDFModel, VideoData
+from python_src.schemas import TFIDFModel, VideoData
 
 with open('data/stopwords_eng.txt', 'r') as f:
     STOPWORDS_ENG = [ line.strip() for line in f ]

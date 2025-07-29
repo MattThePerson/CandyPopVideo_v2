@@ -5,4 +5,4 @@ Set-Location -Path (Split-Path -Parent $MyInvocation.MyCommand.Path)
 Set-Location ..
 
 # Run worker
-& .\.venv\Scripts\python.exe -m src.worker $args
+& .\.venv\Scripts\python.exe -m python_src.worker $args

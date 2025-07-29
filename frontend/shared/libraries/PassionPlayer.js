@@ -317,7 +317,7 @@ export class PassionPlayer {
             )
 
             const thumbIndex = Math.floor(video_perc/100 * (this.seekThumbsSprites.length));
-            // console.log(thumbIndex, this.seekThumbsSprites.length, video_perc);
+            console.log(thumbIndex, this.seekThumbsSprites.length, video_perc);
             const sprite = this.seekThumbsSprites[thumbIndex];
             holder.css(
                 'backgroundPosition',

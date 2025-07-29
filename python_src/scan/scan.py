@@ -4,9 +4,9 @@ import time
 
 from handymatt.wsl_paths import convert_to_wsl_path
 
-from src.util import db
-from src.util.config import SCENE_FILENAME_FORMATS, VIDEO_EXTENSIONS
-from src.schemas import VideoData
+from python_src.util import db
+from python_src.util.config import SCENE_FILENAME_FORMATS, VIDEO_EXTENSIONS
+from python_src.schemas import VideoData
 from .process import process_videos, combine_loaded_and_existing_videos
 
 

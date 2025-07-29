@@ -3,9 +3,9 @@ import os
 from datetime import datetime
 from fastapi import APIRouter, Response, HTTPException
 
-from src.util import db
-from src.util.general import get_sortable_string_tuple
-from src.schemas import VideoData
+from python_src.util import db
+from python_src.util.general import get_sortable_string_tuple
+from python_src.schemas import VideoData
 from ..api import actor_api
 
 

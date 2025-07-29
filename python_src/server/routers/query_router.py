@@ -2,12 +2,12 @@
 import time
 from fastapi import APIRouter, HTTPException
 
-from src.util import db
-from src.util.config import TFIDF_MODEL_PATH
-from src.util.general import pickle_load
-from src.schemas import SearchQuery, VideoData, VideoInteractions, CatalogueQuery
-from src.recommender import search, similarity
-from src.recommender.catalogue import get_catalogue
+from python_src.util import db
+from python_src.util.config import TFIDF_MODEL_PATH
+from python_src.util.general import pickle_load
+from python_src.schemas import SearchQuery, VideoData, VideoInteractions, CatalogueQuery
+from python_src.recommender import search, similarity
+from python_src.recommender.catalogue import get_catalogue
 
 
 query_router = APIRouter()
