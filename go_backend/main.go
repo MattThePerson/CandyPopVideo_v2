@@ -1,4 +1,4 @@
-// build: go build -ldflags="-s -w" -o main.exe .
+// build: go build -ldflags="-s -w" -o CandyPopVideo.exe .
 package main
 
 import (

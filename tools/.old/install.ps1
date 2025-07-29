@@ -19,7 +19,7 @@ python -m pip install -r requirements.txt
 
 # 
 Write-Host "[pyinstaller] Creating executable launcher"
-pyinstaller tray_app/tray_app.py `
+pyinstaller launcher/tray_app.py `
 --onefile `
 --noconsole --icon=assets/icon.ico `
 --distpath . `
