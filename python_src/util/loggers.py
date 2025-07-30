@@ -1,4 +1,5 @@
 import logging
+import os
 
 """ 
 logger.debug('This is a debug message')  # Detailed information, typically of interest only when diagnosing problems.
@@ -9,6 +10,8 @@ logger.critical('This is a critical message')  # A serious error, indicating tha
 """
 
 _logger_dir = '.logs'
+
+os.makedirs(_logger_dir, exist_ok=True)
 
 # Configure the root logger (optional, for general logging)
 logging.basicConfig(

@@ -9,7 +9,7 @@ VENV_DIR := .venv
 
 # Tools
 PYTHON := $(VENV_DIR)/bin/python
-PIP := $(VENV_DIR)/bin/pip
+# PIP := $(VENV_DIR)/bin/pip
 PYINSTALLER := $(VENV_DIR)/bin/pyinstaller
 
 .PHONY: all test install build-go build-launcher build clean
@@ -25,12 +25,13 @@ install:
 	if [ ! -d "$(VENV_DIR)" ]; then \
 		python3 -m venv $(VENV_DIR); \
 	fi
-	$(PIP) install --upgrade pip
-	$(PIP) install -r requirements.txt
+	$(VENV_DIR)/bin/pip install uv
+	$(VENV_DIR)/bin/uv pip install -r requirements.txt
 
 # Build Go backend
 build-go:
-	cd $(GO_BACKEND_DIR) && go build -ldflags="-s -w" -o "$(EXE_NAME)"
+	go mod tidy -C go_backend && \
+    go build -C go_backend -ldflags="-s -w" -o ../$(EXE_NAME)
 
 # Build Python executable
 build-launcher:
@@ -42,3 +43,7 @@ build: build-go build-launcher
 # Clean Python build artifacts
 clean:
 	rm -rf build dist *.spec
+
+# 
+run:
+	go build -C go_backend -ldflags="-s -w" -o ../CandyPopVideo && ./CandyPopVideo

@@ -1,4 +1,6 @@
-// build: go build -ldflags="-s -w" -o CandyPopVideo.exe .
+//   BUILD (from project root)
+// Windows: go build -C go_backend -ldflags="-s -w" -o CandyPopVideo.exe .
+// Linux:   go build -C go_backend -ldflags="-s -w" -o ../CandyPopVideo
 package main
 
 import (
@@ -35,7 +37,7 @@ func main() {
 	flag.Parse()
 
 	// Get config variables
-	var config Config = GetConfig("../config.yaml")
+	var config Config = GetConfig("config.yaml")
 
 	// Echo instance
 	e := echo.New()
@@ -74,7 +76,7 @@ func main() {
 	})
 
 	// Static folders
-	e.Static("/", "../frontend")
+	e.Static("/", "frontend")
 
 	e.Static("/static/preview-media", config.PreviewMediaDir)
 	e.Static("/static/actor-store", config.ActorInfoDir)
