@@ -9,7 +9,6 @@ VENV_DIR := .venv
 
 # Tools
 PYTHON := $(VENV_DIR)/Scripts/python
-PIP := $(VENV_DIR)/Scripts/pip
 PYINSTALLER := $(VENV_DIR)/Scripts/pyinstaller
 
 .PHONY: all test clean
@@ -27,14 +26,16 @@ install:
 	@if not exist $(VENV_DIR) ( \
 		python -m venv $(VENV_DIR) \
 	)
-	$(PIP) install --upgrade pip
-	$(PIP) install -r requirements.txt
+	$(VENV_DIR)\Scripts\python.exe -m pip install --upgrade pip
+	$(VENV_DIR)\Scripts\pip.exe install uv
+	$(VENV_DIR)\Scripts\uv.exe pip install -r requirements.txt
 
 
 # BUILD:
 # Build Go backend
 build-go:
-	cd $(GO_BACKEND_DIR) && go build -ldflags="-s -w" -o "$(EXE_NAME).exe"
+	go mod tidy -C go_backend && \
+    go build -C go_backend -ldflags="-s -w" -o ../$(EXE_NAME).exe
 
 # Build Python executable
 build-launcher:

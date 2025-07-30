@@ -9,7 +9,6 @@ VENV_DIR := .venv
 
 # Tools
 PYTHON := $(VENV_DIR)/bin/python
-# PIP := $(VENV_DIR)/bin/pip
 PYINSTALLER := $(VENV_DIR)/bin/pyinstaller
 
 .PHONY: all test install build-go build-launcher build clean
