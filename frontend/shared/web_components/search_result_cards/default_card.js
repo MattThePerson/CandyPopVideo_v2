@@ -219,7 +219,10 @@ export class MyCard extends HTMLElement {
             // tags_to_add.forEach(async (x) => {
             for (let x of tags_to_add) {
                 $shadow.find('.tags-bar').append(/* html */ `
-                    <a href="/pages/search/page.html?include_terms=${x}">
+                    <a 
+                        href="/pages/search/page.html?include_terms=${x}"
+                        style="${this._get_tag_color(x)}"
+                    >
                         ${x}
                     </a>
                 `);
@@ -270,7 +273,10 @@ export class MyCard extends HTMLElement {
         // tags html
         const [tags_to_add, tags_to_add_later] = this.filter_tags(this.tags, this.max_initial_tag_chars)
         let tags_html = tags_to_add.map((x, idx) => /* html */`
-            <a href="/pages/search/page.html?include_terms=${x}">
+            <a 
+                href="/pages/search/page.html?include_terms=${x}"
+                style="${this._get_tag_color(x)}"
+            >
                 ${x}
             </a>
         `).join('\n')
@@ -536,6 +542,19 @@ export class MyCard extends HTMLElement {
         return (Date.now() - Date.parse(date)) / 1000;
     }
     
+
+    _get_tag_color(tag_str) {
+        if (tag_str.includes(": ")) {
+            const pref = tag_str.split(": ")[0]
+            switch (pref) {
+                case "character":
+                    return "color: #bbb !important; background: #1e3259;"
+                case "source":
+                    return "color: #bbb !important; background: #11975a58;"
+            }
+        }
+        return ""
+    }
     
     // #endregion
     

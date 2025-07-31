@@ -27,7 +27,7 @@ def process_videos(
     reread_json_metadata = False,
 ) -> dict[str, VideoData]:
     """
-    Given a list of video path and a dictionary of previously scanned video data objects,
+    Given a list of video paths and a dictionary of previously scanned video data objects,
     find existing video data by filename, if needed, hash video, and process video. 
     Returns -> dict with all processed videos
     """
@@ -70,7 +70,7 @@ def process_videos(
                 # get additional metadata from json files
                 id_ = video_data.dvd_code or video_data.source_id or Path(video_data.path).stem
                 if id_ is not None:
-                    from pprint import pprint
+                    # from pprint import pprint
                     metadata = json_metadata.get_metadata(id_, video_data.path)
                     if metadata != {}:
                         video_data = _add_metadata_to_video_data(video_data, metadata)
@@ -80,7 +80,13 @@ def process_videos(
             
             videos_dict[video_hash] = video_data
     print()
-
+    
+    # sort tags by occurance
+    print("Sorting tags by frequencey ... ", end="")
+    start = time.time()
+    videos_dict = _sort_tags_by_frequency(videos_dict)
+    print("Done! (took {:.2f}s)".format(time.time()-start))
+    
     return videos_dict
 
 
@@ -96,6 +102,7 @@ def combine_loaded_and_existing_videos(loaded: dict[str, VideoData], existing: d
         obj.is_linked = True
         combined[pid] = obj
     return combined
+
 
 #region - PRIVATE ------------------------------------------------------------------------------------------------------
 
@@ -219,7 +226,8 @@ def _add_filename_parsed_data(video_data: VideoData, parser: StringParser):
     return _add_filename_info_to_scene_data(video_data, filename_info_dict)
     
     # video_data = _update_dataclass_from_dict(data, scene_info)
-    
+
+
 
 def _add_filename_info_to_scene_data(vd: VideoData, info: dict[str, str]):
 
@@ -260,9 +268,7 @@ def _get_tags_from_path(video_data: VideoData):
 
 def _add_metadata_to_video_data(video_data: VideoData, metadata: dict) -> VideoData:
     
-    if 'tags' in metadata:
-        metadata['tags_from_json'] = metadata['tags']
-        del metadata['tags']
+    metadata = _process_metadata(metadata)
     
     valid_keys = { field.name for field in video_data.__dataclass_fields__.values() }
     filtered_data = { k: v for k, v in metadata.items() if k in valid_keys }
@@ -274,13 +280,39 @@ def _add_metadata_to_video_data(video_data: VideoData, metadata: dict) -> VideoD
                 if item not in l2:
                     l2.append(item)
             setattr(video_data, k, l2)
-        elif not hasattr(video_data, k):
-            setattr(video_data, k, v)
+        else:
+            setattr(video_data, k, v) # TODO: Monitor for problems
+        # elif not hasattr(video_data, k):
+        #     setattr(video_data, k, v)
 
-    # for k, v in metadata.items():
-        # setattr(video_data, k, v)
-    
     return video_data
+
+
+
+def _process_metadata(metadata: dict):
+
+    # add artist to actors
+    if "artist" in metadata:
+        actors = metadata.get("primary_actors", [])
+        actors.append(metadata["artist"])
+        metadata["primary_actors"] = actors
+
+    # add characters and source to tags
+    tags = metadata.get("tags", [])
+    characters = metadata.get("characters")
+    if characters and isinstance(characters, list):
+        tags.extend([ f"character: {c}" for c in characters ])
+    
+    sources = metadata.get("sources")
+    if sources and isinstance(sources, list):
+        tags.extend([ f"source: {c}" for c in sources ])
+
+    # rename tags to tags_from_json
+    if 'tags' in metadata:
+        metadata['tags_from_json'] = metadata['tags']
+        del metadata['tags']
+    
+    return metadata
 
 
 
@@ -289,6 +321,35 @@ def _parse_filename(filename: str, parser: StringParser):
     if info is None:
         raise TypeError('String parser returned `None` for filename: "{}"'.format(filename))
     return info
+
+
+
+def _sort_tags_by_frequency(videos_dict: dict[str, VideoData]) -> dict[str, VideoData]:
+    """  """
+    
+    # get tag counts
+    tag_counts = {}
+    for vd in videos_dict.values():
+        for tag in vd.tags:
+            tag_counts[tag] = tag_counts.get(tag, 0) + 1
+    
+    # sort
+    special_tag_order = {
+        "character": 99,
+        "source": 98,
+    }
+    
+    for vd in videos_dict.values():
+        vd.tags = sorted(
+            vd.tags,
+            reverse=True,
+            key=lambda tg: (
+                special_tag_order.get(tg.split(": ")[0], 0) if (": " in tg) else -1,
+                tag_counts[tg]
+            ), # sortby tuple
+        )
+
+    return videos_dict
 
 
 
@@ -374,7 +435,7 @@ def _remove_chars(string, chars):
 
 
 
-#region - HELPERS ------------------------------------------------------------------------------------------------------
+#region - MISC. HELPERS ------------------------------------------------------------------------------------------------
 
 def _update_dataclass_from_dict(instance, update_dict: dict):
     for key, value in update_dict.items():

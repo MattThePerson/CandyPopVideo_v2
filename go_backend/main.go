@@ -1,4 +1,5 @@
-//   BUILD (from project root)
+//	BUILD (from project root)
+//
 // Windows: go build -C go_backend -ldflags="-s -w" -o CandyPopVideo.exe .
 // Linux:   go build -C go_backend -ldflags="-s -w" -o ../CandyPopVideo
 package main
@@ -50,7 +51,7 @@ func main() {
 	e.Use(middleware.Recover())
 
 	if *devMode {
-		fmt.Println("Using NoCacheMiddleware")
+		fmt.Println("[GO] Using NoCacheMiddleware")
 		e.Use(NoCacheMiddleware)
 	}
 
@@ -61,18 +62,13 @@ func main() {
 	routes.IncludeInteractRoutes( e.Group("/api/interact"), config.DBPath)
 
 	// hello there
-	e.GET("/api/hello-there", func(c echo.Context) error {
+	e.GET("/hello-there", func(c echo.Context) error {
 		return c.String(200, "General Kenobi!")
 	})
 
 	// Simple text endpoint
 	e.GET("/api/get-port", func(c echo.Context) error {
-		return c.String(200, "6969 probably idgaf")
-	})
-
-	// Simple JSON endpoint TODO: remove
-	e.GET("/test/json", func(c echo.Context) error {
-		return c.JSON(200, map[string]string{"message": "Hello, JSON response"})
+		return c.String(200, (string)(*serverPort))
 	})
 
 	// Static folders
