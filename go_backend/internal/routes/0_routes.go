@@ -1,12 +1,13 @@
 package routes
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -32,10 +33,15 @@ func getVideoMediaDir(media_dir string, video_hash string) string {
 
 
 // execPythonSubprocess will find local python interpreter and execute commands using it
-func execPythonSubprocess(args ...string) ([]byte, error) {
+func execPythonSubprocess(args ...string) (float64, error) {
 	var python_exec = getLocalPythonInterpreter()
+	var start = time.Now()
 	cmd := exec.Command( python_exec, args... )
-	return cmd.CombinedOutput();
+	if output, err := cmd.CombinedOutput(); err != nil {
+		log.Printf("STDOUT\n****\n%s\n****", string(output))
+		return -1, err
+	}
+	return time.Since(start).Seconds(), nil
 }
 
 
@@ -60,9 +66,10 @@ func getLocalPythonInterpreter() string {
 func getPreviewThumbnail(vid_media_dir string, large_thumbs bool) (string, error) {
 
 	// if prevthumb not exist
-	var prev_thumbs_dir = vid_media_dir + "/preveiwthumbs"
-	if _, err := os.Stat(prev_thumbs_dir); errors.Is(err, os.ErrNotExist) {
-		return "", errors.New("no preview thumbs")
+	var prev_thumbs_dir = vid_media_dir + "/previewthumbs"
+	entries, err := os.ReadDir(prev_thumbs_dir)
+	if err != nil || len(entries) < 10 {
+		return "NONE HAHAHA", err
 	}
 	
 	// get seeded random file
@@ -70,21 +77,15 @@ func getPreviewThumbnail(vid_media_dir string, large_thumbs bool) (string, error
 	if large_thumbs {
 		res = "1080"
 	}
-	fmt.Println(res);
-	return "", nil
 
+	// get thumbs
+	var thumbs []string
+	for _, e := range entries {
+		if strings.Contains(e.Name(), res) {
+			thumbs = append(thumbs, fmt.Sprintf("%s/%s", prev_thumbs_dir, e.Name()))
+		}
+	}
+	var idx = int(time.Now().Unix() % 5)
+	return thumbs[idx], nil
 }
-// vid_folder = f'{get_video_media_dir(mediadir, video_hash)}/previewthumbs'
-// if not os.path.exists(vid_folder):
-//     return None
-// res = '1080' if large else '360'
-// thumb_paths = [ os.path.join('previewthumbs', f) for f in os.listdir(vid_folder) if res in f ]
-// if thumb_paths == []:
-//     return None
-// # return thumbnail by second
-// delta = (datetime.now() - datetime.strptime('1900', '%Y'))
-// i = int(delta.seconds%len(thumb_paths))
-// return thumb_paths[i]
-
-
 

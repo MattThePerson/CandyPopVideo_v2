@@ -1,7 +1,4 @@
 """
-Indented to be called by a subprocess to isolate any heavy imports
-
-call with interpreter: "./.venv/Scripts/python.exe"
 
 """
 import argparse
