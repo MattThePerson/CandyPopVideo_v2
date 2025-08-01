@@ -11,7 +11,7 @@ from handymatt_media.media_generator import generateVideoSpritesheet
 def main(args: argparse.Namespace):
     """  """
 
-    print('[SCRIPT] Calling generateVideoSpritesheet()')
+    print('Generating video spritesheet ...')
     _ = generateVideoSpritesheet(
         args.path,
         args.mediadir,
@@ -19,7 +19,7 @@ def main(args: argparse.Namespace):
         height = args.height,
         filestem = args.filestem,
     )
-    
+    print("Done.")
 
 
 

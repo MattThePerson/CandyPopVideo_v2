@@ -20,5 +20,5 @@ if (-Not (Test-Path ".venv\Scripts\activate.ps1")) {
 # Start uvicorn
 Write-Host "[.ps1] Starting uvicorn on port $BACKEND_PORT and extra args: '$args'"
 go mod tidy -C go_backend
-go build -C go_backend -ldflags="-s -w" -o "../$EXE_NAME.exe"
-./CandyPopVideo.exe $args
+go build -C go_backend -ldflags="-s -w" -o "..\bin\$EXE_NAME.exe"
+& .\bin\$EXE_NAME.exe $args

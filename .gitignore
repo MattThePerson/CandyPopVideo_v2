@@ -29,9 +29,7 @@ frontend_svelte/
 
 # build
 build
-*.exe
-CandyPopVideo*
-
+bin
 
 *.png
 *.jpg
