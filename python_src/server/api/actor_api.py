@@ -85,7 +85,7 @@ def _scrape_babepedia(name, save_dir, download_media=True) -> dict|None:
     res.raise_for_status()
     
     if '/search/' in res.url:
-        print('No such babe in babepedia:', name)
+        # print('No such babe in babepedia:', name)
         return None
 
     soup = BeautifulSoup(res.content, 'html.parser')
@@ -100,7 +100,6 @@ def _get_babepedia_page_by_name(name):
     
     url = 'https://www.babepedia.com/babe/' + name.replace(' ', '_')
     # res = requests.get(url, cookies=COOKIES, headers=REQUEST_HEADERS)
-    print('requesting:', url)
     res = requests.get(url, headers=REQUEST_HEADERS)
     return res
 
@@ -115,12 +114,12 @@ def _parse_babepedia_info(soup):
     try:
         info['bio'] = soup.select_one('#biotext').text
     except:
-        print('Unable to get "bio"')
+        ...
     
     try:
         info['aka'] = soup.select_one('#aka').text.replace('Also known as: ', '').replace('\xa0', '').split(' - ')
     except:
-        print('Unable to get "aka"')
+        ...
     
     comments = _get_bp_comments(soup)
     if comments:
@@ -168,12 +167,13 @@ def _download_actor_galleries(save_dir, name, galleries, redo=False):
     for idx, gall in enumerate(galleries):
         url = 'https://www.babepedia.com' + gall
         img_path = f'{save_dir}/{RELATIVE_BASE}{unquote(gall)}'
-        print('({}/{}) downloading image from: "{}"  ->  "{}"'.format(idx+1, len(galleries), url, gall))
+        # print('({}/{}) downloading image from: "{}"  ->  "{}"'.format(idx+1, len(galleries), url, gall))
         if redo or not os.path.exists(img_path):
             try:
                 ret = _download_image(url, img_path)
             except requests.HTTPError as err:
-                print('HTTPError:', err)
+                # print('HTTPError:', err)
+                ...
         if os.path.exists(img_path):
             paths.append( img_path.replace(save_dir, '') )
     return paths

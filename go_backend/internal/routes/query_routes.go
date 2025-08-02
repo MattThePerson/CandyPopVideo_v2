@@ -28,15 +28,15 @@ func IncludeQueryRoutes(e *echo.Group, db_path string) {
 	e.POST("/search-videos", 		func(c echo.Context) error { return ECHO_search_videos(c, db_path) })
 	e.POST("/get/catalogue", 		func(c echo.Context) error { return ECHO_get_catalogue(c, db_path) })
 
-	e.GET("/get/similar-videos/{video_hash}/{start_from}/{limit}", 	func(c echo.Context) error { return ECHO_get_similar_videos(c) })
-	e.GET("/get/similar-actors/{performer}", 						func(c echo.Context) error { return ECHO_get_similar_actors(c) })
-	e.GET("/get/similar-studios/{studio}", 							func(c echo.Context) error { return ECHO_get_similar_studios(c) })
+	e.GET("/get/similar-videos/:video_hash/:start_from/:limit", 	func(c echo.Context) error { return ECHO_get_similar_videos(c, db_path) })
+	e.GET("/get/similar-actors/:name",   							func(c echo.Context) error { return ECHO_get_similar_actors(c) })
+	e.GET("/get/similar-studios/:name", 							func(c echo.Context) error { return ECHO_get_similar_studios(c) })
 
 }
 
 
 // ECHO_search_videos
-// ...
+// /:video_hash/:start_from/:limit
 func ECHO_search_videos(c echo.Context, db_path string) error {
 	
 	// query
@@ -94,8 +94,39 @@ func ECHO_get_catalogue(c echo.Context, db_path string) error {
 
 
 // ECHO_get_similar_videos
-func ECHO_get_similar_videos(c echo.Context) error {
-	return c.String(501, "Not implemented")
+// query/get/similar-videos/:video_hash/:start_from/:limit
+func ECHO_get_similar_videos(c echo.Context, db_path string) error {
+	// video_hash := c.Param("video_hash")
+	// start_from := c.Param("start_from")
+	// limit := c.Param("limit")
+
+	// [subprocess] get similar videos
+	// ...
+	
+	// get vidoes
+	mp, err := db.GetCachedVideos(db_path, 15, 3)
+	if err != nil {
+		return handleServerError(c, 500, "Unable to read videos table", err)
+	}
+
+	// dummy hashes TODO: Remove
+	hashes := []string{}
+	for hsh, vd := range mp {
+		if vd.Studio == "AllGirlMassage" || vd.Line == "AllGirlMassage" {
+			hashes = append(hashes, hsh)
+		}
+	}
+	
+	// 
+	search_results := []schemas.VideoData{}
+	for _, hsh := range hashes {
+		search_results = append(search_results, mp[hsh])
+	}
+	
+	return c.JSON(200, map[string]any {
+		"amount_of_results": 6969,
+		"search_results": search_results,
+	})
 }
 
 // ECHO_get_similar_actors

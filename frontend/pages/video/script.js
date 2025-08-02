@@ -38,7 +38,7 @@ function main(video_hash) {
         
     });
     
-    // return;
+    return;
     
     /* - video interactions ------------------------------------------------- */
 

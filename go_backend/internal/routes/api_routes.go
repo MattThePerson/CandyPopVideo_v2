@@ -2,6 +2,7 @@ package routes
 
 import (
 	"cmp"
+	"encoding/json"
 	"fmt"
 	"math"
 	"math/rand"
@@ -108,23 +109,23 @@ func ECHO_get_movie(c echo.Context, db_path string) error {
 		handleServerError(c, 500, "Unable to read table", err)
 	}
 
-	// get movie list
-	var movies = []schemas.VideoData{}
+	// get video list
+	var vids = []schemas.VideoData{}
 	for _, vd := range mp {
 		if vd.MovieTitle != "" && strings.ToLower(vd.MovieTitle) == movie_title {
-			movies = append(movies, vd)
+			vids = append(vids, vd)
 		}
 	}
 
-	// sort movies
-	slices.SortFunc(movies, func(a, b schemas.VideoData) int {
+	// sort vids
+	slices.SortFunc(vids, func(a, b schemas.VideoData) int {
 		if (a.DateReleased != b.DateReleased) {
 			return cmp.Compare(a.DateReleased, b.DateReleased)
 		}
 		return cmp.Compare(a.Title, b.Title)
 	})
 	
-	return c.JSON(200, movies)
+	return c.JSON(200, vids)
 }
 
 
@@ -136,37 +137,80 @@ func ECHO_get_movie_series(c echo.Context, db_path string) error {
 		handleServerError(c, 500, "Unable to read table", err)
 	}
 
-	// get movie list
-	var movies = []schemas.VideoData{}
+	// get video list
+	var vids = []schemas.VideoData{}
 	for _, vd := range mp {
 		if vd.MovieSeries != "" && strings.ToLower(vd.MovieSeries) == movie_series {
-			movies = append(movies, vd)
+			vids = append(vids, vd)
 		}
 	}
 
-	// sort movies
-	slices.SortFunc(movies, func(a, b schemas.VideoData) int {
+	// sort videos
+	slices.SortFunc(vids, func(a, b schemas.VideoData) int {
 		if (a.DateReleased != b.DateReleased) {
 			return cmp.Compare(a.DateReleased, b.DateReleased)
 		}
 		return cmp.Compare(a.Title, b.Title)
 	})
 	
-	return c.JSON(200, movies)
+	return c.JSON(200, vids)
 }
 
 
 // ECHO_get_line
 func ECHO_get_line(c echo.Context, db_path string) error {
-	line := c.Param("line")
-	return c.String(501, "Not implemented: "+line)
+	line := strings.ToLower(c.Param("line"))
+	if line == "" {
+		return c.String(400, "Line cannot be empty")
+	}
+	mp, err := db.GetCachedVideos(db_path, 15, 3)
+	if err != nil {
+		handleServerError(c, 500, "Unable to read table", err)
+	}
+
+	// get videos
+	var vids = []schemas.VideoData{}
+	for _, vd := range mp {
+		if strings.ToLower(vd.Line) == line {
+			vids = append(vids, vd)
+		}
+	}
+
+	// sort videos
+	slices.SortFunc(vids, func(a, b schemas.VideoData) int {
+		if (a.DateReleased != b.DateReleased) {
+			return cmp.Compare(a.DateReleased, b.DateReleased)
+		}
+		return cmp.Compare(a.DateAdded, b.DateAdded)
+	})
+	
+	return c.JSON(200, vids)
 }
 
 
 // ECHO_get_actor
+// params: name
 func ECHO_get_actor(c echo.Context, db_path string) error {
 	name := c.Param("name")
-	return c.String(501, "Not implemented: "+name)
+
+	// [subprocess] 
+	output, err := execPythonSubprocess_Output(
+		"-m", "python_src.worker_scripts.getActorInfo",
+		"-name", name,
+		"-redo", "false",
+	)
+	if err != nil {
+		handleServerError(c, 500, "Unable to ", err)
+	}
+
+	// unmarshal data
+	var data map[string]any
+	if err := json.Unmarshal(output, &data); err != nil {
+		fmt.Println(string(output))
+		return handleServerError(c, 501, "Unable to unmarshal actor info", err)
+	}
+	
+	return c.JSON(200, data)
 }
 
 

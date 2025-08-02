@@ -29,6 +29,7 @@ export async function load_recommended_videos(vd, related_sec, similar_sec) {
             };
         }
     }
+    await sleep(50);
 
     /* movie */
     if (vd.movie_title) {
@@ -40,7 +41,7 @@ export async function load_recommended_videos(vd, related_sec, similar_sec) {
             };
         }
     }
-    await sleep(100);
+    await sleep(50);
 
     /* from line */
     if (vd.line) {
@@ -52,9 +53,34 @@ export async function load_recommended_videos(vd, related_sec, similar_sec) {
             };
         }
     }
-    await sleep(100);
+    await sleep(50);
     
-    /* RENDER CAROUSELS */
+    
+    /* from actors */
+    if (vd.actors.length > 1) {
+        const result = await _get_videos_from_actors(vd);
+        if (Array.isArray(result) && result.length > 1) {
+            const actors_str = vd.actors.slice(0,-1).join(', ') + ' & ' + vd.actors.slice(-1);
+            related_videos_dict['from-actors'] = {
+                'videos': result,
+                'title': `with: ${actors_str}`,
+            };
+        }
+    }
+    await sleep(50);
+    
+    /* from actor-studio */
+    if (vd.primary_actors.length == 1 && vd.studio) {
+        const result = await _get_videos_from_actor_studio(vd);
+        if (Array.isArray(result) && result.length > 1) {
+            related_videos_dict['from-actor-studio'] = {
+                'videos': result,
+                'title': `${vd.primary_actors[0]} in ${vd.studio}`,
+            };
+        }
+    }
+
+    /* RENDER REMAINING RELATED VIDEOS */
     load_related_videos(
         related_videos_dict,
         related_sec,
@@ -80,44 +106,6 @@ export async function load_recommended_videos(vd, related_sec, similar_sec) {
     );
     $(similar_sec).find('#expand-results-button').on('click', expand_results_func);
     await sleep(100);
-
-
-
-    /* GET REMAINING RELATED VIDEOS */
-    
-    // @ts-ignore (complains for some reason)
-    related_videos_dict = {};
-    
-    /* from actors */
-    if (vd.actors.length > 1) {
-        const result = await _get_videos_from_actors(vd);
-        if (Array.isArray(result) && result.length > 1) {
-            const actors_str = vd.actors.slice(0,-1).join(', ') + ' & ' + vd.actors.slice(-1);
-            related_videos_dict['from-actors'] = {
-                'videos': result,
-                'title': `with: ${actors_str}`,
-            };
-        }
-    }
-    await sleep(100);
-    
-    /* from actor-studio */
-    if (vd.primary_actors.length == 1 && vd.studio) {
-        const result = await _get_videos_from_actor_studio(vd);
-        if (Array.isArray(result) && result.length > 1) {
-            related_videos_dict['from-actor-studio'] = {
-                'videos': result,
-                'title': `${vd.primary_actors[0]} in ${vd.studio}`,
-            };
-        }
-    }
-
-    /* RENDER REMAINING RELATED VIDEOS */
-    load_related_videos(
-        related_videos_dict,
-        related_sec,
-        vd.hash,
-    )
 
 }
 
@@ -182,18 +170,30 @@ async function load_related_videos(related_videos, section, video_hash) {
 
 
 async function get_filtered_similar_videos(videos_to_ignore, target_video_hash) {
+    
+    
     const query_amount = 512;
-    const result = await $.get(`/api/query/get/similar-videos/${target_video_hash}/0/${query_amount}`);
-    let similar_videos = result.search_results;
+    return $.ajax({
+        "url": `/api/query/get/similar-videos/${target_video_hash}/0/${query_amount}`,
+        "type": "GET",
+    })
+    .then(result => {
+        if (!result.search_results) {
+            return [];
+        }
 
-    /* remove related videos from similar videos */
-    const related_vid_hashes = new Set();
-    for (let vid_obj of videos_to_ignore) {
-        related_vid_hashes.add(vid_obj.hash);
-    }
-    similar_videos = similar_videos.filter(vid => !related_vid_hashes.has(vid.hash));
-    console.debug('similar videos removed:', (query_amount-similar_videos.length));
-    return similar_videos;
+        let similar_videos = result.search_results;
+
+        const related_vid_hashes = new Set(videos_to_ignore.map(v => v.hash));
+        similar_videos = similar_videos.filter(vid => !related_vid_hashes.has(vid.hash));
+        console.debug('similar videos removed:', query_amount - similar_videos.length);
+
+        return similar_videos;
+    })
+    .catch(err => {
+        return [];
+    });
+    
 }
 
 

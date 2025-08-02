@@ -45,6 +45,20 @@ func execPythonSubprocess(args ...string) (float64, error) {
 }
 
 
+// execPythonSubprocess will find local python interpreter and execute commands using it
+func execPythonSubprocess_Output(args ...string) ([]byte, error) {
+	var python_exec = getLocalPythonInterpreter()
+	// var start = time.Now()
+	cmd := exec.Command( python_exec, args... )
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Printf("STDOUT\n****\n%s\n****", string(output))
+		return []byte{}, err
+	}
+	return output, nil
+}
+
+
 func getLocalPythonInterpreter() string {
     var path string
     if runtime.GOOS == "windows" {
