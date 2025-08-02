@@ -1,6 +1,6 @@
 //	BUILD (from project root)
 //
-// Windows: go build -C go_backend -ldflags="-s -w" -o CandyPopVideo.exe .
+// Windows: go build -C go_backend -ldflags="-s -w" -o ..\bin\CandyPopVideo.exe .
 // Linux:   go build -C go_backend -ldflags="-s -w" -o ../CandyPopVideo
 package main
 
