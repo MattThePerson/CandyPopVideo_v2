@@ -3,38 +3,38 @@
 
 ## TODO
 
-TINY_TERM:
-- [frontend] add dated marker button/ui
-- [frontend] add video rating
 
 SHORT_TERM:
+- [frontend] add dated marker button/ui
+- [frontend] add video rating
+- [frontend] add comments
 - [app] flesh out (and fix) tray icon app
 - [frontend] figure out why middle click drag opens results card hrefs
 - [frontend] create PassionPlayer MVP
 
 MEDIUM_TERM:
 - [backend] rewrite in Go
-- [data] port old favourites
 - [frontend] [finish] search panel
 - [frontend] [finish] catalogue page
 - [frontend] [finish] PassionPlayer
 - [frontend] [add] search panel: list/compact list view & page result count
 - [backend] Get performer (and studio) embeddings working
 - [frontend] [finish] video page below section
-- [frontend/backend] Redo dashboard (minimal)
+- [frontend|backend] Redo dashboard (minimal)
+- [backend/worker] Add include tags from actors
+- [backend/worker] Generate tags based on number/type of actors
 
 LONG_TERM:
 - [admin] promote to others/get others to test
 - [admin] find way to make not-nsfw preview
 - [app] dockerize
 
-FAR_FUTURE:
-...
 
 COLLECTION:
 - [media] Generate preview media for entire collection
 - [collection] Handle PMVHaven collection
 - [collection] Handle collisions (Curated v. PH)
+- [collection] Figure out way to add popularity score
 
 OPTIONAL:
 - [backend] Add method of seeing tf-idf tokens
@@ -42,13 +42,15 @@ OPTIONAL:
 - [frontend] Make list view search result component
 - [frontend] date_added/date_released dist extension
 - [frontend] word cloud
-- [frontend] watch history page
+- [frontend] comment/interact history page
 
 THEORETICAL:
 - [app] Add way to make gifs
 - [app] Figure out way to link to d18 (or other 18+ db)
 
 
+<!-- - [collection] Handle 3dh collection -->
+<!-- - [data] port old favourites -->
 <!-- - [media_gen] [fix] seek thumbs alignment -->
 <!-- - [frontend] [catalogue_page] Sort by newest added video -->
 <!-- - [frontend] [catalogue_page] add thresh and item counts (and numbered count view) -->
@@ -86,27 +88,33 @@ THEORETICAL:
 
 ## GO REWRITE PATH
 
-- [go] get all non TFIDF stuff working
 - [go] get interactions working
-- [go] get search page working
-- [go] get catalogue page working
-- [go] get enforce media working
+- [go] fix sorting of search results
+- [go] add sorting by interactions
+- [go] fix sort by title
+- [go] add get actor info
+- [go] get TFIDF stuff working
+<!-- - [go] add get spotlight video -->
+<!-- - [go] get catalogue page working -->
+<!-- - [go] get enforce media working -->
 <!-- - [go] get recommender working -->
 <!-- - [go] write go backend demo -->
 
+
 1. Minimal Viable Product:
-  - serve media (no ensures)
+  <!-- - serve media (no ensures) -->
   - api router
   - interact router
 2. Add non-TFIDF search
   - search videos
-  - get catalogue
-3. Add media ensuring (w/ python)
+  <!-- - get catalogue -->
+<!-- 3. Add media ensuring (w/ python) -->
 4. Add TFIDF search stuff (w/ python)
 5. Frontend scan/media control (w/ python)
 6. (Optional, Discouraged) Backend manager
   - scanning
   - media generation (ffmpeg + porting opencv implementations)
+
 
 
 ## VIDEO PAGE
@@ -115,6 +123,7 @@ buttons:
 - rate
 - like
 - add dated marker
+- add comment
 - make gif
 - extract frame (as thumbnail or something)
 - chapter nav

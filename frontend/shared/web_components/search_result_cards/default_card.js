@@ -244,7 +244,7 @@ export class MyCard extends HTMLElement {
         const date_released_fmt = this.date_released.replace(/-/g, '.');
 
         // studios html
-        const studios = [this.studio, this.line].filter(el => (el !== null && el !== 'null'));
+        const studios = [this.studio, this.line].filter(el => (el !== null && el !== 'null' && el !== ''));
         const studios_html = studios.map((x, idx) =>
             `
             ${ (idx === 0) ? "" : "<span></span>" }
@@ -293,7 +293,7 @@ export class MyCard extends HTMLElement {
 
         // title
         let title_fmt = this.video_title.replace(';', ':');
-        if (this.dvd_code !== 'null') title_fmt = `[${this.dvd_code}] ` + title_fmt;
+        if (this.dvd_code !== 'null' && this.dvd_code !== "") title_fmt = `[${this.dvd_code}] ` + title_fmt;
         const title_short = (title_fmt.length > 80) ? title_fmt.slice(0, 78) + '...' : title_fmt;
         
         const year_el_style = (date_released_fmt !== 'null') ? '' : 'display: none;';

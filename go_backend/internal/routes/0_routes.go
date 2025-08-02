@@ -61,7 +61,6 @@ func getLocalPythonInterpreter() string {
     return "" // unreachable, but required
 }
 
-/* GET PREVIEW THUMBS */
 
 func getPreviewThumbnail(vid_media_dir string, large_thumbs bool) (string, error) {
 
@@ -87,5 +86,13 @@ func getPreviewThumbnail(vid_media_dir string, large_thumbs bool) (string, error
 	}
 	var idx = int(time.Now().Unix() % 5)
 	return thumbs[idx], nil
+}
+
+
+func absDiff(a, b int64) int64 {
+	if (a - b) > 0 {
+		return a - b
+	}
+	return b - a
 }
 

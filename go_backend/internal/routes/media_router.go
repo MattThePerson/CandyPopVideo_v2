@@ -203,10 +203,10 @@ func IncludeMediaRoutes(e *echo.Group, db_path string, preview_media_dir string,
 		// get id to use
 		var filebase = filepath.Base(vd.Path)
 		id := ""
-		if vd.DVDCode != nil {
-			id = *vd.DVDCode
-		} else if vd.SourceID != nil {
-			id = *vd.SourceID
+		if vd.DVDCode != "" {
+			id = vd.DVDCode
+		} else if vd.SourceID != "" {
+			id = vd.SourceID
 		} else {
 			id = strings.TrimSuffix(filebase, filepath.Ext(vd.Path))
 		}

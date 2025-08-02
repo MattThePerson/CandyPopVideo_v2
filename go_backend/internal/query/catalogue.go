@@ -39,26 +39,26 @@ func GetCatalogue(vids []schemas.VideoData, q schemas.CatalogueQuery) (Catalogue
 	}
 
 	/* FILTER */
-	if q.FilterActor != nil {
-		lw := strings.ToLower(*q.FilterActor)
+	if q.FilterActor != "" {
+		lw := strings.ToLower(q.FilterActor)
 		vids = filterSliceFunc(vids, func(vd schemas.VideoData) bool {
 			return slices.Contains(getVideoActors(vd), lw)
 		})
 	}
-	if q.FilterStudio != nil {
-		lw := strings.ToLower(*q.FilterStudio)
+	if q.FilterStudio != "" {
+		lw := strings.ToLower(q.FilterStudio)
 		vids = filterSliceFunc(vids, func(vd schemas.VideoData) bool {
 			return slices.Contains(getVideoStudios(vd), lw)
 		})
 	}
-	if q.FilterCollection != nil {
-		lw := strings.ToLower(*q.FilterCollection)
+	if q.FilterCollection != "" {
+		lw := strings.ToLower(q.FilterCollection)
 		vids = filterSliceFunc(vids, func(vd schemas.VideoData) bool {
 			return slices.Contains(getVideoCollection(vd), lw)
 		})
 	}
-	if q.FilterTag != nil {
-		lw := strings.ToLower(*q.FilterTag)
+	if q.FilterTag != "" {
+		lw := strings.ToLower(q.FilterTag)
 		vids = filterSliceFunc(vids, func(vd schemas.VideoData) bool {
 			return slices.Contains(getVideoTags(vd), lw)
 		})
@@ -73,7 +73,7 @@ func GetCatalogue(vids []schemas.VideoData, q schemas.CatalogueQuery) (Catalogue
 
 	
 	/* TF-IDF */
-	if q.QueryString != nil {
+	if q.QueryString != "" {
 		// ...
 	}
 	
@@ -145,17 +145,17 @@ func getVideoActors_Primary(vd schemas.VideoData) []string {
 
 func getVideoStudios(vd schemas.VideoData) []string {
 	var slic []string
-	if vd.Studio != nil {
-		slic = append(slic, standardizeString(*vd.Studio))
+	if vd.Studio != "" {
+		slic = append(slic, standardizeString(vd.Studio))
 	}
-	if vd.Line != nil {
-		slic = append(slic, standardizeString(*vd.Line))
+	if vd.Line != "" {
+		slic = append(slic, standardizeString(vd.Line))
 	}
 	return slic
 }
 
 func getVideoCollection(vd schemas.VideoData) []string {
-	return []string{standardizeString(*vd.Collection)}
+	return []string{standardizeString(vd.Collection)}
 }
 
 func getVideoTags(vd schemas.VideoData) []string {

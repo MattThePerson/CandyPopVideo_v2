@@ -8,9 +8,9 @@ async function main() {
 
     // const video_count = await $.get('/api/get/video-count').fail(() => {})
     
-    const data = await $.get('/api/get/random-spotlight-video-hash').fail(() => { console.error("No spotlight video found"); });
+    const random_hash = await $.get('/api/get/random-spotlight-video-hash').fail(() => { console.error("No spotlight video found"); });
 
-    const video_data = await $.get('/api/get/video-data/'+data.hash).fail(() => {alert('oh no')});
+    const video_data = await $.get('/api/get/video-data/'+random_hash).fail(() => {alert('oh no')});
 
     console.debug('VIDEO DATA:', video_data);
 

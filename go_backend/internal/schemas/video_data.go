@@ -16,27 +16,27 @@ type VideoData struct {
 	Bitrate         int     `json:"bitrate"`
 	DurationSeconds float64 `json:"duration_seconds"`
 
-	SourceID *string `json:"source_id"`
+	SourceID string `json:"source_id"`
 
 	// collection
-	Collection   *string `json:"collection"`
-	ParentDir    *string `json:"parent_dir"`
-	PathRelative *string `json:"path_relative"`
+	Collection   string `json:"collection"`
+	ParentDir    string `json:"parent_dir"`
+	PathRelative string `json:"path_relative"`
 
 	// scene attributes
-	Title       *string `json:"title"`
-	SceneTitle  *string `json:"scene_title"`
-	SceneNumber *int    `json:"scene_number"`
-	MovieTitle  *string `json:"movie_title"`
-	MovieSeries *string `json:"movie_series"`
+	Title       string `json:"title"`
+	SceneTitle  string `json:"scene_title"`
+	SceneNumber *int   `json:"scene_number"`
+	MovieTitle  string `json:"movie_title"`
+	MovieSeries string `json:"movie_series"`
 
-	Studio       *string `json:"studio"`
-	Line         *string `json:"line"`
-	DateReleased *string `json:"date_released"`
-	Description  *string `json:"description"`
-	DVDCode      *string `json:"dvd_code"`
-	// D18Url       		*string `json:"d18_url"`
-	// DateReleasedD18     *string `json:"date_released_d18"`
+	Studio       string `json:"studio"`
+	Line         string `json:"line"`
+	DateReleased string `json:"date_released"`
+	Description  string `json:"description"`
+	DVDCode      string `json:"dvd_code"`
+	// D18Url       		string `json:"d18_url"`
+	// DateReleasedD18     string `json:"date_released_d18"`
 
 	Actors          []string `json:"actors"`
 	PrimaryActors   []string `json:"primary_actors"`

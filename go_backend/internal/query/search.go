@@ -33,8 +33,8 @@ func FilterAndSortVideos(vids []schemas.VideoData, q schemas.SearchQuery, i map[
 	vids = filterVideosBySearchQuery(vids, q, i)
 
 	// sort
-	if q.SortBy != nil {
-		vids = sortVideos(vids, *q.SortBy, i)
+	if q.SortBy != "" {
+		vids = sortVideos(vids, q.SortBy, i)
 
 	} else {
 		slices.SortFunc(vids, func(a, b schemas.VideoData) int {
@@ -65,8 +65,8 @@ func filterVideosBySearchQuery(vids []schemas.VideoData, q schemas.SearchQuery, 
 	// ...
 
 	// actor
-	if q.Actor != nil {
-		q_actors := strings.Split(*q.Actor, ",")
+	if q.Actor != "" {
+		q_actors := strings.Split(q.Actor, ",")
 		for _, q_actor := range q_actors {
 			q_actor = strings.TrimSpace(q_actor)
 			vids = filterSliceFunc(vids, func(vd schemas.VideoData) bool {
@@ -81,45 +81,45 @@ func filterVideosBySearchQuery(vids []schemas.VideoData, q schemas.SearchQuery, 
 	}
 
 	// studio
-	if q.Studio != nil {
+	if q.Studio != "" {
 		vids = filterSliceFunc(vids, func(vd schemas.VideoData) bool {
-			return 	(vd.Studio != nil && strings.EqualFold(*vd.Studio, *q.Studio)) ||
-					(vd.Line != nil   && strings.EqualFold(*vd.Line, *q.Studio))
+			return 	(vd.Studio != "" && strings.EqualFold(vd.Studio, q.Studio)) ||
+					(vd.Line != ""   && strings.EqualFold(vd.Line, q.Studio))
 		})
 	}
 
 	// collection
-	if q.Collection != nil {
+	if q.Collection != "" {
 		vids = filterSliceFunc(vids, func(vd schemas.VideoData) bool {
-			return strings.EqualFold(*q.Collection, *vd.Collection)
+			return strings.EqualFold(q.Collection, vd.Collection)
 		})
 	}
 
 	// date added from
-	if q.DateAddedFrom != nil {
+	if q.DateAddedFrom != "" {
 		vids = filterSliceFunc(vids, func(vd schemas.VideoData) bool {
-			return vd.DateAdded >= *q.DateAddedFrom
+			return vd.DateAdded >= q.DateAddedFrom
 		})
 	}
 
 	// date added to
-	if q.DateAddedTo != nil {
+	if q.DateAddedTo != "" {
 		vids = filterSliceFunc(vids, func(vd schemas.VideoData) bool {
-			return vd.DateAdded < *q.DateAddedTo
+			return vd.DateAdded < q.DateAddedTo
 		})
 	}
 
 	// date released from
-	if q.DateReleasedFrom != nil {
+	if q.DateReleasedFrom != "" {
 		vids = filterSliceFunc(vids, func(vd schemas.VideoData) bool {
-			return vd.DateReleased != nil && *vd.DateReleased >= *q.DateReleasedFrom
+			return vd.DateReleased != "" && vd.DateReleased >= q.DateReleasedFrom
 		})
 	}
 
 	// date released to
-	if q.DateReleasedTo != nil {
+	if q.DateReleasedTo != "" {
 		vids = filterSliceFunc(vids, func(vd schemas.VideoData) bool {
-			return vd.DateReleased != nil && *vd.DateReleased < *q.DateReleasedTo
+			return vd.DateReleased != "" && vd.DateReleased < q.DateReleasedTo
 		})
 	}
 

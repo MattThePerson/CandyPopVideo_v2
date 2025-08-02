@@ -64,7 +64,7 @@ def ROUTE_get_random_spotlight_video():
     random_hash = _get_random_hash_seeded(video_hashes, seed)
     # rng = random.Random(seed)
     # random_hash = rng.choice( video_hashes )
-    return { 'hash' : random_hash }
+    return random_hash
 
 
 # GET ALL PERFORMERS
