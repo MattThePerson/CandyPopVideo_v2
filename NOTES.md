@@ -23,6 +23,7 @@ MEDIUM_TERM:
 - [frontend|backend] Redo dashboard (minimal)
 - [backend/worker] Add include tags from actors
 - [backend/worker] Generate tags based on number/type of actors
+- [go] get TFIDF search query working
 
 LONG_TERM:
 - [admin] promote to others/get others to test
@@ -92,8 +93,8 @@ THEORETICAL:
 - [go] fix sorting of search results
 - [go] add sorting by interactions
 - [go] fix sort by title
-- [go] add get actor info
-- [go] get TFIDF stuff working
+<!-- - [go] get TFIDF stuff working -->
+<!-- - [go] add get actor info -->
 <!-- - [go] add get spotlight video -->
 <!-- - [go] get catalogue page working -->
 <!-- - [go] get enforce media working -->

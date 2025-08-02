@@ -1,13 +1,13 @@
 """ functions for TF-IDF related stuff """
 from difflib import SequenceMatcher
-import numpy as np
 import nltk
 from nltk.stem.snowball import SnowballStemmer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from scipy.sparse import csr_matrix
 from sklearn.metrics.pairwise import cosine_similarity
 
-from python_src.schemas import TFIDFModel, VideoData
+from python_src.schemas import VideoData
+from python_src.recommender.tfidf_model import TFIDFModel
 
 with open('data/stopwords_eng.txt', 'r') as f:
     STOPWORDS_ENG = [ line.strip() for line in f ]
@@ -59,7 +59,7 @@ def get_related_videos_from_query_TFIDF(query_string: str, tfidf_model: TFIDFMod
     return sims_items
 
 
-def get_similar_videos_for_hash_TFIDF(video_hash: str, tfidf_model: TFIDFModel) -> list[tuple]:
+def get_similar_videos_for_hash_TFIDF(video_hash: str, tfidf_model: TFIDFModel) -> list[tuple[str, float]]:
     matrix, hash_index_map = tfidf_model.matrix, tfidf_model.id_index_map
     video_index = hash_index_map.get(video_hash)
     if video_index is None:
@@ -69,7 +69,7 @@ def get_similar_videos_for_hash_TFIDF(video_hash: str, tfidf_model: TFIDFModel) 
     return sims_items
 
 
-def get_similar_items_TFIDF(target_vect: csr_matrix, matrix: csr_matrix, id_index_map: dict[str, int]) -> list[tuple]:
+def get_similar_items_TFIDF(target_vect: csr_matrix, matrix: csr_matrix, id_index_map: dict[str, int]) -> list[tuple[str, float]]:
     index_id_map = { index: hash for hash, index in id_index_map.items() }
     cosine_sims = cosine_similarity(target_vect, matrix)[0]
     sims_items = [ (idx, sim) for idx, sim in enumerate(cosine_sims) ]

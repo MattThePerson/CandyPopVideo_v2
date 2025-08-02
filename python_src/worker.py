@@ -8,13 +8,14 @@ def backend_manager(args: argparse.Namespace, ws=None):
     import random
     from datetime import datetime
     
-    from python_src.util import db
-    from python_src.util.config import PREVIEW_MEDIA_DIR, TFIDF_MODEL_PATH
+    from python_src.util import db, config
     from python_src.util.general import pickle_save
-    from python_src.schemas import VideoData, SearchQuery, TFIDFModel
+    from python_src.schemas import VideoData, SearchQuery
 
     from python_src.recommender.search import filterVideoObjects
     from python_src.recommender.tfidf import generate_tfidf_model
+    from python_src.recommender.model_matrix import TFIDFModelMatrix
+    from python_src.recommender.tfidf_model import TFIDFModel
     from python_src.scan import scan
     from python_src.media import mass_generators
     
@@ -78,6 +79,18 @@ def backend_manager(args: argparse.Namespace, ws=None):
         return filtered
     
 
+    def save_tfidf_model(model: TFIDFModel):
+        print('Saving TF-IDF model and model matrix')
+        pickle_save(model, config.TFIDF_MODEL_PATH)
+        model_mat = TFIDFModelMatrix(
+            matrix =        model.matrix,
+            id_index_map =  model.id_index_map,
+        )
+        pickle_save(model_mat, config.TFIDF_MODEL_MATRIX_PATH)
+
+
+
+
     # HANDLE
     
     if args.scan_libraries: # - SCAN ---------------------------------------------------------------
@@ -98,8 +111,7 @@ def backend_manager(args: argparse.Namespace, ws=None):
         print('Generating tfidf model for videos')
         videos_list = get_linked_videos()
         model: TFIDFModel = generate_tfidf_model(videos_list)
-        print('Saving model to:', TFIDF_MODEL_PATH)
-        pickle_save(model, TFIDF_MODEL_PATH)
+        save_tfidf_model(model)
     
 
     if args.generate_media: # - MEDIA --------------------------------------------------------------
@@ -115,7 +127,7 @@ def backend_manager(args: argparse.Namespace, ws=None):
         
         # call generators
         print('[START] Generating media for {} videos'.format(len(filtered_videos)))
-        alist = [ filtered_videos, PREVIEW_MEDIA_DIR ]
+        alist = [ filtered_videos, config.PREVIEW_MEDIA_DIR ]
         kdict = { "redo": args.redo_media_gen, "limit": args.limit, "ws": ws }
         opt = args.generate_media
         succs, fails = {}, {}
@@ -165,8 +177,7 @@ def backend_manager(args: argparse.Namespace, ws=None):
         print('Generating tfidf model for videos')
         videos_list = get_linked_videos()
         model: TFIDFModel = generate_tfidf_model(videos_list)
-        print('Saving model to:', TFIDF_MODEL_PATH)
-        pickle_save(model, TFIDF_MODEL_PATH)
+        save_tfidf_model(model)
 
 
     if args.generate_embeddings:
@@ -184,7 +195,7 @@ def backend_manager(args: argparse.Namespace, ws=None):
         print('{:<20} : {}'.format("filters", args.path_include_filters))
         print('{:<20} : {}'.format("select_collection", args.select_collection))
         print(f"\nPREVIEW MEDIA STATUS FOR {len(filtered_videos)} VIDEOS:")
-        mass_generators.checkPreviewMediaStatus(filtered_videos, PREVIEW_MEDIA_DIR, args.media_status, print_without=args.print_without)
+        mass_generators.checkPreviewMediaStatus(filtered_videos, config.PREVIEW_MEDIA_DIR, args.media_status, print_without=args.print_without)
         
 
     elif args.status: # - STATUS -------------------------------------------------------------------
@@ -200,6 +211,8 @@ def backend_manager(args: argparse.Namespace, ws=None):
             print('{:>13} : {:_}'.format(c, colls[c]))
         print('{:>13} : {:_}'.format('total', len(filtered_videos)))
         
+
+
 
 
 #region - ARGUMENT PARSER ----------------------------------------------------------------------------------------------

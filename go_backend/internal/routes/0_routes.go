@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -46,16 +47,21 @@ func execPythonSubprocess(args ...string) (float64, error) {
 
 
 // execPythonSubprocess will find local python interpreter and execute commands using it
-func execPythonSubprocess_Output(args ...string) ([]byte, error) {
+func execPythonSubprocess_Output[R any](args ...string) (R, error) {
+	var reply R
+	
 	var python_exec = getLocalPythonInterpreter()
-	// var start = time.Now()
 	cmd := exec.Command( python_exec, args... )
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("STDOUT\n****\n%s\n****", string(output))
-		return []byte{}, err
+		return reply, err
 	}
-	return output, nil
+	// unmarshal
+	if err := json.Unmarshal(output, &reply); err != nil {
+		return reply, err
+	}
+	return reply, nil
 }
 
 

@@ -12,6 +12,7 @@ with open('config.yaml', 'r') as f:
 APP_DATA_DIR = convert_to_wsl_path(CONFIG.get('app_data_dir'))
 DB_PATH =           APP_DATA_DIR + '/app.db'
 TFIDF_MODEL_PATH =  APP_DATA_DIR + '/tdidf.pkl'
+TFIDF_MODEL_MATRIX_PATH =  APP_DATA_DIR + '/tdidf_matrix.pkl'
 PREVIEW_MEDIA_DIR = APP_DATA_DIR + '/media/preview'
 ACTOR_INFO_DIR =    APP_DATA_DIR + '/actors'
 # CUSTOM_THUMBS_DIR = APP_DATA_DIR + '/media/custom_thumbs'

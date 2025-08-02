@@ -2,7 +2,6 @@ package routes
 
 import (
 	"cmp"
-	"encoding/json"
 	"fmt"
 	"math"
 	"math/rand"
@@ -194,20 +193,13 @@ func ECHO_get_actor(c echo.Context, db_path string) error {
 	name := c.Param("name")
 
 	// [subprocess] 
-	output, err := execPythonSubprocess_Output(
+	data, err := execPythonSubprocess_Output[map[string]any](
 		"-m", "python_src.worker_scripts.getActorInfo",
 		"-name", name,
 		"-redo", "false",
 	)
 	if err != nil {
-		handleServerError(c, 500, "Unable to ", err)
-	}
-
-	// unmarshal data
-	var data map[string]any
-	if err := json.Unmarshal(output, &data); err != nil {
-		fmt.Println(string(output))
-		return handleServerError(c, 501, "Unable to unmarshal actor info", err)
+		handleServerError(c, 500, "Python subprocess failed", err)
 	}
 	
 	return c.JSON(200, data)

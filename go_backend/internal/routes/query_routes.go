@@ -2,6 +2,8 @@ package routes
 
 import (
 	"encoding/json"
+	"fmt"
+	"time"
 
 	"github.com/labstack/echo/v4"
 
@@ -28,9 +30,9 @@ func IncludeQueryRoutes(e *echo.Group, db_path string) {
 	e.POST("/search-videos", 		func(c echo.Context) error { return ECHO_search_videos(c, db_path) })
 	e.POST("/get/catalogue", 		func(c echo.Context) error { return ECHO_get_catalogue(c, db_path) })
 
-	e.GET("/get/similar-videos/:video_hash/:start_from/:limit", 	func(c echo.Context) error { return ECHO_get_similar_videos(c, db_path) })
-	e.GET("/get/similar-actors/:name",   							func(c echo.Context) error { return ECHO_get_similar_actors(c) })
-	e.GET("/get/similar-studios/:name", 							func(c echo.Context) error { return ECHO_get_similar_studios(c) })
+	e.GET("/get/similar-videos/:video_hash", 	func(c echo.Context) error { return ECHO_get_similar_videos(c, db_path) })
+	e.GET("/get/similar-actors/:name",   		func(c echo.Context) error { return ECHO_get_similar_actors(c) })
+	e.GET("/get/similar-studios/:name", 		func(c echo.Context) error { return ECHO_get_similar_studios(c) })
 
 }
 
@@ -96,37 +98,58 @@ func ECHO_get_catalogue(c echo.Context, db_path string) error {
 // ECHO_get_similar_videos
 // query/get/similar-videos/:video_hash/:start_from/:limit
 func ECHO_get_similar_videos(c echo.Context, db_path string) error {
-	// video_hash := c.Param("video_hash")
-	// start_from := c.Param("start_from")
-	// limit := c.Param("limit")
+	video_hash := c.Param("video_hash")
 
-	// [subprocess] get similar videos
-	// ...
+	// unmarshal subprocess response
+	type SubprocessResponse struct {
+		HashesList	[]string
+		SimsList 	[]float64
+		Report 		string
+	}
 	
-	// get vidoes
+	// [subprocess] get similar videos
+	fmt.Printf("[EXEC] Fetching similar videos for `%s` ...\n", video_hash)
+	start := time.Now()
+	response, err := execPythonSubprocess_Output[SubprocessResponse](
+		"-m", "python_src.worker_scripts.getSimilarVideos",
+		"-target", video_hash,
+	)
+	if err != nil {
+		handleServerError(c, 500, "Python subprocess failed", err)
+	}
+	tt := time.Since(start).Seconds()
+	fmt.Printf("[EXEC] Done. Took %.2f sec\n", tt)
+	fmt.Printf("[EXEC] REPORT: %s\n", response.Report)
+
+	// fmt.Printf("SIMILAR HASHES:\n%v\n\n", response)
+	
+	// load vidoes
 	mp, err := db.GetCachedVideos(db_path, 15, 3)
 	if err != nil {
 		return handleServerError(c, 500, "Unable to read videos table", err)
 	}
-
-	// dummy hashes TODO: Remove
-	hashes := []string{}
-	for hsh, vd := range mp {
-		if vd.Studio == "AllGirlMassage" || vd.Line == "AllGirlMassage" {
-			hashes = append(hashes, hsh)
-		}
-	}
 	
 	// 
-	search_results := []schemas.VideoData{}
-	for _, hsh := range hashes {
-		search_results = append(search_results, mp[hsh])
+	videos := []schemas.VideoData{}
+	sims := map[string]float64{}
+	for idx, hsh := range response.HashesList {
+		videos = append(videos, mp[hsh])
+		sims[hsh] = response.SimsList[idx]
+	}
+
+	// Construct reply
+	type Reply struct {
+		TimeTaken	float64
+		Videos 		[]schemas.VideoData
+		SimScores 	map[string]float64
+	}
+	reply := Reply{
+		TimeTaken: tt,
+		Videos: videos,
+		SimScores: sims,
 	}
 	
-	return c.JSON(200, map[string]any {
-		"amount_of_results": 6969,
-		"search_results": search_results,
-	})
+	return c.JSON(200, reply)
 }
 
 // ECHO_get_similar_actors

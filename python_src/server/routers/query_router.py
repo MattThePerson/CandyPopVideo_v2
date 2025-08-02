@@ -55,9 +55,10 @@ def ROUTE_get_catalogue(query: CatalogueQuery):
 
 
 # GET SIMILAR VIDEOS
-@query_router.get("/get/similar-videos/{video_hash}/{start_from}/{limit}")
-def ROUTE_get_similar_videos(video_hash: str, start_from: int, limit: int):
+@query_router.get("/get/similar-videos/{video_hash}")
+def ROUTE_get_similar_videos(video_hash: str):
     
+    start = time.time()
     tfidf_model = pickle_load(TFIDF_MODEL_PATH)
     if tfidf_model is None:
         print("TF-IDF model doesn't exist")
@@ -65,15 +66,16 @@ def ROUTE_get_similar_videos(video_hash: str, start_from: int, limit: int):
     
     video_dicts = db.read_table_as_dict('videos')
     videos_list = [ VideoData.from_dict(dct) for dct in video_dicts.values() ]
-    video_results, amount_of_results = similarity.get_similar_videos(video_hash, start_from, limit, videos_list, tfidf_model)
-    video_dict_results = [ vd.to_dict() for vd in video_results ]
-    if amount_of_results == 0:
+    videos_list = similarity.get_similar_videos(video_hash, videos_list, tfidf_model)
+    if len(videos_list) == 0:
         print('UNEXPECTED: Got 0 similar videos')
         raise HTTPException(status_code=404, detail="No similar videos found")
+    video_dict_results = [ vd.to_dict() for vd in videos_list ][:512]
     
     return {
-        'search_results': video_dict_results,
-        'amount_of_results': amount_of_results,
+        "Videos": video_dict_results,
+        "SimScores": [],
+        "TimeTaken": time.time()-start,
     }
 
 

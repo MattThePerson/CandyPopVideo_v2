@@ -94,7 +94,7 @@ export async function load_recommended_videos(vd, related_sec, similar_sec) {
     const videos_to_ignore = types_to_ignore
                                 .filter(k => k in related_videos_dict)
                                 .map(k => related_videos_dict[k].videos).flat();
-    const similar_videos = await get_filtered_similar_videos(
+    const [similar_videos, tt] = await get_filtered_similar_videos(
         videos_to_ignore,
         vd.hash,
     );
@@ -105,6 +105,7 @@ export async function load_recommended_videos(vd, related_sec, similar_sec) {
         1,
     );
     $(similar_sec).find('#expand-results-button').on('click', expand_results_func);
+    $(similar_sec).find('h2').text(`Similar Videos (took ${Math.floor(tt*10)/10}s)`);
     await sleep(100);
 
 }
@@ -168,30 +169,31 @@ async function load_related_videos(related_videos, section, video_hash) {
 
 // #region - VIDEO GETTERS ---------------------------------------------------------------------------------------------
 
-
+/**
+ * @returns {Promise<[any[], number]>}
+ */
 async function get_filtered_similar_videos(videos_to_ignore, target_video_hash) {
     
     
     const query_amount = 512;
-    return $.ajax({
-        "url": `/api/query/get/similar-videos/${target_video_hash}/0/${query_amount}`,
+    return await $.ajax({
+        "url": `/api/query/get/similar-videos/${target_video_hash}`,
         "type": "GET",
     })
     .then(result => {
-        if (!result.search_results) {
-            return [];
-        }
 
-        let similar_videos = result.search_results;
+        console.debug("SIMILARITY_RESULT:", result)
+        let similar_videos = result.Videos;
+        // const sim_scores = result.SimScores;
 
         const related_vid_hashes = new Set(videos_to_ignore.map(v => v.hash));
         similar_videos = similar_videos.filter(vid => !related_vid_hashes.has(vid.hash));
         console.debug('similar videos removed:', query_amount - similar_videos.length);
 
-        return similar_videos;
+        return [similar_videos, result.TimeTaken];
     })
     .catch(err => {
-        return [];
+        return [[], -1];
     });
     
 }

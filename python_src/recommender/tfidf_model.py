@@ -1,4 +1,5 @@
 """ Contains dataclass for containing video data """
+# HUOM: Maybe move to recommender folder. 
 from dataclasses import dataclass
 
 from sklearn.feature_extraction.text import TfidfVectorizer
