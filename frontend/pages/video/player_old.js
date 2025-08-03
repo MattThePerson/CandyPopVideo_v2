@@ -134,8 +134,10 @@ export function load_video_player(video_hash, video_data, url_params) {
     video_el.addEventListener('play', () => {
         last_play_time = Date.now();
         if (!first_playback) {
-            $.post('/api/interact/last-viewed/add/'+video_hash);
-            first_playback = true;
+            setTimeout(() => {
+                $.post('/api/interact/last-viewed/add/'+video_hash);
+                first_playback = true;
+            }, 500);
         }
     })
 

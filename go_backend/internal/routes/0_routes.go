@@ -23,8 +23,9 @@ func extractValuesFromMap[S any](mp map[string]S) []S {
 
 func handleServerError(c echo.Context, status int, msg string, err error) error {
 	server_prefix := "🚨🚨 ERROR 🚨🚨: "
-	err_msg := msg + ": " + err.Error()
-	log.Println(server_prefix + err_msg)
+	route := c.Path()
+	err_msg := fmt.Sprintf("%s: %s", msg, err.Error())
+	log.Printf("%s [%s] %s", server_prefix, route, err_msg)
 	return c.String(status, err_msg)
 }
 

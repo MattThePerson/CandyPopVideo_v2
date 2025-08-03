@@ -38,7 +38,7 @@ func ECHO_get_video(c echo.Context, db_path string) error {
 	video_hash := c.Param("video_hash")
 	vd, err := db.ReadSerializedRowFromTable[schemas.VideoData](db_path, "videos", video_hash)
 	if err != nil {
-		handleServerError(c, 500, "Unable to get data for hash: "+video_hash, err)
+		return handleServerError(c, 500, "Unable to read from database", err)
 	}
 	return c.File(vd.Path)
 }
@@ -66,7 +66,7 @@ func ECHO_get_poster(c echo.Context, db_path string, preview_media_dir string) e
 	// get video data
 	vd, err := db.ReadSerializedRowFromTable[schemas.VideoData](db_path, "videos", video_hash)
 	if err != nil {
-		handleServerError(c, 404, "No video data for hash: "+video_hash, err)
+		return handleServerError(c, 500, "Unable to read from database", err)
 	}
 
 	// [subprocess] video poster
@@ -81,7 +81,7 @@ func ECHO_get_poster(c echo.Context, db_path string, preview_media_dir string) e
 		"-loglevel", "quiet",
 	)
 	if _, err := cmd.CombinedOutput(); err != nil {
-		handleServerError(c, 500, "Unable to generate simple poster", err)
+		return handleServerError(c, 500, "Unable to generate simple poster", err)
 	}
 
 	// check media exists
@@ -107,7 +107,7 @@ func ECHO_ensure_teaser_small(c echo.Context, db_path string, preview_media_dir 
 	// get video data
 	vd, err := db.ReadSerializedRowFromTable[schemas.VideoData](db_path, "videos", video_hash)
 	if err != nil {
-		handleServerError(c, 404, "No video data for hash: "+video_hash, err)
+		return handleServerError(c, 500, "Unable to read from database", err)
 	}
 
 	// [subprocess] create media with subprocess
@@ -121,7 +121,7 @@ func ECHO_ensure_teaser_small(c echo.Context, db_path string, preview_media_dir 
 		"-type", "small",
 	)
 	if err != nil {
-		handleServerError(c, 500, "Unable to ", err)
+		return handleServerError(c, 500, "Unable to ", err)
 	}
 	fmt.Printf("[EXEC] Done. 'Video Teaser (small)' generated in %.1f seconds\n", tt)
 
@@ -146,7 +146,7 @@ func ECHO_ensure_teaser_thumbs_small(c echo.Context, db_path string, preview_med
 	// get video data
 	vd, err := db.ReadSerializedRowFromTable[schemas.VideoData](db_path, "videos", video_hash)
 	if err != nil {
-		handleServerError(c, 404, "No video data for hash: "+video_hash, err)
+		return handleServerError(c, 500, "Unable to read from database", err)
 	}
 
 	// [subprocess] create media with subprocess
@@ -160,7 +160,7 @@ func ECHO_ensure_teaser_thumbs_small(c echo.Context, db_path string, preview_med
 		"-filestem", "teaser_thumbs_small",
 	)
 	if err != nil {
-		handleServerError(c, 500, "Unable to ", err)
+		return handleServerError(c, 500, "Unable to ", err)
 	}
 	fmt.Printf("[EXEC] Done. 'Teaser Thumbs (small)' generated in %.1f seconds\n", tt)
 
@@ -185,7 +185,7 @@ func ECHO_ensure_seek_thumbs(c echo.Context, db_path string, preview_media_dir s
 	// get video data
 	vd, err := db.ReadSerializedRowFromTable[schemas.VideoData](db_path, "videos", video_hash)
 	if err != nil {
-		handleServerError(c, 404, "No video data for hash: "+video_hash, err)
+		return handleServerError(c, 500, "Unable to read from database", err)
 	}
 
 	// [subprocess] create media with subprocess
@@ -199,7 +199,7 @@ func ECHO_ensure_seek_thumbs(c echo.Context, db_path string, preview_media_dir s
 		"-filestem", "seekthumbs",
 	)
 	if err != nil {
-		handleServerError(c, 500, "Unable to generate seek thumbs with subprocess", err)
+		return handleServerError(c, 500, "Unable to generate seek thumbs with subprocess", err)
 	}
 	fmt.Printf("[EXEC] Done. 'Seek Thumbs' generated in %.1f seconds\n", tt)
 
@@ -218,7 +218,7 @@ func ECHO_get_subs(c echo.Context, db_path string, subtitle_folders []string) er
 	check := c.QueryParam("check") == "true" 
 	vd, err := db.ReadSerializedRowFromTable[schemas.VideoData](db_path, "videos", video_hash)
 	if err != nil {
-		handleServerError(c, 500, "Unable to get data for hash: "+video_hash, err)
+		return handleServerError(c, 500, "Unable to read from database", err)
 	}
 
 	// get id to use

@@ -1,12 +1,10 @@
-# NOTES
 
-
-## TODO
+# TODO
 
 
 SHORT_TERM:
 - [frontend] add dated marker button/ui
-- [frontend] add edit favourite add date with right click
+- [frontend] add edit favourite add date
 - [frontend] add video rating
 - [frontend] add comments
 - [app] flesh out (and fix) tray icon app
@@ -88,12 +86,12 @@ THEORETICAL:
 
 
 
-## GO REWRITE PATH
+# GO REWRITE PATH
 
-- [go] get interactions working
 - [go] fix sorting of search results
 - [go] add sorting by interactions
 - [go] fix sort by title
+<!-- - [go] get interactions working -->
 <!-- - [go] get TFIDF stuff working -->
 <!-- - [go] add get actor info -->
 <!-- - [go] add get spotlight video -->
@@ -119,7 +117,7 @@ THEORETICAL:
 
 
 
-## VIDEO PAGE
+# VIDEO PAGE
 
 buttons:
 - rate
@@ -148,9 +146,8 @@ info:
 
 
 
-### ALT STRUCTURE
+# ALT STRUCTURE
 
-#   |   |   |   |   |   |   |   |   |
 |-- .venv/
 |-- .logs/
 |-- data/
@@ -194,7 +191,7 @@ info:
 
 
 
-## Routes
+# Routes
 
   `/`   // frontend
 

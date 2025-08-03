@@ -65,7 +65,7 @@ async function load_days_recommended_videos(video_data) {
     let similar_videos = result.Videos;
     
     const similar_videos_section = $('.similar-videos-section').get(0);
-    $(similar_videos_section).find('h2').text(`Similar Videos (took ${Math.floor(result.TimeTaken*10)/10}s)`);
+    $(similar_videos_section).find('h2').text(`Similar Videos (took ${Math.floor(result.TimeTaken*100)/100}s):`);
 
     const expand_results_func = await render_video_cards(
         similar_videos,

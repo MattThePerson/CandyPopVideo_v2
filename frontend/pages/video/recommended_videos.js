@@ -105,7 +105,7 @@ export async function load_recommended_videos(vd, related_sec, similar_sec) {
         1,
     );
     $(similar_sec).find('#expand-results-button').on('click', expand_results_func);
-    $(similar_sec).find('h2').text(`Similar Videos (took ${Math.floor(tt*10)/10}s)`);
+    $(similar_sec).find('h2').text(`Similar Videos (took ${Math.floor(tt*100)/100}s)`);
     await sleep(100);
 
 }

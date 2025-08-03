@@ -3,6 +3,8 @@ package routes
 import (
 	"cpv_backend/internal/db"
 	"cpv_backend/internal/schemas"
+	"database/sql"
+	"errors"
 	"strconv"
 
 	"github.com/labstack/echo/v4"
@@ -35,7 +37,7 @@ func IncludeInteractRoutes(e *echo.Group, db_path string) {
 func ECHO_get_interactions(c echo.Context, db_path string) error {
 	video_hash := c.Param("video_hash")
 	inter, err := db.ReadSerializedRowFromTable[schemas.VideoInteractions](db_path, "interactions", video_hash)
-	if err != nil {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return handleServerError(c, 500, "Unable to read interactions row", err)
 	}
 	return c.JSON(200, inter)
@@ -48,8 +50,10 @@ func ECHO_get_interactions(c echo.Context, db_path string) error {
 func ECHO_favs_check(c echo.Context, db_path string) error {
 	video_hash := c.Param("video_hash")
 	inter, err := db.ReadSerializedRowFromTable[schemas.VideoInteractions](db_path, "interactions", video_hash)
-	if err != nil {
-		return handleServerError(c, 500, "Unable to read interactions row", err)
+	if errors.Is(err, sql.ErrNoRows) {
+		c.JSON(200, false)
+	} else if err != nil {
+		return handleServerError(c, 500, "Unable to read from database", err)
 	}
 	return c.JSON(200, inter.IsFavourite)
 }
@@ -149,7 +153,7 @@ func updateInteractionsTable(c echo.Context, db_path string, callback_func func(
 	
 	// read row from db
 	inter, err := db.ReadSerializedRowFromTable[schemas.VideoInteractions](db_path, "interactions", video_hash)
-	if err != nil {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) { // if no rows, use zero struct
 		return handleServerError(c, 500, "Unable to read interactions row", err)
 	}
 

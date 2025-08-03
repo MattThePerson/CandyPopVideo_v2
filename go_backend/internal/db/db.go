@@ -15,7 +15,7 @@ func ReadSerializedRowFromTable[S any](db_path string, table string, id string) 
 	var data S
 	
 	// Open db connection
-	db, err := sql.Open("sqlite", db_path)
+	db, err := sql.Open("sqlite", db_path+"?_busy_timeout=2000") // db_path+"?_busy_timeout=2000"
 	if err != nil {
 		return data, err
 	}
@@ -25,8 +25,7 @@ func ReadSerializedRowFromTable[S any](db_path string, table string, id string) 
 	var data_serialized string
 	err = db.QueryRow("SELECT data FROM "+table+" WHERE id = ?", id).Scan(&data_serialized)
 	if err != nil {
-		return data, nil
-		// return data, err
+		return data, err
 	}
 	
 	// Unmarshal to schema
@@ -45,7 +44,7 @@ func ReadSerializedMapFromTable[S any](db_path string, table string) (map[string
 	items := map[string]S{}
 	
 	// Open db connection
-	db, err := sql.Open("sqlite", db_path)
+	db, err := sql.Open("sqlite", db_path+"?_busy_timeout=2000") // db_path+"?_busy_timeout=2000"
 	if err != nil {
 		return items, err
 	}
@@ -56,7 +55,6 @@ func ReadSerializedMapFromTable[S any](db_path string, table string) (map[string
 	if err != nil {
 		return items, err
 	}
-	defer rows.Close()
 
 	// Process rows
 	for rows.Next() {
@@ -84,7 +82,7 @@ func ReadSerializedMapFromTable[S any](db_path string, table string) (map[string
 func WriteSerializedRowToTable[S any](db_path string, table string, id string, data_struct S) error {
 
 	// Open db connection
-	db, err := sql.Open("sqlite", db_path)
+	db, err := sql.Open("sqlite", db_path+"?_busy_timeout=2000") // db_path+"?_busy_timeout=2000"
 	if err != nil {
 		return err
 	}
@@ -110,7 +108,7 @@ func WriteSerializedRowToTable[S any](db_path string, table string, id string, d
 func InsertDataIntoTable(db_path string, table string, data map[string]any) error {
 
 	// Open db connection
-	db, err := sql.Open("sqlite", db_path)
+	db, err := sql.Open("sqlite", db_path+"?_busy_timeout=2000") // db_path+"?_busy_timeout=2000"
 	if err != nil {
 		return err
 	}

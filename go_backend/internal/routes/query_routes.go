@@ -115,7 +115,7 @@ func ECHO_get_similar_videos(c echo.Context, db_path string) error {
 		"-target", video_hash,
 	)
 	if err != nil {
-		handleServerError(c, 500, "Python subprocess failed", err)
+		return handleServerError(c, 500, "Python subprocess failed", err)
 	}
 	tt := time.Since(start).Seconds()
 	fmt.Printf("[EXEC] Done. Took %.2f sec\n", tt)

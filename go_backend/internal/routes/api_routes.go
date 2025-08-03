@@ -39,9 +39,8 @@ func ECHO_get_video_data(c echo.Context, db_path string) error {
 	hash := c.Param("hash")
 	vd, err := db.ReadSerializedRowFromTable[schemas.VideoData](db_path, "videos", hash)
 	if err != nil {
-		handleServerError(c, 500, "Unable to get data for hash: "+hash, err)
+		return handleServerError(c, 500, "Unable to read from database", err)
 	}
-	
 	return c.JSON(200, vd)
 }
 
@@ -50,7 +49,7 @@ func ECHO_get_video_data(c echo.Context, db_path string) error {
 func ECHO_get_random_hash(c echo.Context, db_path string) error {
 	mp, err := db.GetCachedVideos(db_path, 15, 3)
 	if err != nil {
-		handleServerError(c, 500, "Unable to read table", err)
+		return handleServerError(c, 500, "Unable to read table", err)
 	}
 
 	// get linked keys
@@ -72,7 +71,7 @@ func ECHO_get_random_hash(c echo.Context, db_path string) error {
 func ECHO_get_spotlight_hash(c echo.Context, db_path string) error {
 	mp, err := db.GetCachedVideos(db_path, 15, 3)
 	if err != nil {
-		handleServerError(c, 500, "Unable to read table", err)
+		return handleServerError(c, 500, "Unable to read table", err)
 	}
 
 	// Generate seeded random hash
@@ -105,7 +104,7 @@ func ECHO_get_movie(c echo.Context, db_path string) error {
 	movie_title := strings.ToLower(c.Param("movie_title"))
 	mp, err := db.GetCachedVideos(db_path, 15, 3)
 	if err != nil {
-		handleServerError(c, 500, "Unable to read table", err)
+		return handleServerError(c, 500, "Unable to read table", err)
 	}
 
 	// get video list
@@ -133,7 +132,7 @@ func ECHO_get_movie_series(c echo.Context, db_path string) error {
 	movie_series := strings.ToLower(c.Param("movie_series"))
 	mp, err := db.GetCachedVideos(db_path, 15, 3)
 	if err != nil {
-		handleServerError(c, 500, "Unable to read table", err)
+		return handleServerError(c, 500, "Unable to read table", err)
 	}
 
 	// get video list
@@ -164,7 +163,7 @@ func ECHO_get_line(c echo.Context, db_path string) error {
 	}
 	mp, err := db.GetCachedVideos(db_path, 15, 3)
 	if err != nil {
-		handleServerError(c, 500, "Unable to read table", err)
+		return handleServerError(c, 500, "Unable to read table", err)
 	}
 
 	// get videos
@@ -199,7 +198,7 @@ func ECHO_get_actor(c echo.Context, db_path string) error {
 		"-redo", "false",
 	)
 	if err != nil {
-		handleServerError(c, 500, "Python subprocess failed", err)
+		return handleServerError(c, 500, "Python subprocess failed", err)
 	}
 	
 	return c.JSON(200, data)
@@ -211,7 +210,7 @@ func ECHO_get_actor_vid_count(c echo.Context, db_path string) error {
 	name := strings.ToLower(c.Param("name"))
 	mp, err := db.GetCachedVideos(db_path, 15, 3)
 	if err != nil {
-		handleServerError(c, 500, "Unable to read table", err)
+		return handleServerError(c, 500, "Unable to read table", err)
 	}
 
 	count := 0
@@ -231,7 +230,7 @@ func ECHO_studio_vid_count(c echo.Context, db_path string) error {
 	name := strings.ToLower(c.Param("name"))
 	mp, err := db.GetCachedVideos(db_path, 15, 3)
 	if err != nil {
-		handleServerError(c, 500, "Unable to read table", err)
+		return handleServerError(c, 500, "Unable to read table", err)
 	}
 
 	count := 0
