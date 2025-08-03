@@ -31,39 +31,83 @@ with open('config.yaml', 'r') as f:
 
 os.environ["DEV_MODE"] = "1"
 
+GO_EXE_STEM = "bin/CandyPopVideo"
+if platform.system() == "Windows":
+    GO_SERVER_EXE = GO_EXE_STEM + ".exe"
+else:
+    GO_SERVER_EXE = GO_EXE_STEM
+
 # PROCESSES
 
 PORT = 8011
 APP_URL = f'http://localhost:{PORT}'
+# SERVER_PROC_PYTHON = ProcessManager(
+#     [sys.executable, '-m', 'uvicorn', 'python_src.main:app', '--host', '0.0.0.0', '--port', str(PORT)],
+#     '.logs/tray_app/server.log',
+# )
+
+WORKER_PROC = ProcessManager(None, ".logs/tray_app/worker.log")
+
 SERVER_PROC = ProcessManager(
-    [sys.executable, '-m', 'uvicorn', 'python_src.main:app', '--host', '0.0.0.0', '--port', str(PORT)],
-    '.logs/tray_app/server.log',
+    [GO_SERVER_EXE, "--port", str(PORT)] + sys.argv[1:],
+    ".logs/tray_app/server.log",
 )
 
+def build_backend():
+    result = subprocess.run([
+        "go", "build",
+        "-C", "go_backend",
+        "-ldflags=-s -w",
+        "-o", f"../{GO_SERVER_EXE}"
+    ], capture_output=True, text=True)
+    if result.returncode != 0:
+        raise Exception(f"Failed with code {result.returncode}\nSTDERR: {result.stderr}")
 
-#region - METHODS ------------------------------------------------------------------------------------------------------
+#region - SERVER ------------------------------------------------------------------------------------------------------
 
+
+# launch_backend
+def launch_backend():
+    rebuild_backend()
+    start_backend()
+
+
+# relaunch_backend
+def relaunch_backend():
+    stop_backend()
+    rebuild_backend()
+    start_backend()
+
+
+# 
+def rebuild_backend():
+    icon.icon = combine_icons("assets/icon.png", "assets/subicons/gear_yellow.png", wid=0.45)
+    update_title("go build... ")
+    s = time.time()
+    build_backend()
+    update_title("took {:.2f}s\n".format(time.time()-s))
+    update_tray_icon_menu(icon)
+
+# 
 def start_backend():
-    icon.title = 'Starting backend ...'
-    print('Starting backend ...')
-    SERVER_PROC.start()
-    icon.title = 'Backend running!'
+    icon.icon = combine_icons("assets/icon.png", "assets/subicons/good.png")
+    update_title("running server\n")
+    SERVER_PROC.start(onfail=lambda err: show_process_fail(err))
     update_tray_icon_menu(icon)
 
-def restart_backend():
-    print('Stopping')
-    SERVER_PROC.stop()
-    print('Starting')
-    SERVER_PROC.start()
-    print('Done')
-
+# 
 def stop_backend():
-    icon.title = 'Stopping backend ...'
-    print('Stopping backend ...')
+    icon.icon = combine_icons("assets/icon.png", "assets/subicons/down.png")
+    update_title("stopping server\n")
     SERVER_PROC.stop()
-    icon.title = 'Backend stopped'
-    print('Backend stopped')
+    icon.icon = combine_icons("assets/icon.png", "assets/subicons/idle_grey.png")
     update_tray_icon_menu(icon)
+
+
+def show_process_fail(err):
+    update_title("subprocess failed\n")
+    icon.icon = combine_icons("assets/icon.png", "assets/subicons/error.png")
+    print("SUBPROCESS FAILED:", err)
 
 SERVER_PROC_is_running = False
 def backend_is_running():
@@ -73,6 +117,29 @@ def backend_is_running():
 def quit_app():
     SERVER_PROC.stop()
     icon.stop()
+
+
+
+#region - WORKER -------------------------------------------------------------------------------------------------------
+
+def do_quick_scan(item):
+    print("ITEM:", item)
+    
+    WORKER_PROC.init([
+        sys.executable, "-m", "python_src.worker",
+        # "--scan-libraries"
+        "-ms", "all", "-f", "Aidra Fox",
+    ])
+    
+    s = time.time()
+    update_title("worker: quick scan\n")
+    icon.icon = combine_icons("assets/icon.png", "assets/subicons/gear_yellow.png", wid=0.45)
+    WORKER_PROC.start()
+    WORKER_PROC.join()
+    time.sleep(1)
+    update_title("quick_scan took {:.0f}s\n".format(time.time()-s))
+    icon.icon = combine_icons("assets/icon.png", "assets/subicons/good.png")
+    
 
 
 #region - OPEN RESOURCES -----------------------------------------------------------------------------------------------
@@ -163,13 +230,8 @@ def update_tray_icon_menu(icon):
         )),
         MenuItem("Copy App URL",                lambda: pyperclip.copy(APP_URL)),
         Menu.SEPARATOR,
-        MenuItem("Start App",                   lambda icon, item: start_backend(),             enabled=not backend_is_running()),
-        MenuItem("Restart App",                 lambda icon, item: restart_backend(),           enabled=backend_is_running()),
-        MenuItem("Stop App",                    lambda icon, item: stop_backend(),              enabled=backend_is_running()),
-        MenuItem("Restart on Crash",            lambda icon, item: toggle_start_on_login(),         checked=lambda item: start_on_login),
-        Menu.SEPARATOR,
         MenuItem("Scan Libraries", Menu(
-            MenuItem('Quick Scan',              lambda: ...),
+            MenuItem('Quick Scan',              lambda icon, item: do_quick_scan(item)),
             MenuItem('Redo Parsing',            lambda: ...),
             MenuItem('Redo Hashing',            lambda: ...),
         ), enabled=True),
@@ -194,6 +256,11 @@ def update_tray_icon_menu(icon):
             MenuItem('Worker Logs',             lambda: ...),
         )),
         Menu.SEPARATOR,
+        MenuItem("Start App",                   lambda icon, item: launch_backend(),             enabled=not backend_is_running()),
+        MenuItem("Restart App",                 lambda icon, item: relaunch_backend(),           enabled=backend_is_running()),
+        MenuItem("Stop App",                    lambda icon, item: stop_backend(),              enabled=backend_is_running()),
+        # MenuItem("Restart on Crash",            lambda icon, item: toggle_start_on_login(),         checked=lambda item: start_on_login),
+        Menu.SEPARATOR,
         MenuItem("Quit",                        lambda icon, item: quit_app()),
     )
 
@@ -215,6 +282,41 @@ def get_latest_logfile(root):
     return [ os.path.join(logsdir, f) for f in os.listdir(logsdir) if f.startswith(root) ][0]
 
 
+def combine_icons(base_path, overlay_path, wid=0.4):
+    base = Image.open(base_path).convert("RGBA")
+    overlay = Image.open(overlay_path).convert("RGBA")
+
+    # Resize overlay to 40% of base width, maintain aspect ratio
+    new_width = int(base.width * wid)
+    aspect_ratio = overlay.height / overlay.width
+    overlay_resized = overlay.resize((new_width, int(new_width * aspect_ratio)))
+
+    # Position at bottom-right
+    x = base.width - overlay_resized.width
+    y = base.height - overlay_resized.height
+
+    # Composite
+    base.paste(overlay_resized, (x, y), overlay_resized)
+    return base
+
+
+
+def update_tray_app(prnt: str|None=None, subicon: str|None=None, subicon_wid=0.4):
+    if prnt:    print(prnt)
+    # if title:   icon.title = title
+    if subicon: icon.icon = combine_icons("assets/icon.png", "assets/"+subicon, subicon_wid)
+    update_tray_icon_menu(icon)
+
+
+TITLE = ""
+def update_title(txt, noprint=False):
+    global TITLE
+    TITLE = (TITLE + txt)[:128]
+    icon.title = TITLE
+    if not noprint:
+        print(f"[LAUNCHER] {txt}", end="")
+
+
 #region - START --------------------------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
@@ -223,6 +325,7 @@ if __name__ == '__main__':
         Image.open("assets/icon.png"),
     )
     icon.title = 'CandyPop Video Launcher'
+    icon.icon = combine_icons("assets/icon.png", "assets/subicons/idle_grey.png")
     update_tray_icon_menu(icon)
 
     icon_thread = threading.Thread(target=icon.run)

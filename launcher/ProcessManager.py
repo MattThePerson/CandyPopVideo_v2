@@ -6,7 +6,7 @@ import os
 
 
 class ProcessManager:
-    def __init__(self, cmd, logfile=None):
+    def __init__(self, cmd=None, logfile=None):
         self.cmd = cmd
         self.process: None|subprocess.Popen = None
         self.status = "stopped"
@@ -15,22 +15,34 @@ class ProcessManager:
         if logfile:
             self.logger = self._initLogger(logfile)
 
-    def start(self):
+    def init(self, cmd):
+        self.cmd = cmd
+
+    def start(self, onfail=None):
         if self.process and self.process.poll() is None:
             print("Process already running")
             return
-        self.process = subprocess.Popen(self.cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        self.status = "running"
-        self._stop_reading.clear()
-        self._stdout_thread = threading.Thread(target=self._read_stdout)
-        self._stdout_thread.start()
+        if self.cmd:
+            try:
+                self.process = subprocess.Popen(self.cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                self.status = "running"
+                self._stop_reading.clear()
+                self._stdout_thread = threading.Thread(target=self._read_stdout)
+                self._stdout_thread.start()
+            except Exception as e:
+                self.status = "error"
+                if onfail:
+                    onfail(e)
+                else:
+                    raise
 
     def _read_stdout(self):
         if self.process and self.process.stdout:
             for line in self.process.stdout:
                 if self._stop_reading.is_set():
                     break
-                print(f"[{self.cmd[0]}] {line.strip()}")
+                if self.cmd:
+                    print(f"[{self.cmd[0]}] {line.strip()}")
                 if self.logger:
                     self.logger.info(line.strip())
                 # Optionally parse lines to update status here
@@ -50,6 +62,12 @@ class ProcessManager:
     def restart(self):
         self.stop()
         self.start()
+
+    def join(self):
+        if self.process:
+            self.process.wait()
+        if self._stdout_thread:
+            self._stdout_thread.join()
 
     def is_running(self):
         return self.process and self.process.poll() is None

@@ -33,4 +33,4 @@ bin
 
 *.png
 *.jpg
-!assets/*
+!assets/**

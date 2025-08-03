@@ -2,7 +2,7 @@
 
 # Paths
 GO_BACKEND_DIR := go_backend
-TRAY_APP_SCRIPT := launcher/tray_app.py
+TRAY_APP_SCRIPT := launcher\tray_app.py
 EXE_NAME := CandyPopVideo
 LAUNCHER_EXE_NAME := CandyPopVideoTrayApp
 VENV_DIR := .venv
@@ -35,12 +35,12 @@ install:
 # Build Go backend
 build-go:
 	go mod tidy -C go_backend && \
-    go build -C go_backend -ldflags="-s -w" -o ../$(EXE_NAME).exe
+    go build -C go_backend -ldflags="-s -w" -o ..\$(EXE_NAME).exe
 
 # Build Python executable
 build-launcher:
-	$(PYINSTALLER) $(TRAY_APP_SCRIPT) --name $(LAUNCHER_EXE_NAME) --onefile --noconsole --icon=assets/icon.ico --distpath .
-	if exist *.spec del /Q *.spec
+	$(PYINSTALLER) $(TRAY_APP_SCRIPT) --name $(LAUNCHER_EXE_NAME) --onefile --noconsole --icon=assets\icon.ico --distpath bin
+	if exist bin\*.spec del /Q bin\*.spec
 
 build: build-go build-launcher
 
