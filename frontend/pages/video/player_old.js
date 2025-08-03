@@ -56,7 +56,7 @@ export function load_video_player(video_hash, video_data, url_params) {
         }
     })
 
-    /** @type {HTMLElement} */
+    /** @type {HTMLVideoElement} */
     const video_el = document.querySelector('#player video');
     // return;
     loadSRTasVTT(`/media/get/subtitles/${video_hash}`, (url) => {
@@ -143,10 +143,19 @@ export function load_video_player(video_hash, video_data, url_params) {
         if (last_play_time) {
             const time_played = (Date.now() - last_play_time) / 1000;
             last_play_time = null;
-            // console.log(time_played + 's');
+            console.debug(`viewtime: ${time_played}s`);
             $.post(`/api/interact/viewtime/add/${video_hash}/${time_played}`);
         }
     })
+
+    window.addEventListener("beforeunload", function (event) {
+        if (!video_el.paused && last_play_time) {
+            const time_played = (Date.now() - last_play_time) / 1000;
+            last_play_time = null;
+            console.debug(`viewtime: ${time_played}s`);
+            $.post(`/api/interact/viewtime/add/${video_hash}/${time_played}`);
+        }
+    });
     
 }
 

@@ -116,3 +116,7 @@ func absDiff(a, b int64) int64 {
 	return b - a
 }
 
+
+func getCurrentTime() string {
+	return time.Now().Format("2006-01-02T15:04:05")
+}

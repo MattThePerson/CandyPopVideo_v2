@@ -38,7 +38,7 @@ function main(video_hash) {
         
     });
     
-    return;
+    // return;
     
     /* - video interactions ------------------------------------------------- */
 
@@ -50,12 +50,13 @@ function main(video_hash) {
         $('.viewtime').text('viewtime: ' + _format_seconds(vi.viewtime));
         
         /* likes */
-        const likes_button = $('.likes-button');
-        likes_button.text(`${vi.likes} likes`);
+        const likes_button = $('.like-button');
+        likes_button[0].title = `${vi.likes} ❤️s`;
         likes_button.on('click', () => {
+            console.debug("Adding like ❤️");
             $.post('/api/interact/likes/add/'+video_hash, (data, status) => {
                 if (status === 'success') {
-                    likes_button.text(`${data.likes} likes`);
+                    likes_button[0].title = `${++vi.likes} ❤️s`;
                 }
             })
         })
@@ -147,10 +148,11 @@ function hydrate_info_section(section, vd) {
 
     /* check favourite */
     const is_fav_button = section.find('button.is-fav-button');
-    $.get(`/api/interact/favourites/check/${vd.hash}`, (data, status) => {
+    $.get(`/api/interact/favourites/check/${vd.hash}`, (is_favourite, status) => {
         if (status === 'success') {
+            console.log("is_favourite:", is_favourite);
             is_fav_button.addClass('loaded');
-            if (data.is_favourite) {
+            if (is_favourite) {
                 is_fav_button.addClass('is-fav');
             }
             // add event listeners

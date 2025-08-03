@@ -78,3 +78,68 @@ func ReadSerializedMapFromTable[S any](db_path string, table string) (map[string
 	return items, nil
 	
 }
+
+
+// WriteSerializedRowToTable will marshal (serialize) data from a complex type and write to 'serialized' db
+func WriteSerializedRowToTable[S any](db_path string, table string, id string, data_struct S) error {
+
+	// Open db connection
+	db, err := sql.Open("sqlite", db_path)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	// marshal data
+	data, err := json.Marshal(data_struct)
+	if err != nil {
+		return err
+	}
+	
+	// write row
+	_, err = db.Exec("INSERT OR REPLACE INTO "+table+" (id, data) VALUES (?, ?)", id, data)
+	if err != nil {
+		return err
+	}
+	
+	return nil
+}
+
+
+// InsertDataIntoTable
+func InsertDataIntoTable(db_path string, table string, data map[string]any) error {
+
+	// Open db connection
+	db, err := sql.Open("sqlite", db_path)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	// get strings
+	columns_str := ""
+	qmarks_str := ""
+	values := []any{}
+	FIRST_FLAG := true
+	for k, v := range data {
+		values = append(values, v)
+		if FIRST_FLAG {
+			FIRST_FLAG = false
+		} else {
+			columns_str += ", "
+			qmarks_str += ", "
+		}
+		columns_str += k
+		qmarks_str += "?"
+	}
+	
+	// write row
+	command := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", table, columns_str, qmarks_str)
+	_, err = db.Exec(command, values...)
+	if err != nil {
+		return err
+	}
+	
+	return nil
+}
+

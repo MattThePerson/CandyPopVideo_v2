@@ -6,6 +6,7 @@
 
 SHORT_TERM:
 - [frontend] add dated marker button/ui
+- [frontend] add edit favourite add date with right click
 - [frontend] add video rating
 - [frontend] add comments
 - [app] flesh out (and fix) tray icon app
@@ -131,7 +132,7 @@ buttons:
 - edit filename
 
 
-
+- edit favourited date
 - open d18 page
 - open external link (ph)
 

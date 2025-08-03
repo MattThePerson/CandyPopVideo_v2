@@ -52,7 +52,7 @@ def ROUTE_remove_favourite(video_hash: str):
 @interact_router.get("/favourites/check/{video_hash}")
 def ROUTE_is_favourite(video_hash: str):
     vid_inter = get_video_interactions(video_hash)
-    return { 'is_favourite': vid_inter.is_favourite }
+    return vid_inter.is_favourite
 
 
 

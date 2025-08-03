@@ -262,9 +262,9 @@ if (urlParams.size > 0) {
         configure_page_nav(results.videos_filtered_count, results.time_taken, results_per_page, query.startfrom);
         
         /* similar performers */
-        if (query.actor) {
-            make_performer_panel();
-        }
+        // if (query.actor) {
+        //     make_performer_panel();
+        // }
 
     });
 }

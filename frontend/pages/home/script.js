@@ -14,13 +14,13 @@ async function main() {
 
     console.debug('VIDEO DATA:', video_data);
 
-    load_daily_recommended_videos(video_data);
+    load_days_recommended_videos(video_data);
 
 
 }
 
 
-async function load_daily_recommended_videos(video_data) {
+async function load_days_recommended_videos(video_data) {
     
     /* show date */
     let date = Date().split(' ').slice(0,4).join(' ');
@@ -61,18 +61,19 @@ async function load_daily_recommended_videos(video_data) {
     const video_load_amount = 8 //24;
 
     const query_amount = 512
-    const result = await $.get(`/api/query/get/similar-videos/${video_data.hash}/0/${query_amount}`);
-    let similar_videos = result.search_results;
+    const result = await $.get(`/api/query/get/similar-videos/${video_data.hash}`);
+    let similar_videos = result.Videos;
     
-    const results_container = $('.similar-videos-section').get(0);
+    const similar_videos_section = $('.similar-videos-section').get(0);
+    $(similar_videos_section).find('h2').text(`Similar Videos (took ${Math.floor(result.TimeTaken*10)/10}s)`);
 
     const expand_results_func = await render_video_cards(
         similar_videos,
-        results_container,
+        similar_videos_section,
         video_load_amount,
         1,
     )
-    $(results_container).find('#expand-results-button').on('click', expand_results_func);
+    $(similar_videos_section).find('#expand-results-button').on('click', expand_results_func);
 
 }
 

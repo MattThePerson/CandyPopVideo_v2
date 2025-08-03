@@ -119,8 +119,9 @@ export class MyCard extends HTMLElement {
                 is_fav_button.addClass('loaded');
                 if (VIs.is_favourite) {
                     is_fav_button.addClass('is-fav');
+                    is_fav_button[0].title = `favourite added: ${VIs.favourited_date}`
                 }
-                // add event listeners
+                /* toggle is favourite */
                 is_fav_button.on('click', () => {
                     let change_favourite_route;
                     if (is_fav_button.hasClass('is-fav')) {
