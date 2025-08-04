@@ -140,7 +140,7 @@ for (let button_group of button_groups) {
                     sort_by_arg = sort_type + '-desc';
             } else {
                 sort_by_arg = sort_type + '-desc';
-                if (sort_type == 'filename' || sort_type == 'scene-title' || sort_type == 'studio')
+                if (sort_type == 'filename' || sort_type == 'title' || sort_type == 'studio')
                     sort_by_arg = sort_by_arg.replace('desc', 'asc');
             }
         }
@@ -206,7 +206,7 @@ const query = {
     date_added_to: null,        // str,
     date_released_from: null,   // str,
     date_released_to: null,     // str,
-    only_favourites: false,     // bool,
+    only_favourites: "false",   // str,
     sortby: null,               // str|None,
     limit: null,                  // int,
     startfrom: -1,              // int,
@@ -235,7 +235,7 @@ console.log('Query: ', query)
 if (query.sortby) highlight_sort_button(query.sortby);
 else              highlight_sort_button('date-added-desc');
 
-if (query.only_favourites)  onlyFavsCheckbox.checked = true;
+if (query.only_favourites === "true")  onlyFavsCheckbox.checked = true;
 
 
 //region - BACKEND REQUEST ---------------------------------------------------------------------------------------------

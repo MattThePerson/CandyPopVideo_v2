@@ -11,7 +11,7 @@ type SearchQuery struct {
 	DateAddedTo      string   `json:"date_added_to"`
 	DateReleasedFrom string   `json:"date_released_from"`
 	DateReleasedTo   string   `json:"date_released_to"`
-	OnlyFavourites   bool     `json:"only_favourites"`
+	OnlyFavourites   string   `json:"only_favourites"`
 	SortBy           string   `json:"sortby"`
 	Limit            int      `json:"limit"`
 	StartFrom        int      `json:"startfrom"`

@@ -131,23 +131,28 @@ export function load_video_player(video_hash, video_data, url_params) {
     let last_play_time = null;
     let first_playback = false;
 
-    video_el.addEventListener('play', () => {
+    video_el.addEventListener("play", () => {
         last_play_time = Date.now();
-        if (!first_playback) {
-            setTimeout(() => {
-                $.post('/api/interact/last-viewed/add/'+video_hash);
-                first_playback = true;
-            }, 500);
-        }
     })
 
-    video_el.addEventListener('pause', () => {
+    video_el.addEventListener("pause", () => {
         if (last_play_time) {
+            // viewtime
             const time_played = (Date.now() - last_play_time) / 1000;
+            if (time_played > 5) {
+                console.debug(`viewtime: ${time_played}s`);
+                $.post(`/api/interact/viewtime/add/${video_hash}/${time_played}`);
+            }
+            // last viewed
+            if (!first_playback && time_played > 10) {
+                setTimeout(() => {
+                    $.post('/api/interact/last-viewed/add/'+video_hash);
+                    first_playback = true;
+                }, 500);
+            }
             last_play_time = null;
-            console.debug(`viewtime: ${time_played}s`);
-            $.post(`/api/interact/viewtime/add/${video_hash}/${time_played}`);
         }
+        
     })
 
     window.addEventListener("beforeunload", function (event) {

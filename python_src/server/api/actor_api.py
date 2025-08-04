@@ -82,6 +82,8 @@ def _scrape_actor_info(name, save_dir, download_media=True) -> dict|None:
 def _scrape_babepedia(name, save_dir, download_media=True) -> dict|None:
     # step 1: get soup
     res = _get_babepedia_page_by_name(name)
+    if res.status_code == 504:
+        raise Exception("504 Server Error: Gateway timeout")
     res.raise_for_status()
     
     if '/search/' in res.url:

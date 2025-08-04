@@ -119,7 +119,10 @@ def _sortVideos(videos_list: list[VideoData], sortby_option: str, video_interact
             # print('soring by:', )
             videos_list.sort(
                 reverse=sort_reverse,
-                key=lambda video: ( (getattr(video, sortby_attr) is None) != sort_reverse, getattr(video, sortby_attr) ) # tuple where first element if boolean. 
+                key=lambda video: (
+                    (getattr(video, sortby_attr) is None) != sort_reverse,
+                    getattr(video, sortby_attr),
+                ) # tuple where first element if boolean. 
             )
     
     return videos_list

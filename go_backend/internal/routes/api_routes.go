@@ -115,12 +115,18 @@ func ECHO_get_movie(c echo.Context, db_path string) error {
 		}
 	}
 
+	// generate comparable title strings
+	title_cmp := map[string]string{}
+	for _, vd := range vids {
+		title_cmp[vd.Hash] = formatStringForIntComparability(vd.Title)
+	}
+	
 	// sort vids
 	slices.SortFunc(vids, func(a, b schemas.VideoData) int {
 		if (a.DateReleased != b.DateReleased) {
 			return cmp.Compare(a.DateReleased, b.DateReleased)
 		}
-		return cmp.Compare(a.Title, b.Title)
+		return cmp.Compare(title_cmp[a.Hash], title_cmp[b.Hash])
 	})
 	
 	return c.JSON(200, vids)
@@ -143,12 +149,18 @@ func ECHO_get_movie_series(c echo.Context, db_path string) error {
 		}
 	}
 
-	// sort videos
+	// generate comparable title strings
+	title_cmp := map[string]string{}
+	for _, vd := range vids {
+		title_cmp[vd.Hash] = formatStringForIntComparability(vd.Title)
+	}
+	
+	// sort vids
 	slices.SortFunc(vids, func(a, b schemas.VideoData) int {
 		if (a.DateReleased != b.DateReleased) {
 			return cmp.Compare(a.DateReleased, b.DateReleased)
 		}
-		return cmp.Compare(a.Title, b.Title)
+		return cmp.Compare(title_cmp[a.Hash], title_cmp[b.Hash])
 	})
 	
 	return c.JSON(200, vids)

@@ -61,10 +61,16 @@ func ECHO_search_videos(c echo.Context, db_path string) error {
 		return handleServerError(c, 500, "Unable to read interactions table", err)
 	}
 
-	// get search results TODO: Replace with search logic
+	// get search results
 	results, err := query.FilterAndSortVideos(vids, q, i)
 	if err != nil {
 		return handleServerError(c, 500, "Unable to filter and sort videos", err)
+	}
+
+	// sort by search query (TF-IDF)
+	if q.SearchString != "" {
+		// 1: get list of similar hashes via subprocess
+		// 2: sort search results by similarity score
 	}
 	
 	return c.JSON(200, results)

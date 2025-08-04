@@ -7,12 +7,10 @@ SHORT_TERM:
 - [frontend] add edit favourite add date
 - [frontend] add video rating
 - [frontend] add comments
-- [app] flesh out (and fix) tray icon app
 - [frontend] figure out why middle click drag opens results card hrefs
 - [frontend] create PassionPlayer MVP
 
 MEDIUM_TERM:
-- [backend] rewrite in Go
 - [frontend] [finish] search panel
 - [frontend] [finish] catalogue page
 - [frontend] [finish] PassionPlayer
@@ -22,13 +20,10 @@ MEDIUM_TERM:
 - [frontend|backend] Redo dashboard (minimal)
 - [backend/worker] Add include tags from actors
 - [backend/worker] Generate tags based on number/type of actors
-- [go] get TFIDF search query working
 
 LONG_TERM:
 - [admin] promote to others/get others to test
-- [admin] find way to make not-nsfw preview
-- [app] dockerize
-
+- [admin] make not-nsfw preview
 
 COLLECTION:
 - [media] Generate preview media for entire collection
@@ -49,6 +44,8 @@ THEORETICAL:
 - [app] Figure out way to link to d18 (or other 18+ db)
 
 
+<!-- - [app] flesh out (and fix) tray icon app -->
+<!-- - [backend] rewrite in Go -->
 <!-- - [collection] Handle 3dh collection -->
 <!-- - [data] port old favourites -->
 <!-- - [media_gen] [fix] seek thumbs alignment -->
@@ -85,12 +82,15 @@ THEORETICAL:
 <!-- - Get media generation working -->
 
 
+# DB LOCKED INSTANCES
+- 2025/08/04 14:04:02 🚨🚨 ERROR 🚨🚨:  [/api/interact/get/:video_hash] Unable to read interactions row: database is locked (261)
+
 
 # GO REWRITE PATH
 
-- [go] fix sorting of search results
-- [go] add sorting by interactions
-- [go] fix sort by title
+<!-- - [go] fix sort by title -->
+<!-- - [go] fix sorting of search results -->
+<!-- - [go] add sorting by interactions -->
 <!-- - [go] get interactions working -->
 <!-- - [go] get TFIDF stuff working -->
 <!-- - [go] add get actor info -->
@@ -101,17 +101,18 @@ THEORETICAL:
 <!-- - [go] write go backend demo -->
 
 
-1. Minimal Viable Product:
+<!-- 1. Minimal Viable Product: -->
   <!-- - serve media (no ensures) -->
-  - api router
-  - interact router
-2. Add non-TFIDF search
-  - search videos
+  <!-- - api router -->
+  <!-- - interact router -->
+<!-- 2. Add non-TFIDF search -->
+  <!-- - search videos -->
   <!-- - get catalogue -->
 <!-- 3. Add media ensuring (w/ python) -->
-4. Add TFIDF search stuff (w/ python)
+<!-- 4. Add TFIDF search stuff (w/ python) -->
 5. Frontend scan/media control (w/ python)
 6. (Optional, Discouraged) Backend manager
+  - tfidf recommender system
   - scanning
   - media generation (ffmpeg + porting opencv implementations)
 

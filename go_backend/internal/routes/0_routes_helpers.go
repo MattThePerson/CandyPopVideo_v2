@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -125,3 +126,33 @@ func absDiff(a, b int64) int64 {
 func getCurrentTime() string {
 	return time.Now().Format("2006-01-02T15:04:05")
 }
+
+
+// formatStringForIntComparability
+func formatStringForIntComparability(input string) string {
+
+	// remove grammar
+	for _, char := range []string{".", ",", ":", ";", "'", "*", "!", "_", "-"} {
+		input = strings.ReplaceAll(input, char, "")
+	}
+
+	// split into parts
+	parts_hold := strings.Split(strings.ToLower(input), " ")
+	parts := []string{}
+	for _, p := range parts_hold {
+		if p != "" {
+			parts = append(parts, p)
+		}
+	}
+
+	// process parts
+	for idx, p := range parts {
+		num, err := strconv.Atoi(p)
+		if err == nil {
+			parts[idx] = fmt.Sprintf("!%60d", num)
+		}
+	}
+	return strings.Join(parts, " ")
+}
+
+

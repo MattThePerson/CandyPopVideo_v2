@@ -26,7 +26,7 @@ type VideoData struct {
 	// scene attributes
 	Title       string `json:"title"`
 	SceneTitle  string `json:"scene_title"`
-	SceneNumber *int   `json:"scene_number"`
+	SceneNumber int    `json:"scene_number"`
 	MovieTitle  string `json:"movie_title"`
 	MovieSeries string `json:"movie_series"`
 
