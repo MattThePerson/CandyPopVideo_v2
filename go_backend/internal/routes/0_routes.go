@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -88,8 +89,11 @@ func getPreviewThumbnail(vid_media_dir string, large_thumbs bool) (string, error
 	// if prevthumb not exist
 	var prev_thumbs_dir = vid_media_dir + "/previewthumbs"
 	entries, err := os.ReadDir(prev_thumbs_dir)
-	if err != nil || len(entries) < 10 {
-		return "NONE HAHAHA", err
+	if err != nil {
+		return "", err
+	}
+	if len(entries) < 10 {
+		return "", errors.New("Not enough images in preview media dir")
 	}
 	
 	// get seeded random file

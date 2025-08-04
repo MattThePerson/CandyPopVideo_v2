@@ -40,8 +40,11 @@ def hasPreviewThumbs(video_hash: str, mediadir: str, large=True):
     vid_folder = f'{get_video_media_dir(mediadir, video_hash)}/previewthumbs'
     if not os.path.exists(vid_folder):
         return None
+    dir_contents = os.listdir(vid_folder)
+    if len(dir_contents) < 10:
+        return None
     res = '1080' if large else '360'
-    thumb_paths = [ os.path.join('previewthumbs', f) for f in os.listdir(vid_folder) if res in f ]
+    thumb_paths = [ os.path.join('previewthumbs', f) for f in dir_contents if res in f ]
     if thumb_paths == []:
         return None
     # return thumbnail by second

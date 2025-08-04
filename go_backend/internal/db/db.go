@@ -9,13 +9,33 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+
+func openDbConnection(db_path string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite", db_path)
+	if err != nil {
+		return db, err
+	}
+	// Write Ahead Logging mode (enables concurrent reads ans writes)
+	_, err = db.Exec("PRAGMA journal_mode = WAL;")
+	if err != nil {
+		return db, err
+	}
+	// busy timeout
+	// _, err = db.Exec("PRAGMA busy_timeout = 5000;")
+	// if err != nil {
+	// 	return db, err
+	// }
+	return db, nil
+}
+
+
 // (For a database that stores serialized json) Read row from table and unmarshal to struct
 func ReadSerializedRowFromTable[S any](db_path string, table string, id string) (S, error) {
 
 	var data S
 	
 	// Open db connection
-	db, err := sql.Open("sqlite", db_path+"?_busy_timeout=2000") // db_path+"?_busy_timeout=2000"
+	db, err := openDbConnection(db_path)
 	if err != nil {
 		return data, err
 	}
@@ -44,7 +64,7 @@ func ReadSerializedMapFromTable[S any](db_path string, table string) (map[string
 	items := map[string]S{}
 	
 	// Open db connection
-	db, err := sql.Open("sqlite", db_path+"?_busy_timeout=2000") // db_path+"?_busy_timeout=2000"
+	db, err := openDbConnection(db_path)
 	if err != nil {
 		return items, err
 	}
@@ -82,7 +102,7 @@ func ReadSerializedMapFromTable[S any](db_path string, table string) (map[string
 func WriteSerializedRowToTable[S any](db_path string, table string, id string, data_struct S) error {
 
 	// Open db connection
-	db, err := sql.Open("sqlite", db_path+"?_busy_timeout=2000") // db_path+"?_busy_timeout=2000"
+	db, err := openDbConnection(db_path)
 	if err != nil {
 		return err
 	}
@@ -108,7 +128,7 @@ func WriteSerializedRowToTable[S any](db_path string, table string, id string, d
 func InsertDataIntoTable(db_path string, table string, data map[string]any) error {
 
 	// Open db connection
-	db, err := sql.Open("sqlite", db_path+"?_busy_timeout=2000") // db_path+"?_busy_timeout=2000"
+	db, err := openDbConnection(db_path)
 	if err != nil {
 		return err
 	}
