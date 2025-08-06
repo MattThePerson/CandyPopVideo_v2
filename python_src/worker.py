@@ -105,7 +105,6 @@ def backend_manager(args: argparse.Namespace, ws=None):
             reparse_filenames=args.reparse_filenames,
             reread_json_metadata=args.reread_json_metadata,
             path_filters=args.path_include_filters,
-            ws=ws
         )
         # generate tfidf model
         print('Generating tfidf model for videos')

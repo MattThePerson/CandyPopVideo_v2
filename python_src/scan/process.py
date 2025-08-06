@@ -40,8 +40,8 @@ def process_videos(
     fails = []
     parser = StringParser(scene_filename_formats)
     for idx, (video_hash, video_path) in enumerate(hash_path_map.items()):
-        print('\rprocessing videos ({:_}/{:_}) ({} fails) [{}] : {:<120} :'
-            .format(idx+1, len(hash_path_map), len(fails), video_hash, Path(video_path).name[:118]), end='')
+        print('\rprocessing videos ({:_}/{:_}) ({} fails) [{}] "{:<52}"'
+            .format(idx+1, len(hash_path_map), len(fails), video_hash, _limit_and_filter_string(Path(video_path).name, 50)), end='')
         video_data: VideoData|None = existing_videos.get(video_hash)
         video_found_in_existing_videos = (video_data is not None)
         if not video_found_in_existing_videos or redo_video_attributes:
@@ -79,7 +79,8 @@ def process_videos(
             video_data.tags = list(set( video_data.tags_from_filename + video_data.tags_from_path + video_data.tags_from_json ))
             
             videos_dict[video_hash] = video_data
-    print()
+    print('\rprocessing videos ({:_}/{:_}) ({} fails) {:80}'
+            .format(len(hash_path_map), len(hash_path_map), len(fails), 80*" "))
     
     # sort tags by occurance
     print("Sorting tags by frequencey ... ", end="")
@@ -117,7 +118,8 @@ def _get_video_hashes(
     videos_hashed, hashing_failed, collisions, extracted_ads_tag, other_errors = [], [], [], [], []
     path_hash_map = { video_data.path: hash for hash, video_data in existing_videos.items() }
     for idx, video_path in enumerate(video_paths):
-        print('\rFinding hashes for video paths ({:_}/{:_}) : {:<120} :'.format(idx+1, len(video_paths), Path(video_path).name[:118]), end='')
+        # print('\rFinding hashes for video paths ({:_}/{:_})'.format(idx+1, len(video_paths)), end='')
+        print('\rFinding hashes for video paths ({:_}/{:_})  "{:<52}"'.format(idx+1, len(video_paths), _limit_and_filter_string(Path(video_path).name, 50)), end='')
         video_hash: str|None = path_hash_map.get(video_path)
         if video_hash is None: # get NTFS ADS tag
             video_hash = get_NTFS_ADS_tag(video_path, 'candypop-video-hash')
@@ -146,7 +148,8 @@ def _get_video_hashes(
             else:
                 hash_path_map[video_hash] = video_path
     # print hashing report
-    print('\nDone. |  hashed: {:_}/{:_} videos  |  fails: {:_}  |  collisions: {:_}  |  ads_tags: {:_}  |  errors: {:_}'.format(len(videos_hashed), len(video_paths), len(hashing_failed), len(collisions), len(extracted_ads_tag), len(other_errors)))
+    print("\rFinding hashes for video paths ({:_}/{:_}) {:<70}".format(len(video_paths), len(video_paths), 70*" "))
+    print('All hashes found |  hashed: {:_}/{:_} videos  |  fails: {:_}  |  collisions: {:_}  |  ads_tags: {:_}  |  errors: {:_}'.format(len(videos_hashed), len(video_paths), len(hashing_failed), len(collisions), len(extracted_ads_tag), len(other_errors)))
     if videos_hashed != []:
         print('\n   VIDEOS HASHED:')
         for idx, (hsh, pth) in enumerate(videos_hashed):
@@ -165,7 +168,7 @@ def _get_new_video_data_object(video_hash: str, video_path: str) -> VideoData|No
     try:
         extracted_data = video_analyser.getVideoData(video_path)
     except Exception as e:
-        err_msg = 'getVideoData() failed for [{}] \"{}\"\nmsg: {}'.format(video_hash, video_path, e)
+        err_msg = '\nERROR: getVideoData() failed for [{}] \"{}\"\nmsg: {}'.format(video_hash, video_path, e)
         print(err_msg)
         LOADING_FAILED.error(err_msg)
         return None
@@ -472,3 +475,13 @@ def _add_hash_to_video_metadata(video_path: str, video_hash: str):
         video_metadata.addMetadataTags_MKV(video_path, tags)
 
 
+def _limit_and_filter_string(s: str, l: int) -> str:
+    new = []
+    count = 0
+    for c in s:
+        if ord(c) < 150:
+            new.append(c)
+            count += 1
+        if count >= l:
+            return "".join(new[:-3]) + "..."
+    return "".join(new)
