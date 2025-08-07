@@ -40,7 +40,7 @@ build-go:
 # Build Python executable
 build-launcher:
 	$(PYINSTALLER) $(TRAY_APP_SCRIPT) --name $(LAUNCHER_EXE_NAME) --onefile --noconsole --icon=assets\icon.ico --distpath bin
-	if exist bin\*.spec del /Q bin\*.spec
+	if exist *.spec del /Q *.spec
 
 build: build-go build-launcher
 

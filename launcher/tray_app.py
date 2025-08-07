@@ -25,8 +25,12 @@ import pyperclip
 
 #region - GLOBALS ------------------------------------------------------------------------------------------------------
 
+while not os.path.exists("LICENSE"):
+    os.chdir("..")
+
+
 # load config
-with open('config.yaml', 'r') as f:
+with open("config.yaml", "r") as f:
     CONFIG = yaml.safe_load(f)
 
 os.environ["DEV_MODE"] = "1"
@@ -39,7 +43,7 @@ else:
 
 # PROCESSES
 
-PORT = 8011
+PORT = 8010
 APP_URL = f'http://localhost:{PORT}'
 # SERVER_PROC_PYTHON = ProcessManager(
 #     [sys.executable, '-m', 'uvicorn', 'python_src.main:app', '--host', '0.0.0.0', '--port', str(PORT)],
@@ -54,12 +58,17 @@ SERVER_PROC = ProcessManager(
 )
 
 def build_backend():
-    result = subprocess.run([
-        "go", "build",
-        "-C", "go_backend",
-        "-ldflags=-s -w",
-        "-o", f"../{GO_SERVER_EXE}"
-    ], capture_output=True, text=True)
+    result = subprocess.run(
+        [
+            "go", "build",
+            "-C", "go_backend",
+            "-ldflags=-s -w",
+            "-o", f"../{GO_SERVER_EXE}"
+        ],
+        capture_output=True,
+        text=True,
+        creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+    )
     if result.returncode != 0:
         raise Exception(f"Failed with code {result.returncode}\nSTDERR: {result.stderr}")
 
@@ -311,7 +320,7 @@ def update_tray_app(prnt: str|None=None, subicon: str|None=None, subicon_wid=0.4
 TITLE = ""
 def update_title(txt, noprint=False):
     global TITLE
-    TITLE = (TITLE + txt)[:128]
+    TITLE = (TITLE + txt)[128:]
     icon.title = TITLE
     if not noprint:
         print(f"[LAUNCHER] {txt}", end="")
