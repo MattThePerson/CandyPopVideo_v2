@@ -7,6 +7,7 @@ type SearchQuery struct {
 	Collection       string   `json:"collection"`
 	IncludeTerms     []string `json:"include_terms"`
 	ExcludeTerms     []string `json:"exclude_terms"`
+	Tags             []string `json:"tags"`
 	DateAddedFrom    string   `json:"date_added_from"`
 	DateAddedTo      string   `json:"date_added_to"`
 	DateReleasedFrom string   `json:"date_released_from"`

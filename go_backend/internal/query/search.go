@@ -150,6 +150,19 @@ func filterVideosBySearchQuery(vids []schemas.VideoData, q schemas.SearchQuery, 
 		})
 	}
 
+	// tags
+	for _, t := range q.Tags {
+		t = strings.ToLower(t)
+		vids = filterSliceFunc(vids, func(vd schemas.VideoData) bool {
+			for _, tg := range vd.Tags {
+				if strings.ToLower(tg) == t {
+					return true
+				}
+			}
+			return false
+		})
+	}
+
 	return vids
 }
 

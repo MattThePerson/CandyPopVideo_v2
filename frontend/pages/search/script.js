@@ -202,6 +202,7 @@ const query = {
     collection: null,       // str,
     include_terms: null,      // list[str],
     exclude_terms: null,      // list[str],
+    tags: null,      // list[str],
     date_added_from: null,      // str,
     date_added_to: null,        // str,
     date_released_from: null,   // str,
@@ -223,13 +224,15 @@ params.forEach((value, key) => {
 query.limit =       params.get('results-amount') || results_per_page;
 query.startfrom =   query.limit * (pageNumber-1);
 
-if (typeof query.include_terms === 'string') query.include_terms = query.include_terms.split(',').map(w => w.trim());
-if (typeof query.exclude_terms === 'string') query.exclude_terms = query.exclude_terms.split(',').map(w => w.trim());
+if (typeof query.include_terms === 'string')    query.include_terms = query.include_terms.split(',').map(w => w.trim());
+if (typeof query.exclude_terms === 'string')    query.exclude_terms = query.exclude_terms.split(',').map(w => w.trim());
+if (typeof query.tags === 'string')             query.tags = query.tags.split(',').map(w => w.trim());
 
-if (query.include_terms === null)  query.include_terms = [];
-if (query.exclude_terms === null)  query.exclude_terms = [];
+if (query.include_terms === null)   query.include_terms = [];
+if (query.exclude_terms === null)   query.exclude_terms = [];
+if (query.tags === null)            query.tags = [];
 
-console.log('Query: ', query)
+console.debug('Query: ', query)
 
 /* make ui changes based on params (using query) */
 if (query.sortby) highlight_sort_button(query.sortby);
@@ -243,7 +246,7 @@ if (query.only_favourites === "true")  onlyFavsCheckbox.checked = true;
 if (urlParams.size > 0) {
     makeApiRequestPOST_JSON('/api/query/search-videos', query, (results) => {
         
-        console.log('search_results:', results);
+        console.debug('search_results:', results);
         // return;
 
         const card_type = "search-result-card-default"; // TODO: Replace with local storage
