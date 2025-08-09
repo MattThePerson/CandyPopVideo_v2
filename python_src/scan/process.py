@@ -72,9 +72,14 @@ def process_videos(
                 if id_ is not None:
                     # from pprint import pprint
                     metadata = json_metadata.get_metadata(id_, video_data.path)
+                    from pprint import pprint
+                    
                     if metadata != {}:
                         video_data = _add_metadata_to_video_data(video_data, metadata)
-                        video_data.actors = _get_ordered_set( video_data.primary_actors + video_data.secondary_actors )
+                        print("\nMETADATA:", video_data.filename)
+                        pprint(video_data)
+                        print()
+                        video_data.actors = _get_ordered_set( video_data.actors + video_data.primary_actors + video_data.secondary_actors )
             
             video_data.tags = list(set( video_data.tags_from_filename + video_data.tags_from_path + video_data.tags_from_json ))
             

@@ -51,7 +51,9 @@ func ECHO_get_poster(c echo.Context, db_path string, preview_media_dir string) e
 	var vid_media_dir = getVideoMediaDir(preview_media_dir, video_hash)
 
 	// check for preview thumbs
-	preview_thumb, err := getPreviewThumbnail(vid_media_dir, false)
+	// HEREEEEE
+	large_thumbs := c.QueryParam("large") == "true"
+	preview_thumb, err := getPreviewThumbnail(vid_media_dir, large_thumbs)
 	if err == nil {
 		// fmt.Println("FOUND PREVIEW THUMB: "+preview_thumb)
 		return c.File(preview_thumb)

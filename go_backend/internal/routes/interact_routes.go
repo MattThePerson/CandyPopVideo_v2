@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"errors"
 	"strconv"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 )
@@ -19,7 +20,7 @@ func IncludeInteractRoutes(e *echo.Group, db_path string) {
 	e.GET("/favourites/check/:video_hash", 	func(c echo.Context) error { return ECHO_favs_check(c, db_path) })
 	e.POST("/favourites/add/:video_hash", 					func(c echo.Context) error { return ECHO_fav_add(c, db_path) })
 	e.POST("/favourites/remove/:video_hash", 				func(c echo.Context) error { return ECHO_fav_remove(c, db_path) })
-	e.POST("/favourites/update-time/:video_hash/:new_time", func(c echo.Context) error { return ECHO_fav_update_time(c, db_path) })
+	e.POST("/favourites/update-time/:video_hash/:new_date", func(c echo.Context) error { return ECHO_fav_update_time(c, db_path) })
 
 	e.POST("/likes/add/:video_hash", 				func(c echo.Context) error { return ECHO_likes_add(c, db_path) })
 	e.POST("/last-viewed/add/:video_hash", 			func(c echo.Context) error { return ECHO_last_viewed_add(c, db_path) })
@@ -83,7 +84,7 @@ func ECHO_fav_remove(c echo.Context, db_path string) error {
 		inter.IsFavourite = false
 		inter.FavouritedDate = ""
 
-		return c.String(200, "Favourite aded")
+		return c.String(200, "Favourite added")
 	})
 }
 
@@ -92,10 +93,21 @@ func ECHO_fav_remove(c echo.Context, db_path string) error {
 func ECHO_fav_update_time(c echo.Context, db_path string) error {
 	return updateInteractionsTable(c, db_path, func(inter *schemas.VideoInteractions) error {
 		
-		// ...
+		new_date := c.Param("new_date")
+		
+		if !inter.IsFavourite {
+			return c.String(400, "Video is not favourited")
+		}
 
-		return c.String(501, "Not implemented")
-		// return c.String(200, "Favourite aded")
+		new_date = strings.ReplaceAll(new_date, " ", "T")
+
+		if !isValidDateTime(new_date) {
+			return c.String(400, "New date is invalid: "+new_date)
+		}
+
+		inter.FavouritedDate = new_date
+
+		return c.String(200, "Updated favourited date")
 	})
 }
 

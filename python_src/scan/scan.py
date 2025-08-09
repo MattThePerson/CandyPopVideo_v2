@@ -93,7 +93,7 @@ def _getVideoPathsFromFolders(folders: list[str], ignore_folders: list[str] = []
     # filter files
     start = time.time()
     print("Filtering for videos... ")
-    file_objects = [ obj for obj in file_objects if obj.is_file() and obj.suffix in include_extensions ]
+    file_objects = [ obj for obj in file_objects if obj.suffix in include_extensions ]
     print("  ignore folders... ")
     for igfol in ignore_folders:
         file_objects = [ obj for obj in file_objects if igfol not in str(obj) ]

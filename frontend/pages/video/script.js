@@ -25,7 +25,7 @@ function main(video_hash) {
         const info_section = $('section.video-info-section');
         hydrate_info_section(info_section, video_data);
     
-        // return;
+        return;
         
         /* load recommended (related & similar) videos */
         const related_videos_section = $('section.related-videos-section').get(0);
@@ -46,17 +46,22 @@ function main(video_hash) {
 
         console.debug('INTERACTIONS:', vi);
         
-        /* viewtime */
-        $('.viewtime').text('viewtime: ' + _format_seconds(vi.viewtime));
+        /* info section */
+        $(".viewtime td").text(_format_seconds(vi.viewtime));
+        if (vi.last_viewed) {
+            const lv = vi.last_viewed.replace("T", " ").split(".")[0];
+            $(".last-viewed td").text(`${lv} (${_format_date_added(lv)} ago)`);
+        }
         
         /* likes */
         const likes_button = $('.like-button');
-        likes_button[0].title = `${vi.likes} ❤️s`;
+        likes_button.find("span").text(`${vi.likes} likes`);
         likes_button.on('click', () => {
-            console.debug("Adding like ❤️");
+            console.debug("Adding ❤️");
             $.post('/api/interact/likes/add/'+video_hash, (data, status) => {
                 if (status === 'success') {
-                    likes_button[0].title = `${++vi.likes} ❤️s`;
+                    likes_button.find("span").text(`${++vi.likes} likes`);
+                    likes_button.addClass("liked");
                 }
             })
         })
@@ -67,7 +72,11 @@ function main(video_hash) {
             // ...
         });
         
-        
+        /* favourited date */
+        if (vi.is_favourite) {
+            setupFavouritedDate(video_hash, vi)
+        }
+
     });
 
 }
@@ -91,6 +100,15 @@ function hydrate_info_section(section, vd) {
     section.find('.bitrate').text(Math.floor(vd.bitrate/100)/10 + ' MB/s');
     section.find('.filesize').text(_format_filesize(vd.filesize_mb));
 
+    /* video info (right side) */
+    const da = vd.date_added.replace("T", " ");
+    $(".date-added td").text(`${da.slice(0,-6)} (${_format_date_added(da)} ago)`);
+    const [ parent, name ] = getParentDirAndName(vd.path);
+    $(".filename td").text(name);
+    // $(".filename td").attr("title", name);
+    $(".parent-directory td").text(parent);
+    $(".parent-directory td").attr("title", parent);
+    
     /* title/year */
     let title_fmt = vd.title.replace(';', ':');
     if (vd.dvd_code) title_fmt = `[${vd.dvd_code}] ` + title_fmt;
@@ -144,7 +162,23 @@ function hydrate_info_section(section, vd) {
         });
     });
 
-    /* event listeners */
+    /* add tags */
+    let html = '';
+    vd.tags.forEach(tg => {
+        html += /* html */ `
+            <a href="/pages/search/page.html?tags=${tg}">
+                ${tg}
+            </a>
+        `
+    })
+    $(".tags-bar").html(html);
+
+    if (vd.description && vd.description !== "") {
+        $(".description").show();
+        $(".description p").text(vd.description);
+    }
+
+    /* EVENT LISTENERS */
 
     /* check favourite */
     const is_fav_button = section.find('button.is-fav-button');
@@ -173,6 +207,53 @@ function hydrate_info_section(section, vd) {
     });
     
 
+}
+
+
+
+function setupFavouritedDate(video_hash, vi) {
+    
+    const input = $(".favourited-date td input");
+    let fav_dt = vi.favourited_date.replace("T", " ");
+    $(".favourited-date").show()
+    input.val(fav_dt);
+    $(".favourited-date td span").text(`(${_format_date_added(fav_dt)} ago)`)
+    
+    /* event listener */
+    input.on("keydown", e => {
+        if (e.key === "Enter") {
+            input[0].blur()
+            const new_fav_dt = (input.val()).toString();
+
+            console.debug("NEW DATE: ", new Date(new_fav_dt))
+            const valid_date = !isNaN((new Date(new_fav_dt)).getTime())
+            if (!valid_date) {
+                // input.val(fav_dt);
+                input.css("background", "#d229");
+                setTimeout(() => input.css("background", "none"), 1500);
+                return
+            }
+            
+            /* post new date */
+            console.debug("Sending new favourited date:", new_fav_dt)
+            $.post(`/api/interact/favourites/update-time/${video_hash}/${new_fav_dt}`)
+                .done((data, status, xhr) => {
+                    console.log('Success:', data);
+                    fav_dt = new_fav_dt;
+                    $(".favourited-date td span").text(`(${_format_date_added(fav_dt)} ago)`)
+                    input.css("background", "#2e39");
+                    setTimeout(() => input.css("background", "none"), 1500);
+                })
+                .fail((xhr) => {
+                    // console.log('Error status:', xhr.status);
+                    console.log('Error message:', xhr.responseText);
+                    // input.val(fav_dt);
+                    input.css("background", "#e719");
+                    setTimeout(() => input.css("background", "none"), 1500);
+            });
+
+        }
+    })
 }
 
 
@@ -217,13 +298,31 @@ function _format_seconds(seconds) {
     const secs = Math.floor( seconds - hours*3600 - mins*60 );
 
     if (hours > 0) {
-        return `${hours} hours ${mins} mins ${secs} secs`;
+        return `${hours}h ${mins}m ${secs}s`;
     } else if (mins > 0) {
-        return `${mins} mins ${secs} secs`;
+        return `${mins}m ${secs}s`;
     } else {
-        return `${secs} secs`;
+        return `${secs}s`;
     }
     
+}
+
+function _format_date_added(date_added) {
+    let diff_ms = (new Date()).getTime() - (new Date(date_added.replace(' ', 'T'))).getTime();
+    let string = ['second', 'minute', 'hour', 'day', 'week', 'month', 'year'];
+    let mult =  [60, 60, 24, 7, 4.345, 12, 10];
+    let limit = [60, 60, 24, 7, 3*4.345, 12*3, 10];
+    let ms = 1000;
+    for (let i = 0; i < mult.length; i++) {
+        if (diff_ms < ms*limit[i]) {
+            let unit = Math.floor(diff_ms / ms);
+            let ret = unit + ' ' + string[i];
+            if (unit > 1)
+                ret = ret + 's';
+            return ret;
+        }
+        ms *= mult[i];
+    }
 }
 
 
@@ -234,6 +333,13 @@ function _format_filesize(mb) {
     return (Math.floor(mb)).toString() + ' MB';
 }
 
+function getParentDirAndName(absPath) {
+    const norm = absPath.replace(/\\/g, '/'); // normalize Windows to /
+    const parts = norm.split('/');
+    const name = parts.pop();
+    const parent = parts.join('/');
+    return [ parent, name ];
+}
 
 // #endregion
 

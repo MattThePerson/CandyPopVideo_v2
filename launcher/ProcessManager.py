@@ -3,6 +3,7 @@ import threading
 import logging
 from logging.handlers import RotatingFileHandler
 import os
+import sys
 
 
 class ProcessManager:
@@ -24,7 +25,13 @@ class ProcessManager:
             return
         if self.cmd:
             try:
-                self.process = subprocess.Popen(self.cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                self.process = subprocess.Popen(
+                    self.cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+                )
                 self.status = "running"
                 self._stop_reading.clear()
                 self._stdout_thread = threading.Thread(target=self._read_stdout)

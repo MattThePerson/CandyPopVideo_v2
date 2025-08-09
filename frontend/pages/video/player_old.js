@@ -14,7 +14,7 @@ export function load_video_player(video_hash, video_data, url_params) {
         id: "player",
         title: video_data.filename,
         file: '/media/get/video/' + video_hash,
-        poster: `/media/get/poster/${video_hash}?t=${Date.now()}`,// `../static/preview/${videodata.poster.replace('\\', '/')}`,
+        poster: `/media/get/poster/${video_hash}?large=true&t=${Date.now()}`,// `../static/preview/${videodata.poster.replace('\\', '/')}`,
         //autoplay: true,          // Autoplay the video (if allowed by the browser)
         preload: 'auto',          // Preload the video to reduce buffering (try "metadata" or "none" if performance is still an issue)
         seek: 5,                  // Seeks the video to the nearest 5 seconds

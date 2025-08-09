@@ -94,7 +94,7 @@ func getPreviewThumbnail(vid_media_dir string, large_thumbs bool) (string, error
 		return "", err
 	}
 	if len(entries) < 10 {
-		return "", errors.New("Not enough images in preview media dir")
+		return "", errors.New("not enough images in preview media dir")
 	}
 	
 	// get seeded random file
@@ -126,6 +126,13 @@ func absDiff(a, b int64) int64 {
 func getCurrentTime() string {
 	return time.Now().Format("2006-01-02T15:04:05")
 }
+
+func isValidDateTime(str string) bool {
+    layout := "2006-01-02T15:04:05"
+    _, err := time.Parse(layout, str)
+    return err == nil
+}
+
 
 
 // formatStringForIntComparability

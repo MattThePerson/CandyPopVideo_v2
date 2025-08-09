@@ -28,7 +28,29 @@ section.similar-videos-section {
     padding-top: 0.8rem;
 }
 
-/* Info Section */
+
+/* ########################################################################### */
+/* INFO SECTION: Left side ---------------------------------------------- */
+
+.quick-stats-bar {
+    display: flex;
+    align-items: center;
+    /* background: #1943; */
+    gap: 0.5rem;
+    margin-left: 4rem;
+    width: fit-content;
+}
+.quick-stats-bar div {
+    font-family: "Nunito";
+    color: #999;
+    font-size: 13px;
+}
+.quick-stats-bar span {
+    width: 4px;
+    height: 4px;
+    background: #777;
+    transform: rotate(45deg);
+}
 
 section.video-info-section {
     display: flex;
@@ -128,14 +150,181 @@ section.video-info-section {
     opacity: 0.8;
 }
 
-/* interactions buttons */
-/* ... */
+/* tags / description */
+
+.tags-bar {
+    margin: 0.5rem 1rem;
+    max-width: 35rem;
+    display: flex;
+    gap: 4px;
+    row-gap: 3px;
+    flex-wrap: wrap;
+}
+.tags-bar a {
+    text-wrap: nowrap;
+    font-family: sans-serif;
+    font-size: 0.67rem;
+    font-weight: Bold;
+    background: #151515;
+    border-radius: 5px;
+    padding: 1.5px 6px;
+    color: #888 !important;
+}
+.tags-bar a:hover {
+    text-decoration: none;
+    background: #222;
+}
 
 
+.description {
+    max-width: 40rem;
+}
+.description h5 {
+    padding-bottom: 3px;
+    padding-left: 0.8rem;
+    color: #aaa;
+}
+.description p {
+    color: #ccc;
+    font-size: 0.9rem;
+}
+
+
+/* ########################################################################### */
+/* INFO SECTION: Right side ---------------------------------------------- */
+
+.interactions-container {
+    /* outline: 1px solid #8f82; */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 0 8px;
+    padding-bottom: 7px;
+}
+
+.buttons-bar {
+    /* outline: 1px solid #f8f7; */
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: fit-content;
+    margin-top: 0.5rem;
+}
+
+.buttons-bar button {
+    height: 2.2rem;
+    width: fit-content;
+    background: #222;
+    border: none;
+    color: #bbb;
+    cursor: pointer;
+    padding: 0px 0.5rem;
+    border-radius: 0.8rem;
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+.buttons-bar button:hover {
+    background: #444;
+}
+.buttons-bar button:active {
+    background: #555;
+}
+
+.buttons-bar button svg {
+    height: 1.7rem;
+}
+
+.buttons-bar button path {
+    /* stroke: green; */
+    fill: #999;
+}
+
+/* button specific */
+
+.buttons-bar button.like-button path {
+    fill: none;
+    stroke: rgba(255, 0, 0, 0.603);
+}
+
+.buttons-bar .like-button.liked {
+    outline: 2px solid rgba(255, 0, 0, 0.753);
+}
+.buttons-bar .like-button.liked path {
+    fill: rgba(255, 0, 0, 0.503) !important;
+}
+
+.buttons-bar .rate-button div {
+    font-family: 'Jaro';
+    font-size: 1.2rem;
+    color: #bb9;
+    padding-bottom: 2px;
+    padding-left: 2px;
+}
+
+/* favourited date input */
+.favourited-date input {
+    background: none;
+    color: #ddd;
+    width: 9rem;
+    padding: 1px 6px;
+    border: none;
+    border-radius: 5px;
+    overflow: hidden;
+    cursor: pointer;
+}
+.favourited-date input:hover {
+    background: #fff2;
+    color: white;
+}
+.favourited-date input:focus {
+    background: #ccc !important;
+    color: #222;
+    outline: none;
+}
+
+
+/* info container */
+
+table.info-container {
+    padding: 4px 7px;
+    border-spacing: 5px;
+    outline: 1px solid #44d6;
+}
+
+table.info-container td {
+    color: #ccc;
+    font-size: 0.9rem;
+    max-width: 18rem;
+    overflow: hidden;
+}
+table.info-container .filename td,
+table.info-container .parent-directory td {
+    color: #aaa;
+    letter-spacing: -0.5px;
+}
+
+table.info-container th {
+    text-align: start;
+    color: #999;
+    font-size: 0.9rem;
+    padding-right: 7px;
+}
+
+table.info-container thead th {
+    text-align: right;
+    color: #666;
+    font-size: 0.8rem;
+    padding-top: 2px;
+    padding-left: 0.7rem;
+}
+
+
+/* ########################################################################### */
 /* - RELATED VIDEOS (CAROUSEL) ---------------------------------------------- */
 
 .related-videos-section {
-    /* background: orange; */
     display: flex;
     flex-direction: column;
     align-items: center;

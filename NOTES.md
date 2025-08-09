@@ -4,7 +4,6 @@
 
 SHORT_TERM:
 - [frontend] add dated marker button/ui
-- [frontend] add edit favourite add date
 - [frontend] add video rating
 - [frontend] add comments
 - [frontend] figure out why middle click drag opens results card hrefs
@@ -12,6 +11,7 @@ SHORT_TERM:
 
 MEDIUM_TERM:
 - [frontend] [finish] search panel
+- [frontend] [search] add "similar to video" feature (and right click menu)
 - [frontend] [finish] catalogue page
 - [frontend] [finish] PassionPlayer
 - [frontend] [add] search panel: list/compact list view & page result count
@@ -23,16 +23,15 @@ MEDIUM_TERM:
 
 LONG_TERM:
 - [admin] promote to others/get others to test
-- [admin] make not-nsfw preview
+- [admin] make sfw preview
 
 COLLECTION:
 - [media] Generate preview media for entire collection
 - [collection] Handle PMVHaven collection
 - [collection] Handle collisions (Curated v. PH)
-- [collection] Figure out way to add popularity score
 
 OPTIONAL:
-- [backend] Add method of seeing tf-idf tokens
+- [recommender] Add method of seeing tf-idf tokens
 - [frontend] Add search box to nav search button
 - [frontend] Make list view search result component
 - [frontend] date_added/date_released dist extension
@@ -44,6 +43,8 @@ THEORETICAL:
 - [app] Figure out way to link to d18 (or other 18+ db)
 
 
+<!-- - [frontend] add edit favourite add date -->
+<!-- - [collection] Figure out way to add popularity score -->
 <!-- - [app] flesh out (and fix) tray icon app -->
 <!-- - [backend] rewrite in Go -->
 <!-- - [collection] Handle 3dh collection -->
@@ -120,31 +121,44 @@ THEORETICAL:
 
 # VIDEO PAGE
 
-buttons:
-- rate
-- like
-- add dated marker
-- add comment
-- make gif
-- extract frame (as thumbnail or something)
-- chapter nav
-- edit filename
+[BUTTONS]
+- LIKE: way to see like count
+- RATE: dropdown
+- FINISHED: also see (and jump to) previous points
+- JUMP TO RANDOM TIME
 
+- CHAPTER NAV
+- ADD CHAPTER
 
-- edit favourited date
-- open d18 page
-- open external link (ph)
+<!-- - make gif -->
 
+[INTERACTION_INFOS]
+- [inter] favourited date (edit)
+- [inter] dated markers (remove)
+- [inter] viewtime
+- [inter] last viewed
 
-info:
+[VIDEO_INFOS]
 - date added
-- show description button
-- filename (copy button)
-- Location parent on disk (copy button)
+- filename (edit)
+- parent dir path (copy)
+- d18 page (open)
+- extern link (open)
 
+[UNKNOWN]
+- comments (add)
 
+[MISSING]:
+- tags
+- description
 
+[MISC]
+- [idea] extract frame (as thumbnail or something)
 
+[CUSTOM_TAGS]
+- early memory
+- first actor video
+- 
 
 
 # ALT STRUCTURE

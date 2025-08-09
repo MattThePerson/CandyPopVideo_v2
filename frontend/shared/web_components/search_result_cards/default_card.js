@@ -221,7 +221,7 @@ export class MyCard extends HTMLElement {
             for (let x of tags_to_add) {
                 $shadow.find('.tags-bar').append(/* html */ `
                     <a 
-                        href="/pages/search/page.html?include_terms=${x}"
+                        href="/pages/search/page.html?tags=${x}"
                         style="${this._get_tag_color(x)}"
                     >
                         ${x}
@@ -275,7 +275,7 @@ export class MyCard extends HTMLElement {
         const [tags_to_add, tags_to_add_later] = this.filter_tags(this.tags, this.max_initial_tag_chars)
         let tags_html = tags_to_add.map((x, idx) => /* html */`
             <a 
-                href="/pages/search/page.html?include_terms=${x}"
+                href="/pages/search/page.html?tags=${x}"
                 style="${this._get_tag_color(x)}"
             >
                 ${x}
