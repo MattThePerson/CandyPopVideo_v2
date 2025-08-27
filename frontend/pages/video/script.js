@@ -25,7 +25,7 @@ function main(video_hash) {
         const info_section = $('section.video-info-section');
         hydrate_info_section(info_section, video_data);
     
-        return;
+        // return;
         
         /* load recommended (related & similar) videos */
         const related_videos_section = $('section.related-videos-section').get(0);
@@ -74,8 +74,11 @@ function main(video_hash) {
         
         /* favourited date */
         if (vi.is_favourite) {
-            setupFavouritedDate(video_hash, vi)
+            setupFavouritedDate(video_hash, vi);
         }
+
+        /* setup dated marker button */
+        setupDatedMarkerButton();
 
     });
 
@@ -210,6 +213,7 @@ function hydrate_info_section(section, vd) {
 }
 
 
+// #region - SETUP METHODS ---------------------------------------------------------------------------------------------
 
 function setupFavouritedDate(video_hash, vi) {
     
@@ -257,6 +261,49 @@ function setupFavouritedDate(video_hash, vi) {
 }
 
 
+function setupDatedMarkerButton() {
+    const dm_button = $('.add-dated-marker-button');
+    const adder_menu = dm_button.find(".adder");
+
+    dm_button.on("click", e => {
+
+        const hideAdderMenu = (e) => {
+            const closest = $(e.target).closest(".adder")
+            if (closest.length <= 0) {
+                adder_menu.hide()
+                $(document).off('click', hideAdderMenu)
+                e.stopPropagation();
+            }
+        }
+        
+        if (adder_menu.is(":hidden")) {
+            const video = /** @type {HTMLVideoElement} */ ($("video")[0]);
+            if (video && video.currentTime > 0) {
+                e.stopPropagation();
+                setupAddDatedMarkerMenu(adder_menu, video.currentTime);
+                $(document).on('click', hideAdderMenu);
+            }
+        }
+        
+    })
+    
+}
+
+function setupAddDatedMarkerMenu(menu, time) {
+    menu.show();
+    // const dt = (new Date()).toISOString().replace('T', ' ').slice(0, -5);
+    // menu.find('input').val(dt);
+    // menu.find('.video-time').text(time)
+}
+
+
+// #endregion
+
+// #region - HELPERS ---------------------------------------------------------------------------------------------------
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+
 function get_video_page_title(video_data)  {
     let title = video_data.primary_actors.join(', ');
     if (video_data.studio) {
@@ -265,7 +312,6 @@ function get_video_page_title(video_data)  {
     title += ` - ${video_data.title}`;
     return title;
 }
-
 
 
 function get_year_difference_between_dates(date1, date2) {
@@ -284,12 +330,6 @@ function get_year_difference_between_dates(date1, date2) {
     return Math.max(year_diff, 18);
 }
 
-
-// #endregion
-
-// #region - HELPERS ---------------------------------------------------------------------------------------------------
-
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 function _format_seconds(seconds) {
 

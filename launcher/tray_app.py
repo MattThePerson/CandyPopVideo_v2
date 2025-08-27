@@ -77,14 +77,14 @@ def build_backend():
 
 # launch_backend
 def launch_backend():
-    rebuild_backend()
+    # rebuild_backend()
     start_backend()
 
 
 # relaunch_backend
 def relaunch_backend():
     stop_backend()
-    rebuild_backend()
+    # rebuild_backend()
     start_backend()
 
 

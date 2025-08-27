@@ -82,6 +82,10 @@
     src: url('../../static/fonts/Nunito/Nunito-VariableFont_wght.ttf');
 }
 
+@font-face {
+    font-family: "BebasNueu";
+    src: url('../../static/fonts/Bebas_Neue/BebasNeue-Regular.ttf')
+}
 
 /* ALL & BODY */
 

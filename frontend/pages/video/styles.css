@@ -241,7 +241,7 @@ section.video-info-section {
     fill: #999;
 }
 
-/* button specific */
+/* buttons: likes button */
 
 .buttons-bar button.like-button path {
     fill: none;
@@ -255,15 +255,43 @@ section.video-info-section {
     fill: rgba(255, 0, 0, 0.503) !important;
 }
 
+/* button: rate button */
+
 .buttons-bar .rate-button div {
-    font-family: 'Jaro';
-    font-size: 1.2rem;
+    font-family: 'BebasNueu';
+    font-size: 1.5rem;
     color: #bb9;
-    padding-bottom: 2px;
+    padding-top: 2px;
     padding-left: 2px;
 }
 
-/* favourited date input */
+.buttons-bar .rate-button[data-rating="7"] {
+    background: red;
+}
+
+/* button: add dated marker */
+.add-dated-marker-button {
+    position: relative;
+}
+
+.add-dated-marker-button .adder {
+    position: absolute;
+    bottom: -2.3rem;
+    left: -2rem;
+    display: none;
+}
+.add-dated-marker-button .adder span {
+    min-width: 12rem;
+    height: 2rem;
+    background: purple;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 4px;
+}
+
+
+/* input: favourited date */
 .favourited-date input {
     background: none;
     color: #ddd;
