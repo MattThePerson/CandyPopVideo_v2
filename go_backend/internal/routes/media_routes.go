@@ -40,7 +40,33 @@ func ECHO_get_video(c echo.Context, db_path string) error {
 	if err != nil {
 		return handleServerError(c, 500, "Unable to read from database", err)
 	}
+	if strings.HasSuffix(strings.ToLower(vd.Path), ".mkv") {
+		return get_mkv_file_response(c, vd.Path)
+	}
 	return c.File(vd.Path)
+}
+
+func get_mkv_file_response(c echo.Context, video_path string) error {
+	c.Response().Header().Set(echo.HeaderContentType, "video/mp4")
+	c.Response().WriteHeader(http.StatusOK)
+
+	cmd := exec.Command(
+		"ffmpeg",
+		"-i", path,
+		"-c", "copy",
+		"-movflags", "frag_keyframe+empty_moov",
+		"-f", "mp4",
+		"pipe:1",
+	)
+
+	cmd.Stdout = c.Response().Writer
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 
