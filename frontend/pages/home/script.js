@@ -35,7 +35,8 @@ async function load_days_recommended_videos(video_data) {
         <search-result-card-default
             highlighted = true
             use_video_teasers = true
-            width = "38rem"
+            width = "72rem"
+            aspect_ratio = "21/9"
             video_hash =        "${video_data.hash}"
             video_title =       "${video_data.title}"
             actors =            "${video_data.actors}"

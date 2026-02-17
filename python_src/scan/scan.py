@@ -43,7 +43,7 @@ def scanVideos(
     existing_video_objects = { hsh: VideoData.from_dict(dct) for hsh, dct in existing_dicts.items() }
     # print('Exising objects:', len(existing_video_objects))
 
-    # 
+    # process
     print("\n[PROCESS] Loading/Generating video objects")
     start = time.time()
     video_objects: dict[str, VideoData] = process_videos(video_paths, existing_video_objects, collections_dict, SCENE_FILENAME_FORMATS,
@@ -51,6 +51,8 @@ def scanVideos(
                                                             redo_video_attributes=redo_video_attributes, reread_json_metadata=reread_json_metadata)
     if len(video_objects) > 0:
         print("[PROCESS] Successfully loaded {} videos in {:.1f}s ({:.2f} ms/vid)\n".format( len(video_objects), (time.time()-start), (time.time()-start)*1000/len(video_objects) ))
+    
+    # combine & save
     combined_video_objects = combine_loaded_and_existing_videos(video_objects, existing_video_objects, unloaded_as_unlinked=(path_filters is None))
     combined_video_dicts = { hsh: vd.to_dict()  for hsh, vd in combined_video_objects.items() }
     db.write_dict_of_objects_to_db(combined_video_dicts, 'videos')

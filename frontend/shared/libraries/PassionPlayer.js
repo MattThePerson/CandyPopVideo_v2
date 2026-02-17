@@ -1,5 +1,4 @@
 
-/* Creates a player */
 export class PassionPlayer {
 
     constructor({
@@ -42,15 +41,17 @@ export class PassionPlayer {
         this.seekThumbsSprites; // list of sprites objects
         this.seekThumbsSpritesheetSize;
         
+        this.init();
     }
 
+    // init
     async init() {
 
+        /* create shadow */
         this.root_element = document.getElementById(this.player_id);
         if (!this.root_element) {
             throw new Error(`Cannot inject Passion Player, no element with id: ${this.player_id}`);
         }
-
         this.shadow = this.root_element.attachShadow({ mode: 'open' });
 
         await this.addStyles(this.shadow, this.dev_styles_path);
@@ -63,26 +64,21 @@ export class PassionPlayer {
         this.video = this.shadow.querySelector('video');
         this.log('video loaded');
         
+        /*  */
         this.hydrate();
-        
-        // add keybinds ...
         this.addKeybinds(this.keybind_override_elements);
-
-        // add event listeners
         this.addEventListeners();
         
-        // load seek thumbs ...
+        /* conditional loaders */
         if (this.seek_thumbs_vtt_src) {
             this.loadSeekThumbnails(this.seek_thumbs_vtt_src);
         }
-
         // load subtitles ...
-        
         // load markers ...
 
-        // ...
     }
 
+    // addHTML
     addHTML(shadow) {
         const player = document.createElement('div');
         player.className = 'PassionPlayer';
@@ -90,6 +86,7 @@ export class PassionPlayer {
         shadow.appendChild(player);
     }
 
+    // addStyles
     async addStyles(shadow, styles_path) {
         let css = this.getStyles();
         if (styles_path) {
@@ -107,7 +104,7 @@ export class PassionPlayer {
 
     // #region - HANDLERS ----------------------------------------------------------------------------------------------
     
-    
+    // hydrate
     hydrate() {
 
         /* set video duration */
@@ -115,6 +112,7 @@ export class PassionPlayer {
         
     }
     
+    // addEventListeners
     addEventListeners() {
 
         const video = this.$('video');
@@ -123,12 +121,12 @@ export class PassionPlayer {
         this.addVideoClickEventListeners();
 
         /* progress bar */
-        const progress_bar_container = this.shadow.querySelector('#progress-bar-default');
-        this.addDefaultProgressBarEventListeners(progress_bar_container);
+        this.addDefaultProgressBarEventListeners();
         
     }
 
-    /* responsive toggle playback but lenient toggle fullscreen */
+    // addVideoClickEventListeners
+    // responsive toggle playback but lenient toggle fullscreen
     addVideoClickEventListeners() {
         let pb_flag = false; // playback
         let fs_flag = false; // fullscreen
@@ -158,17 +156,15 @@ export class PassionPlayer {
         });
     }
 
+    // addDefaultProgressBarEventListeners
     addDefaultProgressBarEventListeners(container) {
 
-        const progress_bar_container = this.$(container);
+        const progress_bar_container = this.$('#progress-bar-default');
         const progress_bar = progress_bar_container.find('.progress-bar');
-        const video_duration = this.video.duration;
         
         $(this.video).on('timeupdate', () => {
-            const ts = this.video.currentTime;
-            const perc = ts / video_duration * 100;
+            const perc = this.video.currentTime / this.video.duration * 100;
             progress_bar.width( perc+'%' );
-
             this.$('.time-duration-container .current').text( this.format_time(this.video.currentTime) );
         })
 
@@ -223,7 +219,7 @@ export class PassionPlayer {
                 </div>
 
                 <div class="time-duration-container">
-                    <div class="current">xx.xx.xx</div>
+                    <div class="current">00:00</div>
                     <span>/</span>
                     <div class="duration"></div>
                 </div>
@@ -261,6 +257,12 @@ export class PassionPlayer {
 
     addKeybinds(keybind_override_elements) {
         
+        const jump_small = 2;
+        const jump_medium = 10;
+        const jump_large = 45;
+
+        const progress_bar = this.$("#progress-bar-default .progress-bar");
+        
         document.addEventListener('keydown', (e) => {
 
             const ignore_keydown = false
@@ -271,15 +273,32 @@ export class PassionPlayer {
             
             if (!ignore_keydown) {
 
-                const key = e.shiftKey ? 's-'+e.code : e.code;
-                
+                this.log(this.video.currentTime);
+                this.log(this.video.currentTime + jump_medium);
+
+                const key = e.shiftKey ? 'sh-'+e.code : e.code;
                 switch (key) {
-                    case 'Space':
+                    case "Space":
                         e.preventDefault();
                         this.toggle_playback();
                         break;
-                    case 'KeyF':
+                    case "KeyF":
                         this.toggle_fullscreen();
+                        break;
+                    
+                    /* navigation controls */
+                    case "KeyD":
+                        this.setPlaybackTime(this.video.currentTime + jump_medium, progress_bar[0]);
+                        break;
+                    case "sh-KeyD":
+                        break;
+                    case "KeyE":
+                        break;
+                    case "KeyA":
+                        break;
+                    case "sh-KeyA":
+                        break;
+                    case "KeyQ":
                         break;
                 }
                 
@@ -317,7 +336,6 @@ export class PassionPlayer {
             )
 
             const thumbIndex = Math.floor(video_perc/100 * (this.seekThumbsSprites.length));
-            console.log(thumbIndex, this.seekThumbsSprites.length, video_perc);
             const sprite = this.seekThumbsSprites[thumbIndex];
             holder.css(
                 'backgroundPosition',
@@ -326,8 +344,6 @@ export class PassionPlayer {
 
             /* update time */
             this.$('#seek-thumbs-container .time').text( this.format_time(this.video.duration * video_perc/100) );
-
-            // console.table(thumbIndex, video_perc);
             
         }
     }
@@ -346,7 +362,6 @@ export class PassionPlayer {
         }
         const vtt = await response.text();
         const sprites = this.parseVTT(vtt);
-        // console.log(sprites);
 
         // get image and wait to load
         const spritesheet_src = vtt_src.replace('.vtt', '.jpg');
@@ -419,7 +434,11 @@ export class PassionPlayer {
         }
     }
 
-    /* get playback time as perc between 0 -> 1 */
+    /**
+     * 
+     * @param {number} perc 
+     * @param {HTMLElement} progress_bar 
+     */
     setPlaybackTime(perc, progress_bar) {
         const newTime = this.video.duration * perc;
         this.video.currentTime = newTime;

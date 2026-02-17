@@ -43,7 +43,7 @@ else:
 
 # PROCESSES
 
-PORT = 8010
+PORT = 9900
 APP_URL = f'http://localhost:{PORT}'
 # SERVER_PROC_PYTHON = ProcessManager(
 #     [sys.executable, '-m', 'uvicorn', 'python_src.main:app', '--host', '0.0.0.0', '--port', str(PORT)],

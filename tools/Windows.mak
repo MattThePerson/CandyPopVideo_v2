@@ -35,11 +35,11 @@ install:
 # Build Go backend
 build-go:
 	go mod tidy -C go_backend && \
-    go build -C go_backend -ldflags="-s -w" -o ..\$(EXE_NAME).exe
+    go build -C go_backend -ldflags="-s -w" -o ..\bin\$(EXE_NAME).exe
 
 # Build Python executable
 build-launcher:
-	$(PYINSTALLER) $(TRAY_APP_SCRIPT) --name $(LAUNCHER_EXE_NAME) --onefile --noconsole --icon=assets\icon.ico --distpath bin
+	$(PYINSTALLER) $(TRAY_APP_SCRIPT) --name bin\$(LAUNCHER_EXE_NAME) --onefile --noconsole --icon=assets\icon.ico --distpath bin
 	if exist *.spec del /Q *.spec
 
 build: build-go build-launcher

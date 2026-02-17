@@ -13,7 +13,7 @@ const urlParams = new URLSearchParams(window.location.search);
 //region - HANDLE RANDOM VIDEO REQUEST ---------------------------------------------------------------------------------
 
 if (urlParams.get('random') || !urlParams.get('hash')) {
-    console.log("Getting random video hash ...");
+    console.debug("Getting random video hash ...");
     makeApiRequestGET('/api/get/random-video-hash', [], (arg) => {
         const params = new URLSearchParams(location.search);
         params.set('hash', arg.hash);
@@ -77,7 +77,7 @@ function hydrate_info_section(section, video_data) {
     /* check favourite */
     const is_fav_button = section.find('button.is-fav-button');
     $.get(`/api/interact/favourites/check/${video_hash}`, (data, status) => {
-        // console.log(status);
+        // console.debug(status);
         if (status === 'success') {
             is_fav_button.addClass('loaded');
             if (data.is_favourite) {
@@ -170,14 +170,14 @@ let favouritesButton = document.getElementById('add-favourite-button')
 //region - BACKEND REQUEST ---------------------------------------------------------------------------------------------
 
 const video_hash = urlParams.get('hash');
-console.log("Video hash: " + video_hash);
+console.debug("Video hash: " + video_hash);
 
 if (video_hash != null) {
 
     /* - video data --------------------------------------------------------- */
 
     makeApiRequestGET('/api/get/video-data', [video_hash], async (video_data) => {
-        console.log('video_data:', video_data);
+        console.debug('video_data:', video_data);
         
         document.title = get_video_page_title(video_data);
         
@@ -190,10 +190,10 @@ if (video_hash != null) {
             quiet: false,
         });
 
-        player.init();
+        // player.init();
 
         /* ensure seek thumbs */
-        console.log('ensuring!');
+        console.debug('ensuring seek thumbs!');
         $.get('/media/ensure/seek-thumbnails/'+video_hash, (data, status) => {
             if (status === 'success') {
                 player.loadSeekThumbnails(`/static/preview-media/0x${video_hash}/seekthumbs.vtt`);
@@ -238,7 +238,7 @@ if (video_hash != null) {
 
     makeApiRequestGET('/api/interact/get', [video_hash], vi => {
 
-        // console.log('video_interactions:', vi);  
+        // console.debug('video_interactions:', vi);  
         
         /* viewtime */
         $('.viewtime').text('viewtime: ' + _format_seconds(vi.viewtime));
