@@ -50,6 +50,11 @@ type VideoData struct {
 	Genres           []string `json:"genres"`
 	// TagsFromD18	     []string `json:"tags_from_d18"`
 
+	// crawled interactions
+	Views  int     `json:"views"`
+	Rating float64 `json:"rating"`
+	Likes  int     `json:"likes"`
+
 	Metadata map[string]any `json:"metadata"`
 
 	IsLinked bool `json:"is_linked"`

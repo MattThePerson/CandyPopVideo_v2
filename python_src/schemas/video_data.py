@@ -56,6 +56,11 @@ class VideoData:
     # tags_from_d18:      list[str] = field(default_factory=list)
     metadata:                dict = field(default_factory=dict)
     
+    # crawled interactions
+    views:  Optional[int] = None
+    rating: Optional[float] = None
+    likes:  Optional[int] = None
+    
     is_linked:               bool = True
 
 

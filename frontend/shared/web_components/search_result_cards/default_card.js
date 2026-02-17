@@ -33,6 +33,10 @@ export class MyCard extends HTMLElement {
         this.card_width = this.getAttribute('width') || "24rem";
         this.aspect_ratio = this.getAttribute('aspect_ratio') || "16/9";
 
+        this.views = parseInt(this.getAttribute('views')); // int
+        // this.likes = parseInt(this.getAttribute('likes')); // int
+        // this.rating = this.getAttribute('rating'); // float
+        
         /* variables */
         this.actors = this.actors_str.split(',').filter(x => x !== '');
         this.max_initial_actors = 4;
@@ -147,8 +151,9 @@ export class MyCard extends HTMLElement {
                 
                 
             }
-        });
-        
+        }
+    );
+    
     }
     
 
@@ -301,6 +306,11 @@ export class MyCard extends HTMLElement {
         
         const is_new = this._second_from_now(this.date_added) < 60*60*24*7;
 
+        // ...
+
+        const viewsDisplay = (this.views > 0) ? "block" : "none";
+        const viewsFmt = this._format_views(this.views);
+        
         // #endregion
     
         // #region - html --------------------------------------------------------------------------
@@ -332,6 +342,7 @@ export class MyCard extends HTMLElement {
                             <div class="fps" style="display: none;">${this.fps}</div>
                         </div>
                         <div class="duration">${this.duration}</div>
+                        <div class="views" style="display: ${viewsDisplay}" title="Views on platform">${viewsFmt}</div>
                     </div>
                 </a>
 
@@ -556,6 +567,32 @@ export class MyCard extends HTMLElement {
         }
         return ""
     }
+
+    _format_views(n) {
+        n = Number(n);
+        const abs = Math.abs(n);
+        const sign = n < 0 ? "-" : "";
+
+        const units = [
+            { v: 1e9, s: "B" },
+            { v: 1e6, s: "M" },
+            { v: 1e3, s: "K" },
+        ];
+
+        for (const { v, s } of units) {
+            if (abs >= v) {
+            const x = abs / v;
+
+            if (x < 100) {
+                return sign + (Math.round(x * 10) / 10) + s;
+            } else {
+                return sign + Math.floor(x) + s;
+            }
+            }
+        }
+
+        return sign + abs.toString();
+    }
     
     // #endregion
     
@@ -698,6 +735,14 @@ export class MyCard extends HTMLElement {
                     .duration {
                         background: #0009;
                         right: 4px;
+                        bottom: 4px;
+                    }
+                    .views {
+                        background: #0009;
+                        color: #ddd;
+                        border-radius: 4px;
+                        padding: 1px 3px 0 3px;
+                        left: 4px;
                         bottom: 4px;
                     }
                     

@@ -88,6 +88,7 @@ function get_video_card(vd, {card_width, card_type, use_video_teasers, aspect_ra
             date_added =        "${vd.date_added}"
             tags =              "${vd.tags}"
             filename =          "${vd.filename}"
+            views =             "${vd.views}"
         ></search-result-card-default>
     `
 }

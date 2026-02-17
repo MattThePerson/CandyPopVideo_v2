@@ -251,6 +251,8 @@ def _add_filename_info_to_scene_data(vd: VideoData, info: dict[str, str]):
         date_released = str(info['date_released'])
     elif 'date_released_alt' in info:
         date_released = str(info['date_released_alt'])
+    elif 'date_released_short' in info:
+        date_released = str(info['date_released_short'])
     elif 'year' in info:
         date_released = str(info['year'])
     vd.date_released = date_released
