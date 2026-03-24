@@ -68,7 +68,7 @@ def process_videos(
             
             if not video_found_in_existing_videos or reread_json_metadata:
                 # get additional metadata from json files
-                id_ = video_data.dvd_code or video_data.source_id or Path(video_data.path).stem
+                id_ = video_data.dvd_code or video_data.source_id or video_data.title or Path(video_data.path).stem
                 if id_ is not None:
                     # from pprint import pprint
                     metadata = json_metadata.get_metadata(id_, video_data.path)
