@@ -16,7 +16,6 @@ export class MyCard extends HTMLElement {
         this.studio = this.getAttribute('studio');
         this.line = this.getAttribute('line');
         this.date_released = this.getAttribute('date_released');
-        this.scene_description = this.getAttribute('scene_description');
         this.collection = this.getAttribute('collection');
         this.dvd_code = this.getAttribute('dvd_code');
 
@@ -44,6 +43,7 @@ export class MyCard extends HTMLElement {
         this.tags = this.tags_str.split(',').filter(x => x !== '')
         this.max_initial_tag_chars = 50;
 
+        // this.scene_description = this.getAttribute('scene_description'); // doesn't support raw html as description
     }
 
     disconnectedCallback() {

@@ -165,6 +165,15 @@ for (let button_group of button_groups) {
     }
 }
 
+// 
+document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && document.activeElement.className !== 'search-input') {
+        /** @type {HTMLElement} */
+        let el = document.querySelector('.search-element.include_terms-input input');
+        el.focus();
+    }
+})
+
 
 //endregion
 

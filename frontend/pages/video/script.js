@@ -178,7 +178,7 @@ function hydrate_info_section(section, vd) {
 
     if (vd.description && vd.description !== "") {
         $(".description").show();
-        $(".description p").text(vd.description);
+        $(".description p").html(vd.description);
     }
 
     /* EVENT LISTENERS */

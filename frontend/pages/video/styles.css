@@ -178,6 +178,9 @@ section.video-info-section {
 
 .description {
     max-width: 40rem;
+    background: #ddd1;
+    border-radius: 1rem;
+    padding: 0.3rem 0.7rem;
 }
 .description h5 {
     padding-bottom: 3px;
