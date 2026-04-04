@@ -4,6 +4,7 @@ import (
 	"cpv_backend/internal/db"
 	"cpv_backend/internal/schemas"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,15 +14,14 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-
 func IncludeMediaRoutes(e *echo.Group, db_path string, preview_media_dir string, subtitle_folders []string) {
 
-	e.GET("/get/video/:video_hash", 					func(c echo.Context) error { return ECHO_get_video(c, db_path) })
-	e.GET("/get/poster/:video_hash", 					func(c echo.Context) error { return ECHO_get_poster(c, db_path, preview_media_dir) })
-	e.GET("/ensure/teaser-small/:video_hash", 			func(c echo.Context) error { return ECHO_ensure_teaser_small(c, db_path, preview_media_dir) })
-	e.GET("/ensure/teaser-thumbs-small/:video_hash", 	func(c echo.Context) error { return ECHO_ensure_teaser_thumbs_small(c, db_path, preview_media_dir) })
-	e.GET("/ensure/seek-thumbnails/:video_hash", 		func(c echo.Context) error { return ECHO_ensure_seek_thumbs(c, db_path, preview_media_dir) })
-	e.GET("/get/subtitles/:video_hash", 				func(c echo.Context) error { return ECHO_get_subs(c, db_path, subtitle_folders) })
+	e.GET("/get/video/:video_hash", func(c echo.Context) error { return ECHO_get_video(c, db_path) })
+	e.GET("/get/poster/:video_hash", func(c echo.Context) error { return ECHO_get_poster(c, db_path, preview_media_dir) })
+	e.GET("/ensure/teaser-small/:video_hash", func(c echo.Context) error { return ECHO_ensure_teaser_small(c, db_path, preview_media_dir) })
+	e.GET("/ensure/teaser-thumbs-small/:video_hash", func(c echo.Context) error { return ECHO_ensure_teaser_thumbs_small(c, db_path, preview_media_dir) })
+	e.GET("/ensure/seek-thumbnails/:video_hash", func(c echo.Context) error { return ECHO_ensure_seek_thumbs(c, db_path, preview_media_dir) })
+	e.GET("/get/subtitles/:video_hash", func(c echo.Context) error { return ECHO_get_subs(c, db_path, subtitle_folders) })
 
 	// e.GET("/get/poster-large/:video_hash", 			   func(c echo.Context) error { return c.String(501, "Not implemented") })
 	// e.GET("/ensure/teaser-large/:video_hash", 		   func(c echo.Context) error { return c.String(501, "Not implemented") })
@@ -29,11 +29,7 @@ func IncludeMediaRoutes(e *echo.Group, db_path string, preview_media_dir string,
 
 }
 
-
-
-
 // ECHO_get_video ...
-// 
 func ECHO_get_video(c echo.Context, db_path string) error {
 	video_hash := c.Param("video_hash")
 	vd, err := db.ReadSerializedRowFromTable[schemas.VideoData](db_path, "videos", video_hash)
@@ -52,7 +48,7 @@ func get_mkv_file_response(c echo.Context, video_path string) error {
 
 	cmd := exec.Command(
 		"ffmpeg",
-		"-i", path,
+		"-i", video_path,
 		"-c", "copy",
 		"-movflags", "frag_keyframe+empty_moov",
 		"-f", "mp4",
@@ -62,16 +58,14 @@ func get_mkv_file_response(c echo.Context, video_path string) error {
 	cmd.Stdout = c.Response().Writer
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
-	
+
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-
 // ECHO_get_poster ...
-// 
 func ECHO_get_poster(c echo.Context, db_path string, preview_media_dir string) error {
 	var video_hash = c.Param("video_hash")
 	var vid_media_dir = getVideoMediaDir(preview_media_dir, video_hash)
@@ -98,11 +92,11 @@ func ECHO_get_poster(c echo.Context, db_path string, preview_media_dir string) e
 	}
 
 	// [subprocess] video poster
-	fmt.Println("[subprocess] creating `Simple Poster` for: "+video_hash+" ...")
+	fmt.Println("[subprocess] creating `Simple Poster` for: " + video_hash + " ...")
 	os.MkdirAll(vid_media_dir, 0755)
 	cmd := exec.Command(
 		"ffmpeg",
-		"-ss", strconv.Itoa(int( vd.DurationSeconds*0.2 )),
+		"-ss", strconv.Itoa(int(vd.DurationSeconds*0.2)),
 		"-i", vd.Path,
 		"-frames:v", "1",
 		poster_pth,
@@ -116,13 +110,11 @@ func ECHO_get_poster(c echo.Context, db_path string, preview_media_dir string) e
 	if _, err := os.Stat(poster_pth); err == nil {
 		return c.File(poster_pth)
 	}
-	
+
 	return c.String(500, "Unable to create `Simple Poster` for hash: "+video_hash)
 }
 
-
 // ECHO_ensure_teaser_small ...
-// 
 func ECHO_ensure_teaser_small(c echo.Context, db_path string, preview_media_dir string) error {
 	var video_hash = c.Param("video_hash")
 	var vid_media_dir = getVideoMediaDir(preview_media_dir, video_hash)
@@ -131,7 +123,7 @@ func ECHO_ensure_teaser_small(c echo.Context, db_path string, preview_media_dir 
 	if _, err := os.Stat(media_path); err == nil {
 		return c.String(200, "media exists")
 	}
-	
+
 	// get video data
 	vd, err := db.ReadSerializedRowFromTable[schemas.VideoData](db_path, "videos", video_hash)
 	if err != nil {
@@ -160,9 +152,7 @@ func ECHO_ensure_teaser_small(c echo.Context, db_path string, preview_media_dir 
 	return c.String(500, "Unable to create `Video Teaser (small)` for hash: "+video_hash)
 }
 
-
 // ECHO_ensure_teaser_thumbs_small ...
-// 
 func ECHO_ensure_teaser_thumbs_small(c echo.Context, db_path string, preview_media_dir string) error {
 	var video_hash = c.Param("video_hash")
 	var vid_media_dir = getVideoMediaDir(preview_media_dir, video_hash)
@@ -170,7 +160,7 @@ func ECHO_ensure_teaser_thumbs_small(c echo.Context, db_path string, preview_med
 	if _, err := os.Stat(media_path); err == nil {
 		return c.String(200, "media exists")
 	}
-	
+
 	// get video data
 	vd, err := db.ReadSerializedRowFromTable[schemas.VideoData](db_path, "videos", video_hash)
 	if err != nil {
@@ -199,9 +189,7 @@ func ECHO_ensure_teaser_thumbs_small(c echo.Context, db_path string, preview_med
 	return c.String(500, "Unable to create `Teaser Thumbs (small)` for hash: "+video_hash)
 }
 
-
 // ECHO_ensure_seek_thumbs ...
-// 
 func ECHO_ensure_seek_thumbs(c echo.Context, db_path string, preview_media_dir string) error {
 	var video_hash = c.Param("video_hash")
 	var vid_media_dir = getVideoMediaDir(preview_media_dir, video_hash)
@@ -209,7 +197,7 @@ func ECHO_ensure_seek_thumbs(c echo.Context, db_path string, preview_media_dir s
 	if _, err := os.Stat(media_path); err == nil {
 		return c.String(200, "media exists")
 	}
-	
+
 	// get video data
 	vd, err := db.ReadSerializedRowFromTable[schemas.VideoData](db_path, "videos", video_hash)
 	if err != nil {
@@ -238,12 +226,10 @@ func ECHO_ensure_seek_thumbs(c echo.Context, db_path string, preview_media_dir s
 	return c.String(500, "Unable to create `Seek Thumbs` for hash: "+video_hash)
 }
 
-
 // ECHO_get_subs ...
-// 
 func ECHO_get_subs(c echo.Context, db_path string, subtitle_folders []string) error {
 	video_hash := c.Param("video_hash")
-	check := c.QueryParam("check") == "true" 
+	check := c.QueryParam("check") == "true"
 	vd, err := db.ReadSerializedRowFromTable[schemas.VideoData](db_path, "videos", video_hash)
 	if err != nil {
 		return handleServerError(c, 500, "Unable to read from database", err)
@@ -259,7 +245,7 @@ func ECHO_get_subs(c echo.Context, db_path string, subtitle_folders []string) er
 	} else {
 		id = strings.TrimSuffix(filebase, filepath.Ext(vd.Path))
 	}
-	
+
 	// construct subtitle folder list
 	var check_folders = []string{
 		filebase,
@@ -277,8 +263,6 @@ func ECHO_get_subs(c echo.Context, db_path string, subtitle_folders []string) er
 			return c.File(pth)
 		}
 	}
-	
+
 	return c.NoContent(204)
 }
-
-

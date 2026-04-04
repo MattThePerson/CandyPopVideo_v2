@@ -281,8 +281,8 @@ def _add_metadata_to_video_data(video_data: VideoData, metadata: dict) -> VideoD
     filtered_data = { k: v for k, v in metadata.items() if k in valid_keys }
 
     for k, v in filtered_data.items():
-        if isinstance(v, list):
-            l2 = getattr(video_data, k)
+        l2 = getattr(video_data, k)
+        if isinstance(v, list) and isinstance(l2, list):
             for item in v:
                 if item not in l2:
                     l2.append(item)
