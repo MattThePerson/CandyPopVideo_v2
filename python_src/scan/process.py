@@ -274,6 +274,7 @@ def _get_tags_from_path(video_data: VideoData):
 
 
 def _add_metadata_to_video_data(video_data: VideoData, metadata: dict) -> VideoData:
+    """  """
     
     metadata = _process_metadata(metadata)
     
@@ -281,16 +282,15 @@ def _add_metadata_to_video_data(video_data: VideoData, metadata: dict) -> VideoD
     filtered_data = { k: v for k, v in metadata.items() if k in valid_keys }
 
     for k, v in filtered_data.items():
-        l2 = getattr(video_data, k)
-        if isinstance(v, list) and isinstance(l2, list):
+        v_existing = getattr(video_data, k)
+        if isinstance(v, list) and isinstance(v_existing, list):
             for item in v:
-                if item not in l2:
-                    l2.append(item)
-            setattr(video_data, k, l2)
+                if item not in v_existing:
+                    v_existing.append(item)
+            setattr(video_data, k, v_existing)
         else:
-            setattr(video_data, k, v) # TODO: Monitor for problems
-        # elif not hasattr(video_data, k):
-        #     setattr(video_data, k, v)
+            if type(v) == type(v_existing):
+                setattr(video_data, k, v)
 
     return video_data
 
