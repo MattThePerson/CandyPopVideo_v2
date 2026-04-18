@@ -67,15 +67,22 @@ def process_videos(
                     print('\nTITLE IS NONE: [{}] "{}"'.format(video_hash, video_path))
             
             if not video_found_in_existing_videos or reread_json_metadata:
-                # get additional metadata from json files
+                metadata = {}
+                
                 id_ = video_data.dvd_code or video_data.source_id or video_data.title or Path(video_data.path).stem
                 if id_ is not None:
-                    # from pprint import pprint
                     metadata = json_metadata.get_metadata(id_, video_data.path)
-                    if metadata != {}:
-                        video_data = _add_metadata_to_video_data(video_data, metadata)
-                        video_data.actors = _get_ordered_set( video_data.actors + video_data.primary_actors + video_data.secondary_actors )
             
+                # TEMP FIX: read from metadata from metadata.json file
+                mdata_file = Path(video_data.path).parent / "metadata.json"
+                if mdata_file.exists():
+                    mdata = json_metadata._read_json(str(mdata_file))
+                    metadata = mdata | metadata
+                
+                if metadata != {}:
+                    video_data = _add_metadata_to_video_data(video_data, metadata)
+                    video_data.actors = _get_ordered_set( video_data.actors + video_data.primary_actors + video_data.secondary_actors )
+
             video_data.tags = list(set( video_data.tags_from_filename + video_data.tags_from_path + video_data.tags_from_json ))
             
             videos_dict[video_hash] = video_data
@@ -289,7 +296,7 @@ def _add_metadata_to_video_data(video_data: VideoData, metadata: dict) -> VideoD
                     v_existing.append(item)
             setattr(video_data, k, v_existing)
         else:
-            if type(v) == type(v_existing):
+            if type(v) == type(v_existing) or v_existing is None:
                 setattr(video_data, k, v)
 
     return video_data

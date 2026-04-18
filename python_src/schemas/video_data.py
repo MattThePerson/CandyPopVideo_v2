@@ -38,7 +38,7 @@ class VideoData:
     studio:             Optional[str] = None
     line:               Optional[str] = None
     date_released:      Optional[str] = None
-    description:        Optional[str] = None
+    description:        str=""
     dvd_code:           Optional[str] = None
     # d18_url:            Optional[str] = None
     # date_released_d18:  Optional[str] = None
