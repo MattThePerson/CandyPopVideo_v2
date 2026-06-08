@@ -18,14 +18,14 @@ if (-Not (Test-Path ".venv\Scripts\activate.ps1")) {
 
 
 # Build and run go backend
-Write-Host "[.ps1] Building go"
-go mod tidy -C go_backend
-go build -C go_backend -ldflags="-s -w" -o "..\bin\$EXE_NAME.exe"
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "[.ps1] ERROR: Build exited with non-zero status $LASTEXITCODE"
-    exit 1
-}
+# Write-Host "[.ps1] Building go"
+# go mod tidy -C go_backend
+# go build -C go_backend -ldflags="-s -w" -o "..\bin\$EXE_NAME.exe"
+# if ($LASTEXITCODE -ne 0) {
+#     Write-Host "[.ps1] ERROR: Build exited with non-zero status $LASTEXITCODE"
+#     exit 1
+# }
 
 # Run go
-Write-Host "[.ps1] Starting $EXE_NAME.exe on port $BACKEND_PORT and extra args: '$args'"
+Write-Host "[.ps1] Starting $EXE_NAME.exe with extra args: '$args'"
 & .\bin\$EXE_NAME.exe $args

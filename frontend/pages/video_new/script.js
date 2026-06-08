@@ -1,8 +1,9 @@
 import { injectComponents } from '../../shared/util/component.js'
 import { PassionPlayer } from '../../shared/libraries/PassionPlayer.js';
 import { makeApiRequestGET } from '../../shared/util/request.js';
-import { generate_results } from '../../shared/util/load.js';
 import { load_related_videos } from './related_videos.js';
+import { render_video_cards } from '../../shared/util/load.js';
+// import { generate_results } from '../../shared/util/load.js';
 
 injectComponents();
 
@@ -30,11 +31,11 @@ if (urlParams.get('autoplay'))
 
 
 function hydrate_info_section(section, video_data) {
-    
+
     section.find('.title-bar h1').text( video_data.title );
     section.find('.year').text( video_data.date_released );
 
-    
+
     section.find('.collection').text( video_data.collection );
     section.find('.collection').attr('href', `/pages/search/page.html?collection=${video_data.collection}`)
 
@@ -48,7 +49,7 @@ function hydrate_info_section(section, video_data) {
             `);
         }
     })
-    
+
     // add actors
     const actors_cont = section.find('.actors-container');
     video_data.actors.forEach((actor, idx) => {
@@ -70,8 +71,8 @@ function hydrate_info_section(section, video_data) {
     })
 
 
-    
-    
+
+
     /* event listeners */
 
     /* check favourite */
@@ -99,7 +100,7 @@ function hydrate_info_section(section, video_data) {
             });
         }
     });
-    
+
 }
 
 
@@ -155,7 +156,7 @@ function _format_seconds(seconds) {
     } else {
         return `${secs} secs`;
     }
-    
+
 }
 
 
@@ -178,15 +179,15 @@ if (video_hash != null) {
 
     makeApiRequestGET('/api/get/video-data', [video_hash], async (video_data) => {
         console.debug('video_data:', video_data);
-        
+
         document.title = get_video_page_title(video_data);
-        
+
         /* load video player */
         const player = new PassionPlayer({
             player_id: 'player',
             src: '/media/get/video/' + video_hash,
-            
-            styles: '/shared/libraries/PassionPlayer.css',
+
+            // styles: '/shared/libraries/PassionPlayer.css',
             quiet: false,
         });
 
@@ -203,46 +204,46 @@ if (video_hash != null) {
         /* Hydrate video about section */
         const info_section = $('section.video-info-section');
         hydrate_info_section(info_section, video_data);
-    
+
         return;
 
         /* load similar videos */
         const load_similar_videos = (results_container, video_hash, start_idx, load_amount) => {
             makeApiRequestGET('/api/query/get/similar-videos', [video_hash, start_idx + 1, load_amount], search_results => {
-                generate_results(search_results, results_container);
+                // generate_results(search_results, results_container);
             });
             return start_idx + load_amount;
         };
-        
+
         const similar_videos_load_amount = 8;
         let similar_videos_loaded = 0;
-        
+
         const results_container = $('.similar-videos-section');
         similar_videos_loaded = load_similar_videos(results_container, video_hash, similar_videos_loaded, similar_videos_load_amount);
         document.getElementById('expand-results-button').addEventListener('click', () => {
             similar_videos_loaded = load_similar_videos(results_container, video_hash, similar_videos_loaded, similar_videos_load_amount);
         });
 
-        
+
         /* load recommended videos */
         await sleep(1000);
         const related_videos_section = $('section.related-videos-section');
         load_related_videos(video_data, related_videos_section);
-        
-        
-        
+
+
+
     });
 
-    
+
     /* - video interactions ------------------------------------------------- */
 
     makeApiRequestGET('/api/interact/get', [video_hash], vi => {
 
-        // console.debug('video_interactions:', vi);  
-        
+        // console.debug('video_interactions:', vi);
+
         /* viewtime */
         $('.viewtime').text('viewtime: ' + _format_seconds(vi.viewtime));
-        
+
         /* likes */
         const likes_button = $('.likes-button');
         likes_button.text(`${vi.likes} likes`);
@@ -259,8 +260,8 @@ if (video_hash != null) {
         date_marker_button.on('click', () => {
             // ...
         });
-        
-        
+
+
     });
-    
+
 }
