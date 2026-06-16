@@ -1,9 +1,8 @@
-# genercal
-.vscode
+
+# general
 venv
 .venv
 __pycache__
-*.svg
 
 # custom
 .discard
@@ -18,8 +17,7 @@ BAK
 !/data/stopwords_eng.txt
 TODO.md
 *.ipynb
-_testing/
-
+_*/
 
 .logs
 
@@ -27,12 +25,7 @@ _testing/
 curatedCollections/
 data/
 holdPages/
-frontend_svelte/
 
 # build
 build
 bin
-
-*.png
-*.jpg
-!assets/**

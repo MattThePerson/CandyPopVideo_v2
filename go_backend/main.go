@@ -72,7 +72,7 @@ func main() {
 	})
 
 	// Static folders
-	e.Static("/", "frontend")
+	e.Static("/", "frontend_svelte/dist")
 
 	e.Static("/static/preview-media", config.PreviewMediaDir)
 	e.Static("/static/actor-store", config.ActorInfoDir)

@@ -19,7 +19,6 @@ test:
 # Default target
 all: install build
 
-
 # INSTALL:
 # Set up Python virtual environment and install requirements
 install:
@@ -30,12 +29,11 @@ install:
 	$(VENV_DIR)\Scripts\pip.exe install uv
 	$(VENV_DIR)\Scripts\uv.exe pip install -r requirements.txt
 
-
 # BUILD:
 # Build Go backend
 build-go:
 	go mod tidy -C go_backend && \
-    go build -C go_backend -ldflags="-s -w" -o ..\bin\$(EXE_NAME).exe
+	go build -C go_backend -ldflags="-s -w" -o ..\bin\$(EXE_NAME).exe
 
 # Build Python executable
 build-launcher:
@@ -43,7 +41,6 @@ build-launcher:
 	if exist *.spec del /Q *.spec
 
 build: build-go build-launcher
-
 
 # CLEAN:
 # Clean Python build artifacts

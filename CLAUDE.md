@@ -158,3 +158,12 @@ No build step, no framework — plain JS modules and hand-written custom element
 - TF-IDF-ranked sorting of free-text search results isn't wired up on the Go side yet (`ECHO_search_videos` filters/sorts structurally but doesn't yet call into the TF-IDF subprocess for the `search_string` case).
 - Performer/studio embeddings (for "similar actor/studio" features) are a planned but unimplemented worker feature (`--generate-embeddings` is a no-op stub).
 - A handful of frontend pages exist in parallel old/new versions (e.g. `dashboard` vs `dashboard_old`, `search` vs `search_new`, `video` vs `video_new`) as features are reworked in place.
+
+## Svelte rewrite
+
+The vanilla-JS `frontend/` is being replaced by `frontend_svelte/` — a Svelte 5 + TypeScript + Tailwind v4 project (Vite-built, no SvelteKit/routing yet: just `App.svelte` mounted into `index.html` via `src/main.ts`). It's currently a bare scaffold (placeholder hero markup only); none of the real pages/components have been ported yet.
+
+- The Go server already points at it: `go_backend/main.go`'s static handler now serves `frontend_svelte/dist` instead of `frontend` (so the old frontend is effectively disconnected from the Go server, though its files remain in the repo for reference/the Python server).
+- There's no Makefile/tooling integration yet — building means running `npm install` / `npm run build` manually inside `frontend_svelte/` (no `make build-frontend` target exists). `npm run dev` runs the Vite dev server standalone (no proxy to the backend configured yet, unlike the old Express dev server).
+- `frontend_svelte/dist`, `node_modules`, and other build artifacts are gitignored as usual, but `frontend_svelte/` itself was just unignored at the repo root (it used to be excluded via a blanket `frontend_svelte/` rule) so the scaffold can be committed.
+- A work-in-progress copy of the video player to be ported in is kept at `_ref/passion_player/` (`PassionPlayer.js` + `.d.ts`), copied from the author's separate Wails-based "Lucid Media Player" project — note its `.d.ts` still imports Wails-generated types (`wailsjs/go/models`) that won't resolve here and will need adapting. `_ref/` as a whole is gitignored (root `.gitignore`'s `_*/` rule) and also holds `VIDEO_HASHING.md`, a language-agnostic spec of the video hashing algorithm for cross-project interop.
