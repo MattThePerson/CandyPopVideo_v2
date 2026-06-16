@@ -1,5 +1,18 @@
 # CLAUDE.md
 
+## Responsibilities
+
+### Formatting
+
+For all fucking files use 4 fucking spaces for tabsize.
+
+### Updating CLAUDE.md
+
+In order to maintain sync between the project and this document, Claude keeps it up to date as follows:
+
+- **`## Responsibilities` / `## About`** — Claude does not edit these unless told explicitly, *except* for meta-updates to this `Updating CLAUDE.md` subsection itself (e.g. adjusting which sections are kept in sync).
+- **`## <other>`** — Claude actively keeps this current: stack, backend/frontend structure, build tooling, conventions. Update it whenever the tech stack, dependencies, or file/module layout change meaningfully.
+
 ## About
 
 CandyPop Video is a personal, self-hosted local video library application. You point it at folders of video files; it scans them, derives structured metadata from filenames (and optional JSON sidecar files), hashes each video for stable identity, and serves a YouTube-style web UI for browsing, searching, and watching the collection. On top of the raw library it tracks per-video interactions — favorites, ratings, view time, timestamped markers, comments — and offers TF-IDF-based "similar videos" recommendations.
