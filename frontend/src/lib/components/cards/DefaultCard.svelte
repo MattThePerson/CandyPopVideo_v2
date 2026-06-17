@@ -5,7 +5,9 @@
     import type { CardSize } from '$lib/stores/settings.svelte';
     import { navigate } from '$lib/router/router.svelte';
 
-    let { video, size }: { video: VideoData; size: CardSize } = $props();
+    let { video, size, width: wOverride, aspectRatio: arOverride }: {
+        video: VideoData; size: CardSize; width?: string; aspectRatio?: string;
+    } = $props();
 
     const sizeMap: Record<CardSize, { width: string; aspectRatio: string }> = {
         small:  { width: '20.5rem', aspectRatio: '14/9' },
@@ -13,7 +15,10 @@
         large:  { width: '33rem',   aspectRatio: '18/9' },
         xl:     { width: '40rem',   aspectRatio: '19/9' },
     };
-    let dims = $derived(sizeMap[size]);
+    let dims = $derived({
+        width:       wOverride  ?? sizeMap[size].width,
+        aspectRatio: arOverride ?? sizeMap[size].aspectRatio,
+    });
 
     // ── Interactions ────────────────────────────────────────────────────────────
 

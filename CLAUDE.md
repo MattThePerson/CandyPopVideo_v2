@@ -6,6 +6,15 @@
 
 For all fucking files use 4 fucking spaces for tabsize.
 
+### Refactor
+
+This project is undergoing a staged refactor. Claude's role is to implement each stage in order, following the plan in `docs/PROGRESS.md`. Responsibilities:
+
+- Keep `docs/PROGRESS.md` up to date as items are completed or the plan changes.
+- Work stage by stage; don't pull in Stage 3/4 concerns while Stage 1 is active.
+- When completing a stage, note it in `docs/PROGRESS.md` and flag it to the user before moving on.
+- The current active stage is **Stage 1 (Full Svelte Frontend)**.
+
 ### Updating CLAUDE.md
 
 In order to maintain sync between the project and this document, Claude keeps it up to date as follows:
