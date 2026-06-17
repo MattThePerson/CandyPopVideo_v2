@@ -21,7 +21,7 @@ def scanVideos(
         path_filters: str|None=None,
         ) -> None:
     """ Scan videos in directories and process. Steps: read videos from db, scan videos, process videos, save to db """
-    
+
     include_folders, ignore_folders, collections_dict = _process_collection_dirs(collections)
     if include_folders is None:
         print("WARNING: No video folders read from config.yaml")
@@ -29,7 +29,7 @@ def scanVideos(
     print('\n[SCAN] Scanning video paths from {} folders'.format(len(include_folders)))
     video_paths = _getVideoPathsFromFolders(include_folders, ignore_folders, include_extensions=VIDEO_EXTENSIONS)
     print("[SCAN] Found {:_} videos in {} folders and {} collections".format(len(video_paths), len(include_folders), len(collections_dict)))
-    
+
     # filter paths
     if path_filters:
         path_filters_list = [ f.lower().strip() for f in path_filters.split(',') ]
@@ -37,7 +37,7 @@ def scanVideos(
         for fil in path_filters_list:
             video_paths = [ pth for pth in video_paths if fil in pth.lower() ]
         print('[FILTER] Left with {:_} videos'.format(len(video_paths)))
-        
+
     # Load videos from db
     existing_dicts = db.read_table_as_dict('videos')
     existing_video_objects = { hsh: VideoData.from_dict(dct) for hsh, dct in existing_dicts.items() }
@@ -51,7 +51,7 @@ def scanVideos(
                                                             redo_video_attributes=redo_video_attributes, reread_json_metadata=reread_json_metadata)
     if len(video_objects) > 0:
         print("[PROCESS] Successfully loaded {} videos in {:.1f}s ({:.2f} ms/vid)\n".format( len(video_objects), (time.time()-start), (time.time()-start)*1000/len(video_objects) ))
-    
+
     # combine & save
     combined_video_objects = combine_loaded_and_existing_videos(video_objects, existing_video_objects, unloaded_as_unlinked=(path_filters is None))
     combined_video_dicts = { hsh: vd.to_dict()  for hsh, vd in combined_video_objects.items() }
@@ -104,4 +104,3 @@ def _getVideoPathsFromFolders(folders: list[str], ignore_folders: list[str] = []
     video_paths = sorted(set([str(obj) for obj in file_objects]))
     print("      done (took {:.2f}s)".format(time.time()-start))
     return video_paths
-

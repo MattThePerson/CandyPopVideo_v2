@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+body {
+    background-color: #060A0A;
+    color: #ecede3;
+}
+
 @theme {
     --color-nav-dark: #060A0A;
     --color-off-white: #ecede3;

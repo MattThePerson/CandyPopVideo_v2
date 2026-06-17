@@ -8,7 +8,11 @@ export default defineConfig({
         tailwindcss(), // before Svelte
         svelte(),
     ],
-    // server: {
-    //     "port": 32115, // Wails default
-    // },
+    server: {
+        proxy: {
+            '/api':    'http://localhost:8124',
+            '/media':  'http://localhost:8124',
+            '/static': 'http://localhost:8124',
+        },
+    },
 })

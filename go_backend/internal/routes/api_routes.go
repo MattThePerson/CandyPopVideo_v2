@@ -28,7 +28,7 @@ func IncludeApiRoutes(e *echo.Group, db_path string) {
 	e.GET("/get/actor-video-count/:name", 		func(c echo.Context) error { return ECHO_get_actor_vid_count(c, db_path) })
 	e.GET("/get/studio-video-count/:name", 		func(c echo.Context) error { return ECHO_studio_vid_count(c, db_path) })
 	e.GET("/get/curated-collections", 			func(c echo.Context) error { return ECHO_get_curated_collection(c) })
-	
+
 }
 
 
@@ -78,12 +78,12 @@ func ECHO_get_spotlight_hash(c echo.Context, db_path string) error {
 	tm := time.Now().Add(-6*time.Hour)
 	seed_str := fmt.Sprintf("%d%d", tm.Year(), tm.YearDay())
 	seed, _ := strconv.Atoi(seed_str)
-	
+
 	r := rand.New(rand.NewSource(int64(seed)))
 	hsh := fmt.Sprintf("%012x", r.Intn(int(math.Pow(16, 12))))
 	fmt.Println("[SPOTLIGHT] Generated random hash: "+hsh)
-	
-	// 
+
+	//
 	hsh_i, _ := strconv.ParseInt(hsh, 16, 64)
 	var closest_i int64 = 0
 	for vhsh := range mp {
@@ -120,7 +120,7 @@ func ECHO_get_movie(c echo.Context, db_path string) error {
 	for _, vd := range vids {
 		title_cmp[vd.Hash] = formatStringForIntComparability(vd.Title)
 	}
-	
+
 	// sort vids
 	slices.SortFunc(vids, func(a, b schemas.VideoData) int {
 		if (a.DateReleased != b.DateReleased) {
@@ -128,7 +128,7 @@ func ECHO_get_movie(c echo.Context, db_path string) error {
 		}
 		return cmp.Compare(title_cmp[a.Hash], title_cmp[b.Hash])
 	})
-	
+
 	return c.JSON(200, vids)
 }
 
@@ -154,7 +154,7 @@ func ECHO_get_movie_series(c echo.Context, db_path string) error {
 	for _, vd := range vids {
 		title_cmp[vd.Hash] = formatStringForIntComparability(vd.Title)
 	}
-	
+
 	// sort vids
 	slices.SortFunc(vids, func(a, b schemas.VideoData) int {
 		if (a.DateReleased != b.DateReleased) {
@@ -162,7 +162,7 @@ func ECHO_get_movie_series(c echo.Context, db_path string) error {
 		}
 		return cmp.Compare(title_cmp[a.Hash], title_cmp[b.Hash])
 	})
-	
+
 	return c.JSON(200, vids)
 }
 
@@ -193,7 +193,7 @@ func ECHO_get_line(c echo.Context, db_path string) error {
 		}
 		return cmp.Compare(a.DateAdded, b.DateAdded)
 	})
-	
+
 	return c.JSON(200, vids)
 }
 
@@ -203,7 +203,7 @@ func ECHO_get_line(c echo.Context, db_path string) error {
 func ECHO_get_actor(c echo.Context, db_path string) error {
 	name := c.Param("name")
 
-	// [subprocess] 
+	// [subprocess]
 	data, err := execPythonSubprocess_Output[map[string]any](
 		"-m", "python_src.worker_scripts.getActorInfo",
 		"-name", name,
@@ -212,7 +212,7 @@ func ECHO_get_actor(c echo.Context, db_path string) error {
 	if err != nil {
 		return handleServerError(c, 500, "Python subprocess failed", err)
 	}
-	
+
 	return c.JSON(200, data)
 }
 
@@ -259,13 +259,3 @@ func ECHO_studio_vid_count(c echo.Context, db_path string) error {
 func ECHO_get_curated_collection(c echo.Context) error {
 	return c.String(501, "Not implemented")
 }
-
-
-
-
-
-
-
-
-
-
