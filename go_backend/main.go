@@ -72,10 +72,18 @@ func main() {
 	})
 
 	// Static folders
-	e.Static("/", "frontend_svelte/dist")
+	e.Static("/assets", "frontend/dist/assets")
+	e.File("/favicon.svg", "frontend/dist/favicon.svg")
 
 	e.Static("/static/preview-media", config.PreviewMediaDir)
 	e.Static("/static/actor-store", config.ActorInfoDir)
+
+	// SPA fallback: any other GET request (e.g. /search, /catalogue) that
+	// isn't one of the routes above falls back to the built index.html so
+	// client-side routes survive a hard refresh/deep link.
+	e.GET("/*", func(c echo.Context) error {
+		return c.File("frontend/dist/index.html")
+	})
 
 	addr := fmt.Sprintf(":%d", *serverPort)
 	e.Logger.Fatal(e.Start(addr))

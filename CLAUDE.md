@@ -70,6 +70,16 @@ frontend/               # vanilla JS frontend, served statically
         libraries/       # PassionPlayer (video player) + other vendored JS
         util/            # component injection, fetch helpers, VTT parsing
 
+frontend_svelte/        # in-progress Svelte 5 + TS + Tailwind v4 rewrite of frontend/
+    src/
+        lib/
+            router/      # hand-rolled client-side router (routes.ts, router.svelte.ts)
+            components/  # Header.svelte, Footer.svelte
+        pages/<name>/    # one folder per page: Page.svelte (home, search, catalogue, curated, video, dashboard)
+        assets/fonts/    # Jaro/Inter TTFs used by app.css @font-face rules
+        App.svelte       # mounts Header/Footer + routed page
+        app.css          # Tailwind v4 @theme tokens + @font-face rules
+
 launcher/               # pystray tray-icon app + subprocess ProcessManager
 tools/                  # install/run/worker scripts (.ps1 for Windows, .sh for Linux), Makefiles
 assets/                 # app/tray icons
@@ -161,9 +171,16 @@ No build step, no framework — plain JS modules and hand-written custom element
 
 ## Svelte rewrite
 
-The vanilla-JS `frontend/` is being replaced by `frontend_svelte/` — a Svelte 5 + TypeScript + Tailwind v4 project (Vite-built, no SvelteKit/routing yet: just `App.svelte` mounted into `index.html` via `src/main.ts`). It's currently a bare scaffold (placeholder hero markup only); none of the real pages/components have been ported yet.
+The vanilla-JS `frontend/` is being replaced by `frontend_svelte/` — a Svelte 5 + TypeScript + Tailwind v4 project (Vite-built, no SvelteKit). Milestone 1 (header chrome + client-side page navigation) is done: there's a real header, a hand-rolled router, and six placeholder pages, ported faithfully from the old frontend's finalized design.
 
-- The Go server already points at it: `go_backend/main.go`'s static handler now serves `frontend_svelte/dist` instead of `frontend` (so the old frontend is effectively disconnected from the Go server, though its files remain in the repo for reference/the Python server).
+- **Router** (`src/lib/router/`) — hand-rolled, no third-party package, real URL paths (history mode, not hash routing):
+  - `router.svelte.ts` — `routerState` (`$state`-backed current path), `navigate(path, { replace? })`, `initRouter()` (wires `popstate` + a delegated `document` click listener that intercepts same-origin `<a>` clicks and routes them client-side, skipping modifier-clicks/`target`/`download`/external links), and `matchRoute`/`matchPattern` (segment-based matching with `:param` support, ready for future params like `/video/:hash`). The `.svelte.ts` suffix is required for top-level rune usage outside a `.svelte` file.
+  - `routes.ts` — ordered `{ pattern, component }` table, checked first-match-wins.
+  - `App.svelte` calls `initRouter()` on mount, derives the current match via `matchRoute(routerState.path)`, and renders `<Header />` / the matched page (spreading params as props) / `<Footer />`.
+- **Components** (`src/lib/components/`) — `Header.svelte` (logo, home/search/catalogue/curated nav links, shuffle/search/dashboard/settings icon buttons, active-link highlighting driven by `routerState.path`) and `Footer.svelte`, ported from `frontend/shared/components/{Header,Footer}.js`. Mostly Tailwind utility classes, with a scoped `<style>` block for the fiddly bits (logo font sizing, the active-link color, dropdown positioning).
+- **Pages** (`src/pages/<name>/Page.svelte`) — `home`, `search`, `catalogue`, `curated`, `video`, `dashboard`; currently just a heading each, mirroring the old `frontend/pages/<name>/` folder convention so real content has an obvious home later.
+- Colors/fonts: `src/app.css` defines a Tailwind v4 `@theme` block with `--color-*` tokens carried over from `frontend/global.css`'s `:root` variables, plus `@font-face` rules for `Jaro-Regular.ttf` and the Inter variable font (copied into `src/assets/fonts/`, not shared with `frontend/static/fonts/`).
+- The Go server already points at it: `go_backend/main.go` serves `frontend_svelte/dist/assets` and `favicon.svg` directly, then falls back to `dist/index.html` for any other GET request (`e.GET("/*", ...)`) so client-side routes survive a hard refresh/deep link — Echo resolves literal routes (`/api/*`, `/media/*`, `/assets/*`, ...) before the wildcard regardless of registration order, so this fallback can't shadow existing routes.
 - There's no Makefile/tooling integration yet — building means running `npm install` / `npm run build` manually inside `frontend_svelte/` (no `make build-frontend` target exists). `npm run dev` runs the Vite dev server standalone (no proxy to the backend configured yet, unlike the old Express dev server).
-- `frontend_svelte/dist`, `node_modules`, and other build artifacts are gitignored as usual, but `frontend_svelte/` itself was just unignored at the repo root (it used to be excluded via a blanket `frontend_svelte/` rule) so the scaffold can be committed.
+- `frontend_svelte/dist`, `node_modules`, and other build artifacts are gitignored as usual, but `frontend_svelte/` itself was unignored at the repo root (it used to be excluded via a blanket `frontend_svelte/` rule) so the scaffold can be committed.
 - A work-in-progress copy of the video player to be ported in is kept at `_ref/passion_player/` (`PassionPlayer.js` + `.d.ts`), copied from the author's separate Wails-based "Lucid Media Player" project — note its `.d.ts` still imports Wails-generated types (`wailsjs/go/models`) that won't resolve here and will need adapting. `_ref/` as a whole is gitignored (root `.gitignore`'s `_*/` rule) and also holds `VIDEO_HASHING.md`, a language-agnostic spec of the video hashing algorithm for cross-project interop.
