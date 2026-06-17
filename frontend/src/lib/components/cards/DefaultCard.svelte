@@ -4,6 +4,7 @@
     import type { VideoInteractions } from '$lib/types/video';
     import type { CardSize } from '$lib/stores/settings.svelte';
     import { navigate } from '$lib/router/router.svelte';
+    import Spinner from '$lib/components/Spinner.svelte';
 
     let { video, size, width: wOverride, aspectRatio: arOverride }: {
         video: VideoData; size: CardSize; width?: string; aspectRatio?: string;
@@ -57,6 +58,7 @@
     let spriteSheetSrc = $state('');
     let spriteSheetNW = $state(0);
     let spriteSheetNH = $state(0);
+    let isHovering = $state(false);
     let showSprite = $state(false);
     let spriteStyle = $state('');
 
@@ -75,8 +77,9 @@
     async function ensureSprite() {
         if (teaserState !== 'idle') return;
         teaserState = 'loading';
-        fetch(`/media/ensure/teaser-thumbs-small/${video.hash}`).catch(() => {});
         try {
+            const ensureRes = await fetch(`/media/ensure/teaser-thumbs-small/${video.hash}`);
+            if (!ensureRes.ok) { teaserState = 'failed'; return; }
             const vttRes = await fetch(`/static/preview-media/0x${video.hash}/teaser_thumbs_small.vtt`);
             if (!vttRes.ok) { teaserState = 'failed'; return; }
             const cues = parseVtt(await vttRes.text());
@@ -96,6 +99,7 @@
     }
 
     function handleMouseEnter() {
+        isHovering = true;
         ensureSprite();
     }
 
@@ -111,6 +115,7 @@
     }
 
     function handleMouseLeave() {
+        isHovering = false;
         showSprite = false;
         spriteStyle = '';
     }
@@ -210,10 +215,16 @@
         onmousemove={handleMouseMove}
         onmouseleave={handleMouseLeave}
     >
-        <img class="poster" class:hidden={showSprite} src="/media/get/poster/{video.hash}" alt="" />
+        <img class="poster" class:hidden={showSprite || (isHovering && teaserState === 'loading')} src="/media/get/poster/{video.hash}" alt="" />
 
         {#if showSprite && spriteStyle}
             <div class="sprite-overlay" style={spriteStyle}></div>
+        {/if}
+
+        {#if isHovering && teaserState === 'loading'}
+            <div class="spinner-wrap">
+                <Spinner size={36} bg="#000" />
+            </div>
         {/if}
 
         <div class="stats">
@@ -380,7 +391,7 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        background: #111;
+        background: #000;
         border-radius: 5px 5px 0 0;
         width: 100%;
         overflow: hidden;
@@ -401,6 +412,15 @@
         position: absolute;
         inset: 0;
         pointer-events: none;
+    }
+
+    .spinner-wrap {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        z-index: 1;
     }
 
     /* ── Stats overlay ── */

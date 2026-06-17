@@ -10,6 +10,30 @@ import (
 )
 
 
+// InitDB creates all required tables if they don't already exist.
+// Call once at server startup so the DB is ready regardless of whether
+// the Python worker has ever run.
+func InitDB(db_path string) error {
+    db, err := openDbConnection(db_path)
+    if err != nil {
+        return err
+    }
+    defer db.Close()
+
+    stmts := []string{
+        `CREATE TABLE IF NOT EXISTS videos (id TEXT PRIMARY KEY, data TEXT)`,
+        `CREATE TABLE IF NOT EXISTS interactions (id TEXT PRIMARY KEY, data TEXT)`,
+        `CREATE TABLE IF NOT EXISTS views (timestamp TEXT, video_hash TEXT, duration_sec REAL)`,
+    }
+    for _, stmt := range stmts {
+        if _, err := db.Exec(stmt); err != nil {
+            return err
+        }
+    }
+    return nil
+}
+
+
 func openDbConnection(db_path string) (*sql.DB, error) {
 	db, err := sql.Open("sqlite", db_path)
 	if err != nil {

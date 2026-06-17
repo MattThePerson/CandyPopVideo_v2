@@ -75,7 +75,11 @@ frontend/               # Svelte 5 + TS + Tailwind v4 frontend (Vite-built, serv
     src/
         lib/
             router/      # hand-rolled client-side router (routes.ts, router.svelte.ts)
-            components/  # Header.svelte, Footer.svelte
+            types/       # VideoData, VideoInteractions, SearchQuery, CatalogueQuery (TS interfaces)
+            stores/      # settings.svelte.ts — cardVariant/cardSize/teaserMode, persisted to localStorage
+            util/        # pager.svelte.ts — createPager() batch-paging helper
+            components/  # Header.svelte, Footer.svelte, Spinner.svelte
+                cards/   # DefaultCard.svelte (full video card), VideoCard.svelte (variant wrapper)
         pages/<name>/    # one folder per page: Page.svelte (home, search, catalogue, curated, video, dashboard)
         assets/fonts/    # Jaro/Inter TTFs used by app.css @font-face rules
         App.svelte       # mounts Header/Footer + routed page
@@ -180,16 +184,27 @@ No build step, no framework — plain JS modules and hand-written custom element
 
 ## Svelte rewrite
 
-The vanilla-JS frontend (preserved at `frontend_old/` for reference) is being replaced by `frontend/` — a Svelte 5 + TypeScript + Tailwind v4 project (Vite-built, no SvelteKit). Milestone 1 (header chrome + client-side page navigation) is done: there's a real header, a hand-rolled router, and six placeholder pages, ported faithfully from the old frontend's finalized design.
+The vanilla-JS frontend (preserved at `frontend_old/` for reference) is being replaced by `frontend/` — a Svelte 5 + TypeScript + Tailwind v4 project (Vite-built, no SvelteKit). The header chrome, client-side router, card system, and home page are all functional; the remaining five pages (`search`, `catalogue`, `curated`, `video`, `dashboard`) are stubs.
 
 - **Router** (`src/lib/router/`) — hand-rolled, no third-party package, real URL paths (history mode, not hash routing):
   - `router.svelte.ts` — `routerState` (`$state`-backed current path), `navigate(path, { replace? })`, `initRouter()` (wires `popstate` + a delegated `document` click listener that intercepts same-origin `<a>` clicks and routes them client-side, skipping modifier-clicks/`target`/`download`/external links), and `matchRoute`/`matchPattern` (segment-based matching with `:param` support, ready for future params like `/video/:hash`). The `.svelte.ts` suffix is required for top-level rune usage outside a `.svelte` file.
   - `routes.ts` — ordered `{ pattern, component }` table, checked first-match-wins.
   - `App.svelte` calls `initRouter()` on mount, derives the current match via `matchRoute(routerState.path)`, and renders `<Header />` / the matched page (spreading params as props) / `<Footer />`.
-- **Components** (`src/lib/components/`) — `Header.svelte` (logo, home/search/catalogue/curated nav links, shuffle/search/dashboard/settings icon buttons, active-link highlighting driven by `routerState.path`) and `Footer.svelte`, ported from `frontend_old/shared/components/{Header,Footer}.js`. Mostly Tailwind utility classes, with a scoped `<style>` block for the fiddly bits (logo font sizing, the active-link color, dropdown positioning).
-- **Pages** (`src/pages/<name>/Page.svelte`) — `home`, `search`, `catalogue`, `curated`, `video`, `dashboard`. The home page fetches the daily spotlight video from the backend and displays its title; the rest are placeholder headings.
+- **Components** (`src/lib/components/`):
+  - `Header.svelte` — logo, home/search/catalogue/curated nav links, shuffle/search/dashboard/settings icon buttons, active-link highlighting driven by `routerState.path`. Scoped `<style>` for logo font sizing, active-link colour, dropdown positioning.
+  - `Footer.svelte` — simple copyright line.
+  - `Spinner.svelte` — reusable orange gradient ring animation. Props: `size` (px, default 52) and `bg` (inner-circle colour matching the container background, default `#060A0A`). Used inside card thumbnails while the spritesheet is loading, and on pages while data fetches are in flight.
+  - `cards/DefaultCard.svelte` — the full video card. Poster image with a hover sprite-sheet teaser (fires `/media/ensure/teaser-thumbs-small/:hash`, then loads the VTT + spritesheet and scrubs by mouse position); stats overlay (resolution/bitrate/duration chips, views, collection badge, NEW badge); interactions loaded from `/api/interact/get/:hash` (viewtime, likes, rating, favourite toggle with optimistic UI); actor/tag lists with expand-on-click for overflow; four size variants driven by the `size` prop ('small' 20.5rem / 'medium' 25rem / 'large' 33rem / 'xl' 40rem). While hovering and loading the spritesheet the poster is hidden and a `Spinner` is shown centred on the black thumbnail background; unhovered it shows the poster normally.
+  - `cards/VideoCard.svelte` — thin wrapper that selects card variant via `settings.cardVariant` (currently only 'default') and passes through `video`, `size`, `width`, `aspectRatio` props.
+- **Types** (`src/lib/types/`):
+  - `video.ts` — `VideoData` and `VideoInteractions` TypeScript interfaces, mirroring the Go schemas.
+  - `query.ts` — `SearchQuery` and `CatalogueQuery` interfaces.
+- **Stores / utilities** (`src/lib/stores/`, `src/lib/util/`):
+  - `settings.svelte.ts` — singleton `settings` object persisted to `localStorage`. Fields: `cardVariant` ('default'), `cardSize` ('small'|'medium'|'large'|'xl'), `teaserMode` ('sprite'|'video').
+  - `pager.svelte.ts` — `createPager<T>(source, batchSize)` factory. Exposes `visible` (current slice), `hasMore`, `loadMore()`, `reset()`. Used by the home page for "Load More Results".
+- **Pages** (`src/pages/<name>/Page.svelte`) — `home`, `search`, `catalogue`, `curated`, `video`, `dashboard`. The home page is fully functional: fetches a random spotlight video and renders it as a full-width `VideoCard` (21:9 aspect ratio), then fetches similar videos and shows them in a paginated card grid, with a `Spinner` during both loading phases. The remaining five pages are single-line stubs.
 - Colors/fonts: `src/app.css` defines a global dark `body` background (`#060A0A`), a Tailwind v4 `@theme` block with `--color-*` tokens, and `@font-face` rules for `Jaro-Regular.ttf` and the Inter variable font (copied into `src/assets/fonts/`).
 - The Go server serves `frontend/dist/assets` and `favicon.svg` directly, then falls back to `frontend/dist/index.html` for any other GET request so client-side routes survive a hard refresh/deep link.
-- The Vite dev server proxies `/api`, `/media`, and `/static` to `http://localhost:8010` (Go backend default port) so API calls work during `npm run dev` without CORS issues.
+- The Vite dev server proxies `/api`, `/media`, and `/static` to `http://localhost:8124` (the Go backend port, set in `config.yaml`) so API calls work during `npm run dev` without CORS issues.
 - There's no Makefile/tooling integration yet — building means running `npm install` / `npm run build` manually inside `frontend/` (no `make build-frontend` target exists).
 - A work-in-progress copy of the video player to be ported in is kept at `_ref/passion_player/` (`PassionPlayer.js` + `.d.ts`), copied from the author's separate Wails-based "Lucid Media Player" project — note its `.d.ts` still imports Wails-generated types (`wailsjs/go/models`) that won't resolve here and will need adapting. `_ref/` as a whole is gitignored (root `.gitignore`'s `_*/` rule) and also holds `VIDEO_HASHING.md`, a language-agnostic spec of the video hashing algorithm for cross-project interop.

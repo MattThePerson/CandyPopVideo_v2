@@ -5,14 +5,16 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"strings"
+    "flag"
+    "fmt"
+    "log"
+    "strings"
 
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+    "github.com/labstack/echo/v4"
+    "github.com/labstack/echo/v4/middleware"
 
-	"cpv_backend/internal/routes"
+    "cpv_backend/internal/db"
+    "cpv_backend/internal/routes"
 )
 
 var (
@@ -39,6 +41,11 @@ func main() {
 
 	// Get config variables
 	var config Config = GetConfig("config.yaml")
+
+	// Ensure all DB tables exist before serving any requests
+	if err := db.InitDB(config.DBPath); err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
 
 	// Echo instance
 	e := echo.New()

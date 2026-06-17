@@ -2,12 +2,14 @@
     import { onMount } from 'svelte';
     import type { VideoData } from '$lib/types/video';
     import VideoCard from '$lib/components/VideoCard.svelte';
+    import Spinner from '$lib/components/Spinner.svelte';
     import { createPager } from '$lib/util/pager.svelte';
 
-    let video     = $state<VideoData | null>(null);
-    let similar   = $state<VideoData[]>([]);
-    let queryTime = $state<number | null>(null);
-    let error     = $state<string | null>(null);
+    let video          = $state<VideoData | null>(null);
+    let similar        = $state<VideoData[]>([]);
+    let queryTime      = $state<number | null>(null);
+    let error          = $state<string | null>(null);
+    let similarLoading = $state(false);
 
     const BATCH = 8;
     const pager = createPager(() => similar, BATCH);
@@ -16,15 +18,20 @@
 
     onMount(async () => {
         try {
-            const hash = await fetch('/api/get/random-spotlight-video-hash').then(r => r.text())
+            // const hash = await fetch('/api/get/random-spotlight-video-hash').then(r => r.text());
+            const hash = await fetch('/api/get/random-video-hash')
+                .then(r => r.json()).then(r => r['hash'] as string)
             video = await fetch(`/api/get/video-data/${hash}`)
                 .then(r => r.json()) as VideoData;
+            similarLoading = true;
             const res = await fetch(`/api/query/get/similar-videos/${hash}`)
                 .then(r => r.json());
             similar   = (res.Videos as VideoData[]).slice(1);
             queryTime = res.TimeTaken as number;
         } catch (e) {
             error = String(e);
+        } finally {
+            similarLoading = false;
         }
     });
 </script>
@@ -39,14 +46,25 @@
         {#if error}
             <p class="text-red-400">{error}</p>
         {:else if video === null}
-            <p class="text-[#555]">Loading...</p>
+            <div class="flex justify-center py-16">
+                <Spinner />
+            </div>
         {:else}
             <VideoCard {video} width="72rem" aspectRatio="21/9" />
         {/if}
     </section>
 
     <!-- Similar videos -->
-    {#if similar.length > 0}
+    {#if similarLoading}
+        <section>
+            <h2 class="mb-4 text-[#aaa] uppercase tracking-widest text-sm font-semibold">
+                Similar Videos
+            </h2>
+            <div class="flex justify-center py-12">
+                <Spinner />
+            </div>
+        </section>
+    {:else if similar.length > 0}
         <section>
             <h2 class="mb-4 text-[#aaa] uppercase tracking-widest text-sm font-semibold">
                 Similar Videos{queryTime !== null ? ` (${queryTime.toFixed(2)}s)` : ''}
