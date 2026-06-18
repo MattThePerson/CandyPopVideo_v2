@@ -4,16 +4,13 @@
     import type { VideoData } from '$lib/types/video';
     import VideoCard from '$lib/components/VideoCard.svelte';
     import Spinner from '$lib/components/Spinner.svelte';
-    import { createPager } from '$lib/util/pager.svelte';
+    import SimilarVideos from '$lib/components/SimilarVideos.svelte';
 
     let video          = $state<VideoData | null>(null);
     let similar        = $state<VideoData[]>([]);
     let queryTime      = $state<number | null>(null);
     let error          = $state<string | null>(null);
     let similarLoading = $state(false);
-
-    const BATCH = 8;
-    const pager = createPager(() => similar, BATCH);
 
     const today = new Date().toDateString();
 
@@ -62,58 +59,8 @@
     </section>
 
     <!-- Similar videos -->
-    {#if similarLoading}
-        <section>
-            <h2 class="mb-4 text-[#aaa] uppercase tracking-widest text-sm font-semibold">
-                Similar Videos
-            </h2>
-            <div class="flex justify-center py-12">
-                <Spinner />
-            </div>
-        </section>
-    {:else if similar.length > 0}
-        <section>
-            <h2 class="mb-4 text-[#aaa] uppercase tracking-widest text-sm font-semibold">
-                Similar Videos{queryTime !== null ? ` (${queryTime.toFixed(2)}s)` : ''}
-            </h2>
-            <div class="flex flex-wrap justify-center gap-4">
-                {#each pager.visible as video (video.hash)}
-                    <VideoCard {video} />
-                {/each}
-            </div>
-            {#if pager.hasMore}
-                <div class="flex justify-center mt-6">
-                    <button class="load-more" onclick={pager.loadMore}>
-                        LOAD MORE RESULTS
-                    </button>
-                </div>
-            {/if}
-        </section>
+    {#if video}
+        <SimilarVideos {video} {similar} loading={similarLoading} {queryTime} />
     {/if}
 
 </div>
-
-<!--
-========================================================================================================================
-    //region CSS
-========================================================================================================================
--->
-
-<style>
-    .load-more {
-        background: #151515;
-        color: #aaa;
-        border: 1px solid #333;
-        border-radius: 6px;
-        padding: 0.5rem 2rem;
-        font-size: 0.8rem;
-        font-weight: bold;
-        letter-spacing: 0.1em;
-        cursor: pointer;
-        transition: border-color 0.15s, color 0.15s;
-    }
-    .load-more:hover {
-        border-color: #666;
-        color: #eee;
-    }
-</style>
