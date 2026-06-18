@@ -1,19 +1,26 @@
 import { routes, type RouteDef } from './routes';
 
-export const routerState = $state({ path: window.location.pathname });
+export const routerState = $state({ path: window.location.pathname, search: window.location.search });
 
-export function navigate(path: string, { replace = false }: { replace?: boolean } = {}) {
-    if (path === routerState.path) return;
+export function navigate(fullPath: string, { replace = false }: { replace?: boolean } = {}) {
+    const qIdx = fullPath.indexOf('?');
+    const pathname = qIdx >= 0 ? fullPath.slice(0, qIdx) : fullPath;
+    const search   = qIdx >= 0 ? fullPath.slice(qIdx)    : '';
+
+    if (pathname === routerState.path && search === routerState.search) return;
+
     if (replace) {
-        history.replaceState({}, '', path);
+        history.replaceState({}, '', fullPath);
     } else {
-        history.pushState({}, '', path);
+        history.pushState({}, '', fullPath);
     }
-    routerState.path = path;
+    routerState.path   = pathname;
+    routerState.search = search;
 }
 
 function onPopState() {
-    routerState.path = window.location.pathname;
+    routerState.path   = window.location.pathname;
+    routerState.search = window.location.search;
 }
 
 function isModifiedClick(e: MouseEvent) {

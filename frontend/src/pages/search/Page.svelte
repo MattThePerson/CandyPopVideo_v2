@@ -1,2 +1,6 @@
 <!-- pages/search/Page.svelte -->
-<h1 class="text-2xl font-semibold p-8">Search</h1>
+<script lang="ts">
+    import SearchPanel from '$lib/components/SearchPanel.svelte';
+</script>
+
+<SearchPanel />
