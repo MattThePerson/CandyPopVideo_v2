@@ -20,6 +20,9 @@ TODO.md
 *.ipynb
 
 .logs
+*/curated/*
+frontend/static/
+frontend/new_frontend.png
 
 # frontend
 curatedCollections/
