@@ -1,1 +1,1 @@
-C:/Users/stirl/Programming/AwesomeVideoPlayer/frontend/src/passion_player/PassionPlayer.js
+C:/Users/stirl/Programming/LucidMediaPlayer/frontend/src/passion_player/PassionPlayer.js
