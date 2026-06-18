@@ -16,6 +16,7 @@ export interface PassionPlayerOptions {
     disable_keybinds?: boolean;
     controlsOverlayKey?: string;
     thumbnailSize?: number;
+    resumeKey?: string | null;
     onPlay?: (() => void) | null;
     onPause?: (() => void) | null;
     onSeek?: ((pos: number) => void) | null;
@@ -54,6 +55,7 @@ export declare class PassionPlayer {
     setThumbnailSize(mult: number): void;
     getThumbnailSize(): number;
     setKeybindsEnabled(enabled: boolean): void;
+    setSeekThumbsLoading(loading: boolean): void;
     setSeekThumbs(vttContent: string, spritesheetDataURL: string): void;
     setSubtitleState(text: string | null, tracks: TrackInfo[], activeSid: number): void;
     showOSD(text: string): void;

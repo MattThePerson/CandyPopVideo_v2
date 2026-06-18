@@ -12,9 +12,10 @@
     // the VTT and the JPEG and passes them to PassionPlayer as a data URL.
     // PassionPlayer's setSeekThumbs requires an inline data URL, not a path.
     async function loadSeekThumbs(p: PassionPlayer) {
+        p.setSeekThumbsLoading(true);
         try {
             const ensureRes = await fetch(`/media/ensure/seek-thumbnails/${hash}`);
-            if (!ensureRes.ok) return;
+            if (!ensureRes.ok) { p.setSeekThumbsLoading(false); return; }
 
             const [vttText, imgBlob] = await Promise.all([
                 fetch(`/static/preview-media/0x${hash}/seekthumbs.vtt`).then(r => r.ok ? r.text() : Promise.reject()),
@@ -29,7 +30,7 @@
             });
 
             p.setSeekThumbs(vttText, dataUrl);
-        } catch { /* seek thumbs optional */ }
+        } catch { p.setSeekThumbsLoading(false); }
     }
 
     onMount(async () => {
@@ -47,6 +48,7 @@
             subtitles_srt_src: subsUrl,
             autoplay: false,
             quiet: false,
+            resumeKey: hash,
         });
 
         loadSeekThumbs(player);

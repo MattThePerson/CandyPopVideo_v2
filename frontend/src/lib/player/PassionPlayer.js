@@ -249,6 +249,7 @@ export class PassionPlayer {
         onCssFilterChange = null,
         onThumbnailSizeChange = null,
         thumbnailSize = 1.0,
+        resumeKey = null,
     }) {
         this.player_id = player_id;
         this.src = src;
@@ -303,6 +304,13 @@ export class PassionPlayer {
         this.seekThumbsSpritesheetSize = null;
 
         this._clickToTogglePlayback = true;
+        this._resumeKey = resumeKey;
+        this._resumeUnloadHandler = null;
+        this._resumeVisibilityHandler = null;
+        this._fsBarBottom = JSON.parse(localStorage.getItem('pp_settings') ?? '{}').fsBarBottom ?? false;
+        this._fsActive = false;
+        this._settingsMenuOpen = false;
+        this._fullscreenChangeHandler = null;
         this._keybindEngine = null;
         this._keydownHandler = null; // kept for compat
         this._hostEl = hostEl;
@@ -331,8 +339,10 @@ export class PassionPlayer {
         this._mpvPresetIndex = 0;
 
         // thumbnail size (multiplier, base = 200px)
-        this._thumbSizeMultiplier = thumbnailSize;
+        this._thumbSizeMultiplier = JSON.parse(localStorage.getItem('pp_settings') ?? '{}').thumbnailSize ?? thumbnailSize;
         this._lastRenderedDuration = 0;
+
+        this._seekThumbsLoading = false;
 
         // drag-seek state
         this._seekDragging = false;
@@ -362,11 +372,23 @@ export class PassionPlayer {
             });
             this.video = this.shadow.querySelector('video');
             this.log('video loaded');
+            if (this._resumeKey) {
+                const saved = parseFloat(localStorage.getItem(`pp_resume_${this._resumeKey}`) ?? '');
+                if (saved > 3) {
+                    const dur = this.video.duration;
+                    if (!isFinite(dur) || saved < dur - 5) this.video.currentTime = saved;
+                }
+                this._resumeUnloadHandler = () => this._saveResumePosition();
+                this._resumeVisibilityHandler = () => { if (document.hidden) this._saveResumePosition(); };
+                window.addEventListener('beforeunload', this._resumeUnloadHandler);
+                document.addEventListener('visibilitychange', this._resumeVisibilityHandler);
+            }
         }
 
         this._hydrate();
         if (!this.disable_keybinds && !this._keybindEngine) this.addKeybinds();
         this._initEventListeners();
+        this._applyFsBarClass();
     }
 
     _addHTML(shadow) {
@@ -389,6 +411,17 @@ export class PassionPlayer {
     }
 
     destroy() {
+        this._saveResumePosition();
+        if (this._resumeUnloadHandler) {
+            window.removeEventListener('beforeunload', this._resumeUnloadHandler);
+            document.removeEventListener('visibilitychange', this._resumeVisibilityHandler);
+            this._resumeUnloadHandler = null;
+            this._resumeVisibilityHandler = null;
+        }
+        if (this._fullscreenChangeHandler) {
+            document.removeEventListener('fullscreenchange', this._fullscreenChangeHandler);
+            this._fullscreenChangeHandler = null;
+        }
         this._destroyed = true;
         this._stopRaf();
         this.onUIVisible?.(false);
@@ -417,6 +450,8 @@ export class PassionPlayer {
         this.updatePlayBtn();
         const fn = this.$('.pp-filename');
         if (fn && this._filenameText) fn.textContent = this._filenameText;
+        const settingsVal = this.$('.pp-settings-value');
+        if (settingsVal) settingsVal.textContent = this._fsBarBottom ? 'Bottom' : 'Top';
     }
 
     _initEventListeners() {
@@ -426,8 +461,14 @@ export class PassionPlayer {
         this._addVolumeEventListeners();
         this._addFullscreenBtnEventListeners();
         this._addSubtitleEventListeners();
+        this._addSettingsEventListeners();
         this._addScrollEventListeners();
         this._initControlsAutoHide();
+        this._fullscreenChangeHandler = () => {
+            this._fsActive = !!document.fullscreenElement;
+            this._applyFsBarClass();
+        };
+        document.addEventListener('fullscreenchange', this._fullscreenChangeHandler);
 
         this.shadow.addEventListener('mousedown', (e) => {
             if (e.target.tagName === 'BUTTON' || e.target.closest?.('button')) {
@@ -443,6 +484,7 @@ export class PassionPlayer {
         if (this.video) {
             this.video.addEventListener('play', () => this.updatePlayBtn());
             this.video.addEventListener('pause', () => this.updatePlayBtn());
+            if (this._resumeKey) this.video.addEventListener('pause', () => this._saveResumePosition());
         }
     }
 
@@ -487,8 +529,10 @@ export class PassionPlayer {
                         pb_flag = false;
                     }
                 }, 175);
-                setTimeout(() => { fs_flag = false; }, 350);
+                setTimeout(() => { fs_flag = false; }, 500);
             } else if (fs_flag) {
+                // If pb_timer already fired (pb_flag=false), undo the brief playback toggle
+                if (!pb_flag && this._clickToTogglePlayback) this.togglePlayback();
                 clearTimeout(pb_timer);
                 pb_timer = null;
                 this.$$('.pp-icon').forEach(el => { el.style.display = 'none'; });
@@ -531,16 +575,15 @@ export class PassionPlayer {
         document.addEventListener('mousemove', this._seekDragMoveHandler);
         document.addEventListener('mouseup', this._seekDragUpHandler);
 
-        // scroll on progress bar: Ctrl+Shift = thumb size; else seek ±1s
+        // scroll on progress bar: Shift = thumb size; else seek ±2s
         zone.addEventListener('wheel', (e) => {
-            if (!document.fullscreenElement) return;
             e.preventDefault();
             e.stopPropagation();
-            if (e.ctrlKey && e.shiftKey) {
+            if (e.shiftKey) {
                 this._adjustThumbSize(e.deltaY > 0 ? -0.1 : 0.1);
                 return;
             }
-            const delta = e.deltaY > 0 ? -1 : 1;
+            const delta = e.deltaY > 0 ? -2 : 2;
             let newFrac;
             if (this.video) {
                 const nt = Math.max(0, Math.min(this.video.duration, this.video.currentTime + delta));
@@ -599,17 +642,19 @@ export class PassionPlayer {
         clearTimeout(this._hideTimer);
         const isPaused = this.video ? this.video.paused : this._paused;
         if (!isPaused) {
-            this._hideTimer = setTimeout(() => this._hideControls(), 2000);
+            this._hideTimer = setTimeout(() => this._hideControls(), 1250);
         }
     }
 
     _showControls() {
         const controls = this.$('.controls-bar');
         const progress = this.$('#progress-bar-default');
+        const settings = this.$('.pp-settings-control');
         const player = this.$('.PassionPlayer');
         const filename = this.$('.pp-filename');
         if (controls) { controls.style.transitionDuration = '0ms'; controls.style.opacity = '1'; }
         if (progress) { progress.style.transitionDuration = '0ms'; progress.style.opacity = '1'; }
+        if (settings) { settings.style.transitionDuration = '0ms'; settings.style.opacity = '1'; }
         if (filename) { filename.style.transitionDuration = '0ms'; filename.style.opacity = '1'; }
         if (player) player.style.cursor = '';
         this._controlsVisible = true;
@@ -619,14 +664,17 @@ export class PassionPlayer {
     _hideControls() {
         const controls = this.$('.controls-bar');
         const progress = this.$('#progress-bar-default');
+        const settings = this.$('.pp-settings-control');
         const player = this.$('.PassionPlayer');
         const filename = this.$('.pp-filename');
         if (controls) { controls.style.transitionDuration = '500ms'; controls.style.opacity = '0'; }
         if (progress) { progress.style.transitionDuration = '500ms'; progress.style.opacity = '0.2'; }
+        if (settings) { settings.style.transitionDuration = '500ms'; settings.style.opacity = '0'; }
         if (filename) { filename.style.transitionDuration = '500ms'; filename.style.opacity = '0'; }
         if (player) player.style.cursor = 'none';
         this._controlsVisible = false;
         this._closeSubtitleMenu();
+        this._closeSettingsMenu();
         this.onUIVisible?.(false);
     }
 
@@ -641,38 +689,51 @@ export class PassionPlayer {
 
             <div class="pp-filename"></div>
 
-            <div id="progress-bar-default" class="progress-bar-interact-zone">
-                <div class="pp-markers-layer"></div>
-                <div class="progress-bar-wrapper">
-                    <div class="progress-bar"></div>
-                </div>
-            </div>
-
             <div class="pp-seek-osd"><div class="pp-seek-osd-fill"></div></div>
 
             <div class="pp-subtitle-overlay">
                 <div class="pp-subtitle-text" style="display:none"></div>
             </div>
 
-            <div class="controls-bar">
-                <div class="controls-left">
-                    <button class="pp-play-btn" title="Play/Pause">▶</button>
-                    <div class="pp-volume-control">
-                        <span class="pp-volume-icon">🔊</span>
-                        <input class="pp-volume-slider" type="range" min="0" max="100" value="100" title="Volume" />
-                    </div>
-                    <div class="time-duration-container">
-                        <div class="current">00:00</div>
-                        <span>/</span>
-                        <div class="duration">00:00</div>
+            <div class="pp-settings-control">
+                <button class="pp-settings-btn" title="Settings">⚙</button>
+                <div class="pp-settings-menu" style="display:none">
+                    <div class="pp-settings-item" data-setting="fsBarBottom">
+                        <span>Fullscreen bar</span>
+                        <span class="pp-settings-value">Top</span>
                     </div>
                 </div>
-                <div class="controls-right">
-                    <div class="pp-subtitle-control">
-                        <button class="pp-subtitle-btn" title="Subtitles">CC</button>
-                        <div class="pp-subtitle-menu" style="display:none"></div>
+            </div>
+
+            <div class="pp-controls-wrapper">
+                <div class="pp-progress-container">
+                    <div id="progress-bar-default" class="progress-bar-interact-zone">
+                        <div class="pp-markers-layer"></div>
+                        <div class="progress-bar-wrapper">
+                            <div class="progress-bar"></div>
+                        </div>
                     </div>
-                    <button class="pp-fullscreen-btn" title="Toggle Fullscreen">⛶</button>
+                </div>
+                <div class="controls-bar">
+                    <div class="controls-left">
+                        <button class="pp-play-btn" title="Play/Pause">▶</button>
+                        <div class="pp-volume-control">
+                            <span class="pp-volume-icon">🔊</span>
+                            <input class="pp-volume-slider" type="range" min="0" max="100" value="100" title="Volume" />
+                        </div>
+                        <div class="time-duration-container">
+                            <div class="current">00:00</div>
+                            <span>/</span>
+                            <div class="duration">00:00</div>
+                        </div>
+                    </div>
+                    <div class="controls-right">
+                        <div class="pp-subtitle-control">
+                            <button class="pp-subtitle-btn" title="Subtitles">CC</button>
+                            <div class="pp-subtitle-menu" style="display:none"></div>
+                        </div>
+                        <button class="pp-fullscreen-btn" title="Toggle Fullscreen">⛶</button>
+                    </div>
                 </div>
             </div>
 
@@ -697,6 +758,13 @@ export class PassionPlayer {
             <div id="seek-thumbs-container">
                 <div class="time"></div>
                 <div class="seek-thumbnail"></div>
+            </div>
+
+            <div class="pp-seek-loading-overlay" style="display:none">
+                <div class="pp-seek-loading-spinner">
+                    <div class="pp-seek-loading-inner"></div>
+                </div>
+                <span class="pp-seek-loading-text">seek thumbnails loading</span>
             </div>
 
             <div class="pp-keybinds-overlay">
@@ -1113,7 +1181,15 @@ export class PassionPlayer {
     // ====================================================================================================
 
     _updateSeekThumbnail(mouse_x, video_perc) {
-        if (!this.seekThumbsContainer) return;
+        if (!this.seekThumbsContainer) {
+            if (!this._seekThumbsLoading) return;
+            const overlay = this.$('.pp-seek-loading-overlay');
+            if (!overlay) return;
+            overlay.style.display = 'flex';
+            const w = parseInt(getComputedStyle(overlay).width) || 160;
+            overlay.style.left = Math.max(8, Math.min(mouse_x - w / 2, document.documentElement.clientWidth - w - 8)) + 'px';
+            return;
+        }
         const cont = this.seekThumbsContainer;
         cont.style.display = '';
         const cont_wid = parseInt(getComputedStyle(cont).width);
@@ -1134,7 +1210,18 @@ export class PassionPlayer {
     }
 
     _hideSeekThumbnail() {
-        if (this.seekThumbsContainer) this.seekThumbsContainer.style.display = 'none';
+        const cont = this.seekThumbsContainer ?? this.$('#seek-thumbs-container');
+        if (cont) cont.style.display = 'none';
+        const overlay = this.$('.pp-seek-loading-overlay');
+        if (overlay) overlay.style.display = 'none';
+    }
+
+    setSeekThumbsLoading(loading) {
+        this._seekThumbsLoading = loading;
+        if (!loading) {
+            const overlay = this.$('.pp-seek-loading-overlay');
+            if (overlay) overlay.style.display = 'none';
+        }
     }
 
     setSeekThumbs(vttContent, spritesheetDataURL) {
@@ -1147,6 +1234,8 @@ export class PassionPlayer {
         img.onload = () => {
             const cont = this.shadow?.querySelector('#seek-thumbs-container');
             if (!cont) return;
+            const overlay = this.shadow?.querySelector('.pp-seek-loading-overlay');
+            if (overlay) overlay.style.display = 'none';
             const holder = cont.querySelector('.seek-thumbnail');
             this.seekThumbsSpritesheetSize = { w: img.naturalWidth, h: img.naturalHeight };
             holder.style.backgroundImage = `url("${spritesheetDataURL}")`;
@@ -1156,6 +1245,7 @@ export class PassionPlayer {
             cont.style.display = 'none';
             this.seekThumbsSprites = sprites;
             this.seekThumbsContainer = cont;
+            this._seekThumbsLoading = false;
         };
         img.src = spritesheetDataURL;
     }
@@ -1228,6 +1318,7 @@ export class PassionPlayer {
         this._thumbSizeMultiplier = Math.max(0.4, Math.min(3.0, mult));
         this._updateThumbSize();
         this.onThumbnailSizeChange?.(this._thumbSizeMultiplier);
+        this._saveSettings();
     }
 
     getThumbnailSize() { return this._thumbSizeMultiplier; }
@@ -1288,6 +1379,17 @@ export class PassionPlayer {
     $(sel) { return this.shadow.querySelector(sel); }
     $$(sel) { return Array.from(this.shadow.querySelectorAll(sel)); }
     log(msg) { if (!this.quiet) console.log(msg); }
+
+    _saveResumePosition() {
+        if (!this._resumeKey || !this.video) return;
+        const t = this.video.currentTime;
+        const dur = this.video.duration;
+        if (t > 3 && (!isFinite(dur) || t < dur - 5)) {
+            localStorage.setItem(`pp_resume_${this._resumeKey}`, String(t));
+        } else if (isFinite(dur) && t >= dur - 5) {
+            localStorage.removeItem(`pp_resume_${this._resumeKey}`);
+        }
+    }
 
     setPlaybackTime(perc, progress_bar) {
         if (this.video) {
@@ -1409,6 +1511,57 @@ export class PassionPlayer {
         menu.style.display = 'none';
     }
 
+    _addSettingsEventListeners() {
+        const btn  = this.$('.pp-settings-btn');
+        const menu = this.$('.pp-settings-menu');
+        const item = this.$('[data-setting="fsBarBottom"]');
+        if (!btn || !menu || !item) return;
+
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this._settingsMenuOpen = !this._settingsMenuOpen;
+            menu.style.display = this._settingsMenuOpen ? '' : 'none';
+            btn.blur();
+        });
+
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this._fsBarBottom = !this._fsBarBottom;
+            item.querySelector('.pp-settings-value').textContent = this._fsBarBottom ? 'Bottom' : 'Top';
+            this._saveSettings();
+            this._applyFsBarClass();
+            this._closeSettingsMenu();
+            e.currentTarget.blur();
+        });
+
+        const player = this.$('.PassionPlayer');
+        if (player) {
+            player.addEventListener('click', (e) => {
+                if (!e.target.closest('.pp-settings-control')) this._closeSettingsMenu();
+            });
+        }
+    }
+
+    _closeSettingsMenu() {
+        const menu = this.$('.pp-settings-menu');
+        if (!menu) return;
+        this._settingsMenuOpen = false;
+        menu.style.display = 'none';
+    }
+
+    _applyFsBarClass() {
+        const p = this.$('.PassionPlayer');
+        if (!p) return;
+        p.classList.toggle('pp-fs-bar-bottom', this._fsActive && this._fsBarBottom);
+    }
+
+    _saveSettings() {
+        const current = JSON.parse(localStorage.getItem('pp_settings') ?? '{}');
+        current.fsBarBottom = this._fsBarBottom;
+        current.thumbnailSize = this._thumbSizeMultiplier;
+        localStorage.setItem('pp_settings', JSON.stringify(current));
+    }
+
     _updateSubtitleMenu() {
         const menu = this.$('.pp-subtitle-menu');
         if (!menu) return;
@@ -1515,7 +1668,28 @@ video {
     border-radius: 0 0 6px 0;
 }
 
+/* CONTROLS WRAPPER */
+
+.pp-controls-wrapper {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    pointer-events: none;
+}
+
 /* PROGRESS BAR */
+
+.pp-progress-container {
+    position: relative;
+    height: 12px;
+    order: 1;
+    flex-shrink: 0;
+    overflow: visible;
+    margin-bottom: 6px;
+}
 
 #progress-bar-default {
     position: absolute;
@@ -1525,6 +1699,11 @@ video {
     height: 12px;
     cursor: pointer;
     transition: opacity 500ms ease;
+    pointer-events: auto;
+}
+
+#progress-bar-default:hover {
+    background: rgba(255, 255, 255, 0.12);
 }
 
 .progress-bar-wrapper {
@@ -1544,16 +1723,20 @@ video {
 /* CONTROLS BAR */
 
 .controls-bar {
-    position: absolute;
-    bottom: 28px;
-    left: 8px;
-    right: 8px;
+    order: 2;
     display: flex;
     align-items: center;
     justify-content: space-between;
     pointer-events: none;
     transition: opacity 500ms ease;
+    margin: 0 8px 8px;
 }
+
+/* Fullscreen + bar-at-bottom: swap order, no gap above progress bar */
+.PassionPlayer.pp-fs-bar-bottom .pp-progress-container { order: 2; margin-bottom: 0; }
+/* pointer-events: auto makes the controls-bar opaque to hit-testing, so the expanded
+   progress bar underneath can't be accidentally clicked through the controls area */
+.PassionPlayer.pp-fs-bar-bottom .controls-bar { order: 1; margin: 8px 8px 6px; }
 
 .controls-left {
     display: flex;
@@ -1618,7 +1801,7 @@ video {
 #seek-thumbs-container {
     visibility: hidden;
     position: absolute;
-    bottom: 5rem;
+    bottom: 90px;
     left: 0;
     height: 200px;
     width: fit-content;
@@ -1628,6 +1811,43 @@ video {
     overflow: hidden;
 }
 .seek-thumbnail { height: 100%; }
+
+.pp-seek-loading-overlay {
+    position: absolute;
+    bottom: 88px;
+    left: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 7px;
+    background: rgba(0, 0, 0, 0.65);
+    border-radius: 20px;
+    padding: 5px 10px 5px 7px;
+    pointer-events: none;
+    white-space: nowrap;
+}
+.pp-seek-loading-spinner {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: linear-gradient(0deg, rgba(255, 61, 0, 0.2) 33%, #ff3d00 100%);
+    animation: pp-spin 1s linear infinite;
+    position: relative;
+    flex-shrink: 0;
+}
+.pp-seek-loading-inner {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #000;
+}
+@keyframes pp-spin { to { transform: rotate(360deg); } }
+.pp-seek-loading-text {
+    color: #bbb;
+    font-size: 11px;
+}
 
 /* PLAY BUTTON */
 
@@ -1666,6 +1886,70 @@ video {
     flex-shrink: 0;
 }
 .pp-fullscreen-btn:hover { background: #000b; }
+
+/* SETTINGS BUTTON */
+
+.pp-settings-control {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 20;
+    opacity: 0;
+    transition: opacity 500ms ease;
+}
+
+.pp-settings-btn {
+    width: 36px;
+    height: 36px;
+    background: #0007;
+    border: 1px solid #fff3;
+    border-radius: 6px;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 150ms;
+    flex-shrink: 0;
+}
+.pp-settings-btn:hover { background: #000b; }
+.pp-settings-btn:focus { outline: none; }
+
+.pp-settings-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: rgba(20,20,20,0.95);
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 8px;
+    min-width: 180px;
+    overflow: hidden;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+    padding: 4px;
+}
+
+.pp-settings-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 100ms;
+    font-family: inherit;
+    user-select: none;
+}
+.pp-settings-item:hover { background: rgba(255,255,255,0.1); }
+.pp-settings-item:focus { outline: none; }
+
+.pp-settings-value {
+    color: #aaa;
+    font-size: 12px;
+}
 
 /* VOLUME CONTROL */
 
@@ -2009,6 +2293,6 @@ video {
     color: #aaa;
 }
 
-        `;
+        `/* end CSS */;
     }
 }
