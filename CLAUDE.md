@@ -15,6 +15,10 @@ This project is undergoing a staged refactor. Claude's role is to implement each
 - When completing a stage, note it in `docs/PROGRESS.md` and flag it to the user before moving on.
 - The current active stage is **Stage 1 (Full Svelte Frontend)**.
 
+### File length
+
+Keep files under ~200 lines wherever practical. If a Svelte component, page, or module grows significantly past this, extract sub-components, helper utilities, or logic modules rather than continuing to accumulate in one file. This is a soft limit — some files legitimately exceed it — but it should prompt a decomposition check.
+
 ### Updating CLAUDE.md
 
 In order to maintain sync between the project and this document, Claude keeps it up to date as follows:

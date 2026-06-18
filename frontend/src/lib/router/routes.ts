@@ -18,6 +18,6 @@ export const routes: RouteDef[] = [
     { pattern: '/search', component: SearchPage },
     { pattern: '/catalogue', component: CataloguePage },
     { pattern: '/curated', component: CuratedPage },
-    { pattern: '/video', component: VideoPage },
+    { pattern: '/video/:hash', component: VideoPage },
     { pattern: '/dashboard', component: DashboardPage },
 ];
