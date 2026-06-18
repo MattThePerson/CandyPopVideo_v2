@@ -1,6 +1,9 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { navigate } from '$lib/router/router.svelte';
+    import { settings, type ResultsPerPage } from '$lib/stores/settings.svelte';
+
+    const PER_PAGE_OPTIONS: ResultsPerPage[] = [4, 8, 16, 24, 36];
 
     let searchString   = $state('');
     let actor          = $state('');
@@ -37,7 +40,8 @@
         excludeTerms   = p.get('exclude')     ?? '';
         tags           = p.get('tags')        ?? '';
         onlyFavourites = p.get('favourites') === '1';
-        sortby         = p.get('sortby')      ?? 'date_added_desc';
+        const rawSortby = p.get('sortby') ?? 'date_added_desc';
+        sortby         = rawSortby.startsWith('random') ? 'random' : rawSortby;
     }
 
     function apply() {
@@ -50,7 +54,12 @@
         if (excludeTerms)   p.set('exclude',     excludeTerms);
         if (tags)           p.set('tags',        tags);
         if (onlyFavourites) p.set('favourites',  '1');
-        if (sortby && sortby !== 'date_added_desc') p.set('sortby', sortby);
+        if (sortby && sortby !== 'date_added_desc') {
+            const sortbyParam = sortby === 'random'
+                ? `random-${Math.floor(Math.random() * 1_000_000)}`
+                : sortby;
+            p.set('sortby', sortbyParam);
+        }
         const qs = p.toString();
         navigate('/search' + (qs ? '?' + qs : ''));
     }
@@ -58,8 +67,8 @@
     let searchInputEl:  HTMLInputElement;
     let includeInputEl: HTMLInputElement;
 
-    /* Enter in the include field applies and drops focus. */
-    function onIncludeKeydown(e: KeyboardEvent) {
+    /* Enter in any panel field applies the search and drops focus. */
+    function onFieldKeydown(e: KeyboardEvent) {
         if (e.key === 'Enter') {
             e.stopPropagation();
             apply();
@@ -67,16 +76,9 @@
         }
     }
 
-    /* Enter in any other panel field drops focus without triggering the global handler. */
-    function onFieldKeydown(e: KeyboardEvent) {
-        if (e.key === 'Enter') {
-            e.stopPropagation();
-            (e.currentTarget as HTMLElement).blur();
-        }
-    }
-
     function randomVideo() {
-        navigate('/search?sortby=random');
+        const seed = Math.floor(Math.random() * 1_000_000);
+        navigate(`/search?sortby=random-${seed}`);
     }
 
     /* Returns true if the currently focused element is any kind of text input. */
@@ -133,9 +135,15 @@
         </div>
         <div class="top-right">
             <span class="sort-label">sort by</span>
-            <select class="sort-select" bind:value={sortby}>
+            <select class="sort-select" bind:value={sortby} onchange={apply}>
                 {#each SORT_OPTIONS as opt}
                     <option value={opt.value}>{opt.label}</option>
+                {/each}
+            </select>
+            <span class="sort-label">per page</span>
+            <select class="sort-select" bind:value={settings.resultsPerPage} onchange={apply}>
+                {#each PER_PAGE_OPTIONS as n}
+                    <option value={n}>{n}</option>
                 {/each}
             </select>
         </div>
@@ -164,7 +172,7 @@
                 <div class="filter-col">
                     <div class="field">
                         <label for="sp-include">include</label>
-                        <input id="sp-include" type="text" bind:value={includeTerms} bind:this={includeInputEl} onkeydown={onIncludeKeydown} placeholder="comma-separated" />
+                        <input id="sp-include" type="text" bind:value={includeTerms} bind:this={includeInputEl} onkeydown={onFieldKeydown} placeholder="comma-separated" />
                     </div>
                     <div class="field">
                         <label for="sp-exclude">exclude</label>
@@ -182,7 +190,7 @@
             <h3 class="section-label">filters</h3>
             <div class="extra-filters-body">
                 <label class="fav-toggle">
-                    <input type="checkbox" bind:checked={onlyFavourites} />
+                    <input type="checkbox" bind:checked={onlyFavourites} onchange={apply} />
                     <span>favourites only</span>
                 </label>
             </div>

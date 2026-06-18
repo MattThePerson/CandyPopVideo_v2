@@ -27,9 +27,7 @@
     }
 
     function goRandomVideo() {
-        // TODO: once the backend can pick a real random video, fetch it
-        // before navigating instead of always landing on the placeholder.
-        navigate('/video');
+        navigate('/video/random');
     }
 </script>
 

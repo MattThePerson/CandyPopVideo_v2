@@ -1,6 +1,7 @@
 <!-- pages/video/Page.svelte -->
 <script lang="ts">
     import { onMount } from 'svelte';
+    import { navigate } from '$lib/router/router.svelte';
     import Spinner from '$lib/components/Spinner.svelte';
     import type { VideoData, VideoInteractions } from '$lib/types/video';
     import VideoPlayer from './VideoPlayer.svelte';
@@ -20,6 +21,19 @@
     let queryTime      = $state<number | null>(null);
 
     onMount(async () => {
+        /* Resolve the sentinel 'random' hash to a real one and update the URL
+           (replace so the back button skips the /video/random entry). */
+        if (hash === 'random') {
+            try {
+                hash = await fetch('/api/get/random-video-hash')
+                    .then(r => r.json()).then(r => r['hash'] as string);
+                navigate(`/video/${hash}`, { replace: true });
+            } catch (e) {
+                loadError = String(e);
+                return;
+            }
+        }
+
         try {
             [video, interact] = await Promise.all([
                 fetch(`/api/get/video-data/${hash}`).then(r => r.json()) as Promise<VideoData>,

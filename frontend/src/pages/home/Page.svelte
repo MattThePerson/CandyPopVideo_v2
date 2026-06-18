@@ -16,9 +16,9 @@
 
     onMount(async () => {
         try {
-            // const hash = await fetch('/api/get/random-spotlight-video-hash').then(r => r.text());
-            const hash = await fetch('/api/get/random-video-hash')
-                .then(r => r.json()).then(r => r['hash'] as string)
+            const hash = await fetch('/api/get/random-spotlight-video-hash').then(r => r.text());
+            // const hash = await fetch('/api/get/random-video-hash')
+            //     .then(r => r.json()).then(r => r['hash'] as string)
             video = await fetch(`/api/get/video-data/${hash}`)
                 .then(r => r.json()) as VideoData;
             similarLoading = true;
