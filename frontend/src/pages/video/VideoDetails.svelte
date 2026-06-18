@@ -13,6 +13,7 @@
     let likes   = $state(interact.likes);
     let favBusy = $state(false);
 
+    // Optimistic — flips the UI immediately and reverts if the API call fails.
     async function toggleFav() {
         if (favBusy) return;
         favBusy = true;

@@ -6,6 +6,7 @@
     import { navigate } from '$lib/router/router.svelte';
     import Spinner from '$lib/components/Spinner.svelte';
 
+    /* Props */
     let { video, size, width: wOverride, aspectRatio: arOverride }: {
         video: VideoData; size: CardSize; width?: string; aspectRatio?: string;
     } = $props();
@@ -35,6 +36,7 @@
         } catch { /* non-critical */ }
     });
 
+    // Optimistic — flips the UI immediately and reverts if the API call fails.
     async function toggleFavourite() {
         if (favLoading) return;
         favLoading = true;
@@ -64,6 +66,7 @@
 
     let spriteLoaded = $derived(teaserState === 'loaded');
 
+    // Extracts xywh sprite coordinates from a WebVTT spritesheet description.
     function parseVtt(text: string): SpriteCue[] {
         const cues: SpriteCue[] = [];
         const re = /xywh=(\d+),(\d+),(\d+),(\d+)/g;
@@ -74,6 +77,9 @@
         return cues;
     }
 
+    // Triggers server-side teaser thumbnail generation if needed, then loads
+    // the VTT + spritesheet for hover scrubbing. teaserState gates re-entry
+    // so this runs at most once per card lifetime.
     async function ensureSprite() {
         if (teaserState !== 'idle') return;
         teaserState = 'loading';
@@ -103,6 +109,8 @@
         ensureSprite();
     }
 
+    // Maps cursor horizontal position to a sprite frame index and builds the
+    // CSS background-position string to show that frame in the overlay.
     function handleMouseMove(e: MouseEvent) {
         if (!spriteLoaded || !spriteCues.length) return;
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -142,6 +150,8 @@
     });
     let remainingTags = $derived(!tagsExpanded && tags.length > displayedTags.length ? tags.length - displayedTags.length : 0);
 
+    // Applies distinct colors for structured tag categories (character:, source:)
+    // to visually separate them from plain genre/act tags.
     function tagStyle(tag: string): string {
         if (tag.startsWith('character: ')) return 'color:#bbb!important;background:#1e3259;';
         if (tag.startsWith('source: '))    return 'color:#bbb!important;background:#11975a58;';
@@ -203,6 +213,12 @@
     let isNewVideo  = $derived(video.date_added ? isNew(video.date_added) : false);
     let viewtimeStr = $derived(interactions ? formatViewtime(interactions.viewtime) : '');
 </script>
+
+<!--
+========================================================================================================================
+    //region HTML
+========================================================================================================================
+-->
 
 <div class="card" style="width:{dims.width}">
 
@@ -372,6 +388,12 @@
 
     </div>
 </div>
+
+<!--
+========================================================================================================================
+    //region CSS
+========================================================================================================================
+-->
 
 <style>
     .card {

@@ -6,6 +6,8 @@
 
 For all fucking files use 4 fucking spaces for tabsize.
 
+Svelte-specific formatting rules live in `frontend/CLAUDE.md`.
+
 ### Refactor
 
 This project is undergoing a staged refactor. Claude's role is to implement each stage in order, following the plan in `docs/PROGRESS.md`. Responsibilities:
@@ -25,6 +27,7 @@ In order to maintain sync between the project and this document, Claude keeps it
 
 - **`## Responsibilities` / `## About`** — Claude does not edit these unless told explicitly, *except* for meta-updates to this `Updating CLAUDE.md` subsection itself (e.g. adjusting which sections are kept in sync).
 - **`## <other>`** — Claude actively keeps this current: stack, backend/frontend structure, build tooling, conventions. Update it whenever the tech stack, dependencies, or file/module layout change meaningfully.
+- **`frontend/CLAUDE.md`** — Claude keeps this in sync with Svelte/frontend conventions. Update it when frontend formatting rules or component conventions change.
 
 ## About
 

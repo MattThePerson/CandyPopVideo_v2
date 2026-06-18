@@ -1,3 +1,4 @@
+<!-- pages/video/Page.svelte -->
 <script lang="ts">
     import { onMount } from 'svelte';
     import Spinner from '$lib/components/Spinner.svelte';
@@ -5,6 +6,7 @@
     import VideoPlayer from './VideoPlayer.svelte';
     import VideoDetails from './VideoDetails.svelte';
 
+    /* Props */
     let { hash }: { hash: string } = $props();
 
     let video     = $state<VideoData | null>(null);
@@ -22,6 +24,12 @@
         }
     });
 </script>
+
+<!--
+========================================================================================================================
+    //region HTML
+========================================================================================================================
+-->
 
 <div class="page">
 
@@ -42,6 +50,12 @@
     {/if}
 
 </div>
+
+<!--
+========================================================================================================================
+    //region CSS
+========================================================================================================================
+-->
 
 <style>
     .page {

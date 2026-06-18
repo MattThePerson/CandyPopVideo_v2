@@ -18,6 +18,7 @@
         configMenuOpen = !configMenuOpen;
     }
 
+    // Closes the config dropdown when the user clicks outside it.
     function handleWindowMouseDown(e: MouseEvent) {
         if (!configMenuOpen) return;
         const target = e.target as Element;
@@ -31,6 +32,12 @@
         navigate('/video');
     }
 </script>
+
+<!--
+========================================================================================================================
+    //region HTML
+========================================================================================================================
+-->
 
 <svelte:window onmousedown={handleWindowMouseDown} />
 
@@ -92,6 +99,12 @@
         </span>
     </nav>
 </header>
+
+<!--
+========================================================================================================================
+    //region CSS
+========================================================================================================================
+-->
 
 <style>
     .logo-main {
