@@ -76,7 +76,7 @@
             <h2 class="mb-4 text-[#aaa] uppercase tracking-widest text-sm font-semibold">
                 Similar Videos{queryTime !== null ? ` (${queryTime.toFixed(2)}s)` : ''}
             </h2>
-            <div class="flex flex-wrap gap-4">
+            <div class="flex flex-wrap justify-center gap-4">
                 {#each pager.visible as video (video.hash)}
                     <VideoCard {video} />
                 {/each}

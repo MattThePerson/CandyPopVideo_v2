@@ -20,8 +20,10 @@
 
 <main class="flex flex-col items-center min-h-[40rem]">
     {#if match}
-        {@const PageComponent = match.route.component}
-        <PageComponent {...match.params} />
+        {#key routerState.path}
+            {@const PageComponent = match.route.component}
+            <PageComponent {...match.params} />
+        {/key}
     {:else}
         <p class="p-8">Page not found.</p>
     {/if}
