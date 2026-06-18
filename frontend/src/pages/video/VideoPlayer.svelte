@@ -8,34 +8,6 @@
     let hostEl: HTMLDivElement;
     let player: PassionPlayer | null = null;
 
-    // Fixes three PassionPlayer bugs without touching its source: it hardcodes
-    // `muted` on the <video> element, its volume slider never sets video.volume,
-    // and it accepts a `poster` option but never applies it to the element.
-    // Uses a MutationObserver because the <video> is added asynchronously
-    // (after _addStyles resolves) even though attachShadow runs synchronously.
-    function patchPlayer(shadow: ShadowRoot) {
-        const obs = new MutationObserver(() => {
-            const vid = shadow.querySelector('video') as HTMLVideoElement | null;
-            if (!vid) return;
-            obs.disconnect();
-
-            vid.poster = `/media/get/poster/${hash}`;
-
-            // PassionPlayer hardcodes `muted`; slider handler never sets video.volume
-            vid.muted = false;
-            vid.volume = 1.0;
-
-            const slider = shadow.querySelector('.pp-volume-slider') as HTMLInputElement | null;
-            if (slider) {
-                slider.addEventListener('input', () => {
-                    vid.volume = Number(slider.value) / 100;
-                    if (Number(slider.value) > 0) vid.muted = false;
-                });
-            }
-        });
-        obs.observe(shadow, { childList: true, subtree: true });
-    }
-
     // Ensures the seek spritesheet is generated server-side, then fetches both
     // the VTT and the JPEG and passes them to PassionPlayer as a data URL.
     // PassionPlayer's setSeekThumbs requires an inline data URL, not a path.
@@ -76,9 +48,6 @@
             autoplay: false,
             quiet: false,
         });
-
-        // attachShadow runs synchronously in PassionPlayer constructor
-        if (hostEl.shadowRoot) patchPlayer(hostEl.shadowRoot);
 
         loadSeekThumbs(player);
 

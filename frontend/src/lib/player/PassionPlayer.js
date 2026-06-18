@@ -459,8 +459,10 @@ export class PassionPlayer {
             e.stopPropagation();
             const vol = Number(e.target.value);
             this._volume = vol;
-            this.onVolumeChange?.(this._muted ? 0 : vol);
-            this.updateVolumeIcon(this._muted ? 0 : vol);
+            const effectiveVol = this._muted ? 0 : vol;
+            if (this.video) this.video.volume = effectiveVol / 100;
+            this.onVolumeChange?.(effectiveVol);
+            this.updateVolumeIcon(effectiveVol);
         });
         slider.addEventListener('click', (e) => e.stopPropagation());
         slider.addEventListener('mousedown', (e) => e.stopPropagation());
@@ -531,6 +533,7 @@ export class PassionPlayer {
 
         // scroll on progress bar: Ctrl+Shift = thumb size; else seek ±1s
         zone.addEventListener('wheel', (e) => {
+            if (!document.fullscreenElement) return;
             e.preventDefault();
             e.stopPropagation();
             if (e.ctrlKey && e.shiftKey) {
@@ -568,6 +571,7 @@ export class PassionPlayer {
         const playerDiv = this.$('.PassionPlayer');
         if (!playerDiv) return;
         playerDiv.addEventListener('wheel', (e) => {
+            if (!document.fullscreenElement) return;
             e.preventDefault();
             if (e.ctrlKey && e.shiftKey) {
                 this._adjustThumbSize(e.deltaY > 0 ? -0.1 : 0.1);
@@ -631,7 +635,7 @@ export class PassionPlayer {
     // ====================================================================================================
 
     getHTML() {
-        const videoEl = this.src ? `<video src="${this.src}" loop muted preload="metadata"></video>` : '';
+        const videoEl = this.src ? `<video src="${this.src}" loop ${this.mute ? 'muted' : ''} ${this.poster ? `poster="${this.poster}"` : ''} preload="metadata"></video>` : '';
         return /* html */ `
             ${videoEl}
 

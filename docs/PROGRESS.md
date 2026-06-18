@@ -22,7 +22,7 @@
 ### Shared Components
 - [ ] **VideoCard** — tile for video grids (in progress)
 - [ ] **Search panel** — filters sidebar/drawer
-- [ ] **Video player** — port PassionPlayer from `_ref/passion_player/` (strip Wails types)
+- [ ] **Video player** — PassionPlayer
 - [ ] **Markers / timeline** — editable annotation layer on the player
 - [ ] **Catalogue cards** — actor, studio, collection, tag tiles
 
