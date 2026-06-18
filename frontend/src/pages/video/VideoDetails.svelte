@@ -10,7 +10,7 @@
     } = $props();
 
     let isFav   = $state(interact.is_favourite);
-    const likes   = $state(interact.likes);
+    let likes   = $state(interact.likes);
     let favBusy = $state(false);
 
     async function toggleFav() {
