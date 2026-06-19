@@ -10,10 +10,10 @@ import (
 )
 
 type ItemInfo struct {
-	Name 			string
-	VideoCount 		int
-	NewestVideo 	string
-	NewVideoCount 	int
+	Name 			string `json:"name"`
+	VideoCount 		int    `json:"video_count"`
+	NewestVideo 	string `json:"newest_video"`
+	NewVideoCount 	int    `json:"new_video_count"`
 }
 
 type Catalogue struct {
@@ -63,30 +63,30 @@ func GetCatalogue(vids []schemas.VideoData, q schemas.CatalogueQuery) (Catalogue
 			return slices.Contains(getVideoTags(vd), lw)
 		})
 	}
-	
-	
+
+
 	/* GET ITEM INFOS */
 	cat.ActorInfo = 	 getItemInfo(vids, getVideoActors)
 	cat.StudioInfo = 	 getItemInfo(vids, getVideoStudios)
 	cat.CollectionInfo = getItemInfo(vids, getVideoCollection)
 	cat.TagInfo = 		 getItemInfo(vids, getVideoTags)
 
-	
+
 	/* TF-IDF */
 	if q.QueryString != "" {
 		// ...
 	}
-	
+
 	cat.TimeTakenMS = float64(time.Since(start).Microseconds())/1000
 	return cat, nil
-	
+
 }
 
 
 // #region - PRIV ------------------------------------------------------------------------------------------------------
 
 
-// 
+//
 func getItemInfo(vids []schemas.VideoData, item_extractor_func func(schemas.VideoData)[]string) []ItemInfo {
 
 	item_counts := map[string]int{}

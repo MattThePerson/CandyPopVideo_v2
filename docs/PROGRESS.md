@@ -95,3 +95,5 @@
 - [ ] **Catalogue improvements** — better sorting, faceted browsing, infinite scroll
 - [ ] **Actor/studio TF-IDF profiles** — average video vectors → "similar actors/studios" feature
 - [ ] **Alternative/advanced search** — synonym expansion, semantic model (may reintroduce a narrow Python dependency or use an embedded model)
+- [ ] **Video renaming** — along with reparsing the filename data
+- [ ] **Video tags** — tagging system which is included in search stuff
