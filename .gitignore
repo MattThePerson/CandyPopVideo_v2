@@ -1,38 +1,31 @@
-# genercal
-.vscode
+
+# general
 venv
 .venv
 __pycache__
-*.svg
-
-# custom
-.discard
-config.yaml
-tests/
-testing*
-BAK
-*.bak
-**.pkl
-/data/*
-!/data/templates/
-!/data/stopwords_eng.txt
-TODO.md
-*.ipynb
-_testing/
-
-
-.logs
-
-# frontend
-curatedCollections/
-data/
-holdPages/
-frontend_svelte/
+.logs/
 
 # build
 build
 bin
 
-*.png
-*.jpg
-!assets/**
+# custom
+config.yaml
+**.bak
+**.pkl
+**.ipynb
+BUFFER.md
+
+# data dir
+data/*
+!data/config.yaml
+!data/templates/
+!data/stopwords_eng.txt
+
+# frontend
+frontend/curatedCollections/
+frontend/data/
+frontend/holdPages/
+
+# temp
+_ref/
