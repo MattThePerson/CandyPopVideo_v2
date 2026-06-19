@@ -261,7 +261,10 @@
     .letter-btn:hover { background: #ff5500; color: #fff; }
 
     /* List area */
-    .list-area { padding: 1rem 2rem 4rem; }
+    .list-area {
+        padding: 1rem 2rem 4rem;
+        max-width: 40rem;
+    }
 
     .center-pad { display: flex; justify-content: center; padding: 4rem 0; }
 
