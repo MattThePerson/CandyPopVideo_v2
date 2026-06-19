@@ -15,6 +15,7 @@ import (
 
     "cpv_backend/internal/db"
     "cpv_backend/internal/routes"
+    "cpv_backend/internal/config"
 )
 
 var (
@@ -40,7 +41,7 @@ func main() {
 	flag.Parse()
 
 	// Get config variables
-	var config Config = GetConfig("config.yaml")
+	var config config.Config = config.GetConfig("config.yaml")
 
 	// Ensure all DB tables exist before serving any requests
 	if err := db.InitDB(config.DBPath); err != nil {

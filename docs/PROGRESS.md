@@ -12,19 +12,19 @@
 - [x] Go server serving `frontend/dist` + SPA fallback
 
 ### Pages
-- [ ] **Home** — spotlight video, recent videos, in-progress (partially done: video cards, similar videos loading)
-- [ ] **Search** — search bar, filters panel, result grid (placeholder)
-- [ ] **Catalogue** — browse by actor/studio/collection/tag with counts (placeholder)
-- [ ] **Curated** — curated collections list + detail view (placeholder)
-- [ ] **Video** — player, metadata panel, markers, similar videos, interactions (placeholder)
+- [x] **Home** — spotlight video, recent videos, in-progress (partially done: video cards, similar videos loading)
+- [x] **Search** — search bar, filters panel, result grid (placeholder)
+- [x] **Catalogue** — browse by actor/studio/collection/tag with counts (placeholder)
+- [x] **Curated** — curated collections list + detail view (placeholder)
+- [x] **Video** — player, metadata panel, markers, similar videos, interactions (placeholder)
 - [ ] **Dashboard** — library management UI (stub; will expand in Stage 3)
 
 ### Shared Components
-- [ ] **VideoCard** — tile for video grids (in progress)
-- [ ] **Search panel** — filters sidebar/drawer
-- [ ] **Video player** — PassionPlayer
+- [x] **VideoCard** — tile for video grids (in progress)
+- [x] **Search panel** — filters sidebar/drawer
+- [x] **Video player** — PassionPlayer
 - [ ] **Markers / timeline** — editable annotation layer on the player
-- [ ] **Catalogue cards** — actor, studio, collection, tag tiles
+- [x] **Catalogue cards** — actor, studio, collection, tag tiles
 
 ---
 
