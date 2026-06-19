@@ -3,29 +3,29 @@
 venv
 .venv
 __pycache__
-
-# custom
-_*/
-.discard
-config.yaml
-tests/
-testing*
-BAK
-*.bak
-**.pkl
-/data/*
-!/data/templates/
-!/data/stopwords_eng.txt
-TODO.md
-*.ipynb
-docs/BUFFER.md
-.logs
-
-# frontend
-curatedCollections/
-data/
-holdPages/
+.logs/
 
 # build
 build
 bin
+
+# custom
+config.yaml
+**.bak
+**.pkl
+**.ipynb
+BUFFER.md
+
+# data dir
+data/*
+!data/config.yaml
+!data/templates/
+!data/stopwords_eng.txt
+
+# frontend
+frontend/curatedCollections/
+frontend/data/
+frontend/holdPages/
+
+# temp
+_ref/
