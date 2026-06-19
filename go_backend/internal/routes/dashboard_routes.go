@@ -12,6 +12,7 @@ import (
 
     "cpv_backend/internal/config"
     "cpv_backend/internal/db"
+    "cpv_backend/internal/mediagen"
     "cpv_backend/internal/scanner"
 )
 
@@ -82,7 +83,7 @@ func IncludeDashboardRoutes(e *echo.Group, cfg config.Config) {
     e.GET("/stats",           func(c echo.Context) error { return ECHO_dashboard_stats(c, cfg.DBPath) })
     e.GET("/media-status",    func(c echo.Context) error { return ECHO_dashboard_media_status(c, cfg.DBPath, cfg.PreviewMediaDir) })
     e.POST("/run-scan",       func(c echo.Context) error { return ECHO_dashboard_run_scan(c, cfg) })
-    e.POST("/generate-media", func(c echo.Context) error { return ECHO_dashboard_generate_media(c) })
+    e.POST("/generate-media", func(c echo.Context) error { return ECHO_dashboard_generate_media(c, cfg) })
     e.POST("/rebuild-tfidf",  func(c echo.Context) error { return ECHO_dashboard_rebuild_tfidf(c) })
     e.GET("/job-stream",      ECHO_dashboard_job_stream)
 }
@@ -203,10 +204,15 @@ func ECHO_dashboard_run_scan(c echo.Context, cfg config.Config) error {
     return c.JSON(202, map[string]string{"status": "started"})
 }
 
-func ECHO_dashboard_generate_media(c echo.Context) error {
+func ECHO_dashboard_generate_media(c echo.Context, cfg config.Config) error {
+    var opts mediagen.GenerateMediaOptions
+    if err := c.Bind(&opts); err != nil {
+        return c.JSON(400, map[string]string{"error": "invalid request body"})
+    }
     started := dashBroker.start(func(emit func(string)) {
-        emit("[MEDIA] Media generation not yet implemented — coming in Stage 2c")
-        time.Sleep(200 * time.Millisecond)
+        if err := mediagen.BatchGenerate(cfg, opts, emit); err != nil {
+            emit(fmt.Sprintf("[ERROR] Media generation failed: %v", err))
+        }
     })
     if !started {
         return c.JSON(409, map[string]string{"error": "A job is already running"})

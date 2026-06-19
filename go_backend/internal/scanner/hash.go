@@ -37,5 +37,5 @@ func HashVideoFile(path string) (string, error) {
         h.Write(buf[:n])
     }
 
-    return hex.EncodeToString(h.Sum(nil)), nil
+    return hex.EncodeToString(h.Sum(nil))[:12], nil
 }

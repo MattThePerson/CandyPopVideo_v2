@@ -55,20 +55,18 @@
 
 ---
 
-### Stage 2b — Go Scanner
+### Stage 2b — Go Scanner ✓
 
 **Goal:** Full library scan implemented in Go, wired to the dashboard scan trigger.
 
-- [ ] Filesystem walker (collection folders, extension filter, ignore hidden dirs/dot-folders)
-<!--- [ ] NTFS ADS read/write (`candypop-video-hash` stream — Windows `CreateFileW` `:streamname` trick)-->
-- [ ] Video hashing — ffmpeg frame extraction + xxHash (new algo; DB migration required)
-- [ ] Video attribute extraction — `ffprobe` JSON output (duration, fps, resolution, bitrate, filesize)
-- [ ] Filename parser — use the new `go-string-parser` package (developed separately)
-- [ ] JSON sidecar loader — per-video / per-folder metadata merge
-- [ ] Movie/series title extraction — pure string logic (Scene N, Part N, Vol., Season, ` - ` delimiter)
-- [ ] Path-based tag extraction + sort by frequency across collection
-- [ ] DB merge logic — preserve interactions on re-scan, mark missing as `is_linked: false`
-- [ ] SSE progress streaming during scan (wired to dashboard job log)
+- [x] Filesystem walker (collection folders, extension filter, ignore hidden dirs/dot-folders)
+- [x] Video hashing — SHA-256 of three 64 KB chunks at offsets 0 / size/2 / size-chunk (interoperable with `handymatt` Go projects; no DB migration needed, dev DB was wiped)
+- [x] Video attribute extraction — `ffprobe` JSON output (duration, fps, resolution, bitrate, filesize)
+- [x] Filename parser — `github.com/MattThePerson/string_parser v0.1.3`; `#Tag` tokens extracted from stem before parsing
+- [x] Path-based tag extraction + sort by frequency across collection (all three tag sources: filename, path, JSON)
+- [x] DB merge logic — preserve interactions on re-scan, mark missing as `is_linked: false`
+- [x] SSE progress streaming during scan (wired to dashboard job log)
+- [ ] JSON sidecar loader — deferred to later stage
 
 ---
 
