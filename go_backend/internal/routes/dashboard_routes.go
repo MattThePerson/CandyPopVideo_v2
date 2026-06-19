@@ -6,7 +6,6 @@ import (
     "os"
     "slices"
     "sync"
-    "time"
 
     "github.com/labstack/echo/v4"
 
@@ -222,8 +221,13 @@ func ECHO_dashboard_generate_media(c echo.Context, cfg config.Config) error {
 
 func ECHO_dashboard_rebuild_tfidf(c echo.Context) error {
     started := dashBroker.start(func(emit func(string)) {
-        emit("[TFIDF] Dashboard TF-IDF rebuild not yet implemented — use the Python worker for now")
-        time.Sleep(200 * time.Millisecond)
+        emit("[TFIDF] Building TF-IDF model…")
+        tt, err := execPythonSubprocess("-m", "python_src.worker", "--generate-tfidf")
+        if err != nil {
+            emit(fmt.Sprintf("[TFIDF] Failed: %v", err))
+            return
+        }
+        emit(fmt.Sprintf("[TFIDF] Done in %.1fs.", tt))
     })
     if !started {
         return c.JSON(409, map[string]string{"error": "A job is already running"})

@@ -135,9 +135,9 @@ def _extract_tokens_from_video_object(video: VideoData, stopwords=[], stemmer=No
     tokens.extend( _extract_tokens_from_string( video.line,                 stopwords=stopwords, stemmer=stemmer) )
     tokens.extend( _extract_tokens_from_string( video.description,    stopwords=stopwords, stemmer=stemmer) )
     tokens.extend( _extract_tokens_from_string( video.collection ) )
-    for name in video.actors:
+    for name in (video.actors or []):
         tokens.extend( _extract_tokens_from_string(name, stopwords=stopwords, stemmer=stemmer) )
-    for tag in video.tags:
+    for tag in (video.tags or []):
         tokens.extend( _extract_tokens_from_string(tag, stopwords=stopwords, stemmer=stemmer) )
     return [ t for t in tokens if t != '' ]
 

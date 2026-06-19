@@ -7,6 +7,19 @@ import (
     "cpv_backend/internal/schemas"
 )
 
+// normalizeVideoDataSlices replaces nil slices with empty slices so JSON
+// marshaling writes [] instead of null, keeping Python readers happy.
+func normalizeVideoDataSlices(vd *schemas.VideoData) {
+    if vd.Actors == nil          { vd.Actors = []string{} }
+    if vd.PrimaryActors == nil   { vd.PrimaryActors = []string{} }
+    if vd.SecondaryActors == nil { vd.SecondaryActors = []string{} }
+    if vd.Tags == nil            { vd.Tags = []string{} }
+    if vd.TagsFromFilename == nil { vd.TagsFromFilename = []string{} }
+    if vd.TagsFromPath == nil    { vd.TagsFromPath = []string{} }
+    if vd.TagsFromJSON == nil    { vd.TagsFromJSON = []string{} }
+    if vd.Genres == nil          { vd.Genres = []string{} }
+}
+
 // SortTagsByFrequency sorts each video's tag source lists by descending
 // frequency of that tag within the same collection, then re-derives Tags.
 func SortTagsByFrequency(videos map[string]*schemas.VideoData) {
@@ -93,8 +106,9 @@ func MergeAndSave(dbPath string, loaded map[string]*schemas.VideoData, isFiltere
         merged[hash] = *scanned
     }
 
-    // Write all records back
+    // Write all records back, ensuring nil slices become [] not null in JSON
     for hash, vd := range merged {
+        normalizeVideoDataSlices(&vd)
         if err := db.WriteSerializedRowToTable(dbPath, "videos", hash, vd); err != nil {
             return err
         }

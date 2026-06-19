@@ -3,7 +3,9 @@ package scanner
 import (
     "fmt"
     "os"
+    "os/exec"
     "path/filepath"
+    "runtime"
     "strings"
     "time"
 
@@ -105,6 +107,7 @@ func ScanLibraries(cfg config.Config, opts ScanOptions, emit func(string)) error
     }
 
     emit(fmt.Sprintf("[SCAN] Done. %d videos processed, %d errors.", len(loaded), errCount))
+    rebuildTFIDF(emit)
     return nil
 }
 
@@ -193,4 +196,25 @@ func fileCtime(path string) string {
         return time.Now().Format("2006-01-02 15:04")
     }
     return info.ModTime().Format("2006-01-02 15:04")
+}
+
+// rebuildTFIDF shells out to the Python worker to regenerate the TF-IDF model
+// so similar-video lookups stay current after a scan.
+func rebuildTFIDF(emit func(string)) {
+    emit("[TFIDF] Building TF-IDF model…")
+    out, err := exec.Command(localPythonInterpreter(), "-m", "python_src.worker", "--generate-tfidf").CombinedOutput()
+    if err != nil {
+        emit(fmt.Sprintf("[TFIDF] Failed: %v — %s", err, strings.TrimSpace(string(out))))
+        return
+    }
+    emit("[TFIDF] Model built successfully.")
+}
+
+// localPythonInterpreter returns the path to the project .venv interpreter.
+// Mirrors getLocalPythonInterpreter in routes/0_routes_helpers.go.
+func localPythonInterpreter() string {
+    if runtime.GOOS == "windows" {
+        return `.venv\Scripts\python.exe`
+    }
+    return ".venv/bin/python3"
 }
