@@ -52,6 +52,15 @@ func GetCachedVideos(db_path string, cache_base_timeout int, cache_access_timeou
 }
 
 
+// InvalidateCache forces the next GetCachedVideos call to re-read from DB.
+func InvalidateCache() {
+    cacheMutex.Lock()
+    defer cacheMutex.Unlock()
+    cachedVideos = nil
+    cacheTime = time.Time{}
+    cacheLastAccess = time.Time{}
+}
+
 // func GetCachedInteractions(db_path string, cache_base_timeout int, cache_access_timeout int) (map[string]schemas.VideoInteractions, error) {
 
 // 	mpfil := map[string]schemas.VideoInteractions{}

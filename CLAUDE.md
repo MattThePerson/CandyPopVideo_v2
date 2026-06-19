@@ -49,7 +49,7 @@ It's built and run as a single-user local web app: no auth, no multi-tenancy, ju
 
 Two backend implementations currently coexist, with a CLI worker alongside them:
 
-1. **Go server** (`go_backend/main.go`, entrypoint built to `bin/CandyPopVideo.exe`) — the primary server. Serves the frontend as static files, owns all database reads/writes, and exposes routes grouped under `/media`, `/api`, `/api/query`, and `/api/interact`. Started directly or via the tray-app launcher.
+1. **Go server** (`go_backend/cmd/app/main.go`, entrypoint built to `bin/CandyPopVideo.exe`) — the primary server. Serves the frontend as static files, owns all database reads/writes, and exposes routes grouped under `/media`, `/api`, `/api/query`, and `/api/interact`. Started directly or via the tray-app launcher.
 2. **Python server** (`python_src/main.py`, FastAPI + uvicorn) — the original implementation, kept route-compatible with the Go server (`/media`, `/api`, `/api/query`, `/api/interact`). Functionally a reference/fallback for routes the Go server doesn't yet implement.
 3. **Python worker** (`python_src/worker.py`, run as `python -m python_src.worker <flags>`) — not a server. A CLI for scanning libraries into the DB, building the TF-IDF recommendation model, and mass-generating preview media. Driven manually or via `tools/worker.ps1` / `tools/worker.sh`. See `--help` for the full flag set (`--scan-libraries`, `--generate-media`, `--status`, `--update <filter>`, `--update-media <hours>`, etc).
 
@@ -59,9 +59,11 @@ Where the Go server needs functionality not yet ported, it shells out to standal
 
 ```
 go_backend/             # Go HTTP server (Echo)
-    main.go             # entrypoint, route registration, static file serving
-    config.go           # config.yaml loader
+    cmd/
+        app/main.go     # entrypoint, route registration, static file serving
+        worker/main.go  # Go worker stub (not yet implemented)
     internal/
+        config/         # config.yaml loader
         db/             # sqlite access + in-memory video cache
         schemas/        # VideoData, VideoInteractions, query structs
         query/          # search filtering/sorting, catalogue aggregation
@@ -109,7 +111,7 @@ config.yaml             # runtime configuration (see below)
 
 ## Configuration
 
-Runtime config lives in `config.yaml` at the project root (kept out of git via `git update-index --assume-unchanged` rather than `.gitignore`, since a real path-bearing copy has to exist locally). Both backends read it directly — the Go side via `go_backend/config.go`, the Python side via `python_src/util/config.py`.
+Runtime config lives in `config.yaml` at the project root (kept out of git via `git update-index --assume-unchanged` rather than `.gitignore`, since a real path-bearing copy has to exist locally). Both backends read it directly — the Go side via `go_backend/internal/config/config.go`, the Python side via `python_src/util/config.py`.
 
 Key fields:
 

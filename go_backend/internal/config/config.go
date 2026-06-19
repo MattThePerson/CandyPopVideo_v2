@@ -8,13 +8,16 @@ import (
 )
 
 type Config struct {
-	AppDataDir      string   `yaml:"app_data_dir"`
-	DatetimeFormats string   `yaml:"datetime_format"`
-	SubtitleFolders []string `yaml:"subtitle_folders"`
+    AppDataDir           string              `yaml:"app_data_dir"`
+    DatetimeFormats      string              `yaml:"datetime_format"`
+    SubtitleFolders      []string            `yaml:"subtitle_folders"`
+    Collections          map[string][]string `yaml:"collections"`
+    VideoExtensions      []string            `yaml:"video_extensions"`
+    SceneFilenameFormats []string            `yaml:"scene_filename_formats"`
 
-	DBPath          string
-	PreviewMediaDir string
-	ActorInfoDir    string
+    DBPath          string
+    PreviewMediaDir string
+    ActorInfoDir    string
 }
 
 // Get Config struct from .yaml file
