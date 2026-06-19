@@ -77,7 +77,7 @@ func BatchGenerate(cfg config.Config, opts GenerateMediaOptions, emit func(strin
         if doTeaserThumbs {
             p := vidDir + "/teaser_thumbs_small.jpg"
             if opts.Redo || !fileExists(p) {
-                if err := GenerateSpritesheet(vd.Path, vidDir, "teaser_thumbs_small", 16, 300); err != nil {
+                if err := GenerateSpritesheet(vd.Path, vidDir, "teaser_thumbs_small", 16, 300, 3); err != nil {
                     emit(fmt.Sprintf("[WARN] teaser thumbs %s: %v", vd.Hash, err))
                     errCount++
                 } else {
@@ -89,7 +89,7 @@ func BatchGenerate(cfg config.Config, opts GenerateMediaOptions, emit func(strin
         if doSeekThumbs {
             p := vidDir + "/seekthumbs.jpg"
             if opts.Redo || !fileExists(p) {
-                if err := GenerateSpritesheet(vd.Path, vidDir, "seekthumbs", 400, 300); err != nil {
+                if err := GenerateSpritesheet(vd.Path, vidDir, "seekthumbs", 400, 300, 6); err != nil {
                     emit(fmt.Sprintf("[WARN] seek thumbs %s: %v", vd.Hash, err))
                     errCount++
                 } else {

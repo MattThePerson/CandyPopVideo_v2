@@ -9,11 +9,13 @@ import (
     "path/filepath"
     "strconv"
     "strings"
+    "sync"
 )
 
 // GenerateSpritesheet generates {stem}.jpg (tiled spritesheet) and {stem}.vtt in outDir.
 // nFrames=16 for teaser thumbs, 400 for seek thumbs. height=300 for both.
-func GenerateSpritesheet(videoPath, outDir, stem string, nFrames, height int) error {
+// workers controls how many ffmpeg processes run concurrently for frame extraction.
+func GenerateSpritesheet(videoPath, outDir, stem string, nFrames, height, workers int) error {
     vidW, vidH, duration, err := probeVideoInfo(videoPath)
     if err != nil {
         return fmt.Errorf("probe: %w", err)
@@ -33,25 +35,54 @@ func GenerateSpritesheet(videoPath, outDir, stem string, nFrames, height int) er
     }
     defer os.RemoveAll(tmpDir)
 
-    // Step 1: extract N frames evenly spaced
-    framePattern := filepath.Join(tmpDir, "frame_%03d.jpg")
-    vfExtract := fmt.Sprintf("fps=1/%.6f,scale=%d:%d", interval, thumbW, height)
-    out, err := exec.Command(
-        "ffmpeg", "-y",
-        "-i", videoPath,
-        "-vf", vfExtract,
-        "-frames:v", strconv.Itoa(nFrames),
-        "-v", "error",
-        framePattern,
-    ).CombinedOutput()
-    if err != nil {
-        return fmt.Errorf("ffmpeg extract frames: %w\n%s", err, out)
+    // Step 1: extract N frames with fast input-level seek.
+    // -ss before -i jumps to the nearest keyframe without decoding the whole video.
+    // Worker pool: exactly workers goroutines pull frame indices from a channel.
+    work := make(chan int, nFrames)
+    for i := range nFrames {
+        work <- i
+    }
+    close(work)
+
+    errs := make(chan error, nFrames)
+    var wg sync.WaitGroup
+    for range workers {
+        wg.Add(1)
+        go func() {
+            defer wg.Done()
+            for i := range work {
+                pos := (float64(i) + 0.5) * interval
+                framePath := filepath.Join(tmpDir, fmt.Sprintf("frame_%03d.jpg", i+1))
+                out, err := exec.Command("ffmpeg", "-y",
+                    "-ss", fmt.Sprintf("%.3f", pos),
+                    "-i", videoPath,
+                    "-frames:v", "1",
+                    "-vf", fmt.Sprintf("scale=%d:%d", thumbW, height),
+                    "-q:v", "3",
+                    "-v", "error",
+                    framePath,
+                ).CombinedOutput()
+                if err != nil {
+                    errs <- fmt.Errorf("frame %d at %.1fs: %w\n%s", i+1, pos, err, out)
+                }
+            }
+        }()
+    }
+
+    wg.Wait()
+    close(errs)
+
+    for err := range errs {
+        if err != nil {
+            return err
+        }
     }
 
     // Step 2: tile frames into spritesheet
     spritePath := filepath.Join(outDir, stem+".jpg")
     tileFilter := fmt.Sprintf("tile=%dx%d", cols, rows)
-    out, err = exec.Command(
+    framePattern := filepath.Join(tmpDir, "frame_%03d.jpg")
+    out, err := exec.Command(
         "ffmpeg", "-y",
         "-i", framePattern,
         "-filter_complex", tileFilter,
@@ -69,7 +100,7 @@ func GenerateSpritesheet(videoPath, outDir, stem string, nFrames, height int) er
 func writeSpritesheetVTT(vttPath, stem string, nFrames, cols, thumbW, thumbH int, interval float64) error {
     var sb strings.Builder
     sb.WriteString("WEBVTT\n\n")
-    for i := 0; i < nFrames; i++ {
+    for i := range nFrames {
         x := (i % cols) * thumbW
         y := (i / cols) * thumbH
         sb.WriteString(fmt.Sprintf(

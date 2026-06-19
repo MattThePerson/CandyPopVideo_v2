@@ -15,6 +15,10 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// onDemandSem limits concurrent on-demand media generation triggered by hover events.
+// Without this, hovering 24 cards simultaneously would spawn 24*n concurrent ffmpeg processes.
+var onDemandSem = make(chan struct{}, 3)
+
 func IncludeMediaRoutes(e *echo.Group, db_path string, preview_media_dir string, subtitle_folders []string) {
 
 	e.GET("/get/video/:video_hash", func(c echo.Context) error { return ECHO_get_video(c, db_path) })
@@ -132,7 +136,10 @@ func ECHO_ensure_teaser_small(c echo.Context, db_path string, preview_media_dir 
 	}
 
 	fmt.Printf("[MEDIA] Generating 'Video Teaser (small)' for: %s ...\n", video_hash)
-	if err := mediagen.GenerateTeaser(vd.Path, vid_media_dir, "teaser_small", vd.DurationSeconds, true); err != nil {
+	onDemandSem <- struct{}{}
+	err = mediagen.GenerateTeaser(vd.Path, vid_media_dir, "teaser_small", vd.DurationSeconds, true)
+	<-onDemandSem
+	if err != nil {
 		return handleServerError(c, 500, "Unable to generate teaser small", err)
 	}
 
@@ -159,7 +166,10 @@ func ECHO_ensure_teaser_thumbs_small(c echo.Context, db_path string, preview_med
 	}
 
 	fmt.Printf("[MEDIA] Generating 'Teaser Thumbs (small)' for: %s ...\n", video_hash)
-	if err := mediagen.GenerateSpritesheet(vd.Path, vid_media_dir, "teaser_thumbs_small", 16, 300); err != nil {
+	onDemandSem <- struct{}{}
+	err = mediagen.GenerateSpritesheet(vd.Path, vid_media_dir, "teaser_thumbs_small", 16, 300, 6)
+	<-onDemandSem
+	if err != nil {
 		return handleServerError(c, 500, "Unable to generate teaser thumbs", err)
 	}
 
@@ -186,7 +196,10 @@ func ECHO_ensure_seek_thumbs(c echo.Context, db_path string, preview_media_dir s
 	}
 
 	fmt.Printf("[MEDIA] Generating 'Seek Thumbs' for: %s ...\n", video_hash)
-	if err := mediagen.GenerateSpritesheet(vd.Path, vid_media_dir, "seekthumbs", 400, 300); err != nil {
+	onDemandSem <- struct{}{}
+	err = mediagen.GenerateSpritesheet(vd.Path, vid_media_dir, "seekthumbs", 400, 300, 12)
+	<-onDemandSem
+	if err != nil {
 		return handleServerError(c, 500, "Unable to generate seek thumbs", err)
 	}
 
