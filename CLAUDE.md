@@ -127,6 +127,7 @@ Key config.yaml fields:
 - `collections` — maps a collection name to one or more absolute folder paths. A path prefixed with `!` is scanned for exclusion only (its contents are ignored even if nested inside an included path).
 - `subtitle_folders` — extra folders to search for `.srt` files when serving subtitles.
 - `datetime_format` — display format for dates in the frontend.
+- `curated_collections` — list of named saved searches shown on the `/curated` page. Each entry has `name`, `description`, and a `query` object whose fields (`actor`, `studio`, `tags`, `sortby`, etc.) map to the standard search filters.
 
 The Go config package (`go_backend/internal/config/config.go`) exposes `ConfigStore` (RWMutex-protected, hot-reloadable) and `NewConfigStore()` (handles first-run bootstrap). Python subprocesses no longer read config.yaml; instead, the Go server passes all needed paths as explicit CLI flags (`--db-path`, `--model-dir`, `--model-path`, `--actor-info-dir`).
 
@@ -197,39 +198,44 @@ Generated media is cached to `preview_media_dir` keyed by video hash, and only r
 
 (See `NOTES.md` for the live, unfiltered TODO list.) Notable unfinished or partial pieces as of now:
 
-- Several Go routes are explicit stubs (`501 Not Implemented`): curated collections, similar-actors, similar-studios, marker get/update.
+- Go routes still stubbed (`501 Not Implemented`): `GET /api/query/get/similar-actors/:name`, `GET /api/query/get/similar-studios/:name`, marker get/update.
 - TF-IDF-ranked sorting of free-text search results isn't wired up on the Go side yet — the search route filters/sorts structurally but doesn't call into the TF-IDF subprocess for ranking `search_string` queries.
 - Performer/studio embeddings (for "similar actor/studio" features) are a planned but unimplemented worker feature (`--generate-embeddings` is a no-op stub).
 - Preview thumbnail generation (`preview_thumbs`) is still Python-only (ML-based); the Go mediagen package doesn't handle it.
-- Four Svelte pages remain stubs: `search`, `catalogue`, `curated`, `video`.
 
 ## Svelte rewrite
 
-The vanilla-JS frontend (preserved at `frontend_old/` for reference) is being replaced by `frontend/` — a Svelte 5 + TypeScript + Tailwind v4 project (Vite-built, no SvelteKit). The header chrome, client-side router, card system, home page, dashboard page, and video page are all functional; the remaining three pages (`search`, `catalogue`, `curated`) are stubs.
+The vanilla-JS frontend (preserved at `frontend_old/` for reference) is fully replaced by `frontend/` — a Svelte 5 + TypeScript + Tailwind v4 project (Vite-built, no SvelteKit). All six pages are functional. Stage 1 of the frontend rewrite is complete.
 
 - **Router** (`src/lib/router/`) — hand-rolled, no third-party package, real URL paths (history mode, not hash routing):
-  - `router.svelte.ts` — `routerState` (`$state`-backed current path), `navigate(path, { replace? })`, `initRouter()` (wires `popstate` + a delegated `document` click listener that intercepts same-origin `<a>` clicks and routes them client-side, skipping modifier-clicks/`target`/`download`/external links), and `matchRoute`/`matchPattern` (segment-based matching with `:param` support, ready for future params like `/video/:hash`). The `.svelte.ts` suffix is required for top-level rune usage outside a `.svelte` file.
-  - `routes.ts` — ordered `{ pattern, component }` table, checked first-match-wins.
+  - `router.svelte.ts` — `routerState` (`$state`-backed current path + search), `navigate(path, { replace? })`, `initRouter()` (wires `popstate` + a delegated `document` click listener that intercepts same-origin `<a>` clicks and routes them client-side, skipping modifier-clicks/`target`/`download`/external links), and `matchRoute`/`matchPattern` (segment-based matching with `:param` support). The `.svelte.ts` suffix is required for top-level rune usage outside a `.svelte` file.
+  - `routes.ts` — ordered `{ pattern, component }` table, checked first-match-wins. Routes: `/`, `/search`, `/catalogue`, `/curated`, `/video/:hash`, `/dashboard`, `/config`.
   - `App.svelte` calls `initRouter()` on mount, derives the current match via `matchRoute(routerState.path)`, and renders `<Header />` / the matched page (spreading params as props) / `<Footer />`.
 - **Components** (`src/lib/components/`):
-  - `Header.svelte` — logo, home/search/catalogue/curated nav links, shuffle/search/dashboard/settings icon buttons, active-link highlighting driven by `routerState.path`. Scoped `<style>` for logo font sizing, active-link colour, dropdown positioning.
+  - `Header.svelte` — logo, home/search/catalogue/curated nav links, shuffle/search/dashboard/settings icon buttons, active-link highlighting driven by `routerState.path`.
   - `Footer.svelte` — simple copyright line.
-  - `Spinner.svelte` — reusable orange gradient ring animation. Props: `size` (px, default 52) and `bg` (inner-circle colour matching the container background, default `#060A0A`). Used inside card thumbnails while the spritesheet is loading, and on pages while data fetches are in flight.
-  - `cards/DefaultCard.svelte` — the full video card. Poster image with a hover sprite-sheet teaser (fires `/media/ensure/teaser-thumbs-small/:hash`, then loads the VTT + spritesheet and scrubs by mouse position); stats overlay (resolution/bitrate/duration chips, views, collection badge, NEW badge); interactions loaded from `/api/interact/get/:hash` (viewtime, likes, rating, favourite toggle with optimistic UI); actor/tag lists with expand-on-click for overflow; four size variants driven by the `size` prop ('small' 20.5rem / 'medium' 25rem / 'large' 33rem / 'xl' 40rem). While hovering and loading the spritesheet the poster is hidden and a `Spinner` is shown centred on the black thumbnail background; unhovered it shows the poster normally.
-  - `cards/VideoCard.svelte` — thin wrapper that selects card variant via `settings.cardVariant` (currently only 'default') and passes through `video`, `size`, `width`, `aspectRatio` props.
-  - `RenameOverlay.svelte` — modal overlay (F2 on the video page) for renaming a video file. Validates against Windows/POSIX illegal chars in real time (red input), shows the extension as a read-only suffix beside the text box, unloads the player before sending the request, retries on failure, and shows a dismissable undo bar after success.
+  - `Spinner.svelte` — reusable orange gradient ring animation. Props: `size` (px, default 52) and `bg` (inner-circle colour, default `#060A0A`).
+  - `SearchPanel.svelte` — full filter/sort sidebar used by the search page. Syncs all filter state to URL params via `navigate('/search?...')`. Supports: query, actor, studio, collection, include/exclude terms, tags, favourites toggle, sort (12 modes), results-per-page selector.
+  - `ConfirmDialog.svelte` — reusable modal confirmation dialog. Props: `message`, `confirmLabel`, `onConfirm`, `onCancel`. Escape key via `$effect`, click-outside dismissal.
+  - `cards/DefaultCard.svelte` — the full video card. Poster image with hover sprite-sheet teaser; stats overlay; interactions loaded from `/api/interact/get/:hash` (viewtime, likes, rating, favourite toggle with optimistic UI); four size variants ('small'/'medium'/'large'/'xl').
+  - `cards/VideoCard.svelte` — thin wrapper that selects card variant via `settings.cardVariant`.
+  - `RenameOverlay.svelte` — F2 modal for renaming a video file. Real-time validation, unmounts player before request, undo bar after success.
 - **Types** (`src/lib/types/`):
-  - `video.ts` — `VideoData` and `VideoInteractions` TypeScript interfaces, mirroring the Go schemas.
+  - `video.ts` — `VideoData` and `VideoInteractions` TypeScript interfaces.
   - `query.ts` — `SearchQuery` and `CatalogueQuery` interfaces.
 - **Stores / utilities** (`src/lib/stores/`, `src/lib/util/`):
-  - `settings.svelte.ts` — singleton `settings` object persisted to `localStorage`. Fields: `cardVariant` ('default'), `cardSize` ('small'|'medium'|'large'|'xl'), `teaserMode` ('sprite'|'video').
-  - `pager.svelte.ts` — `createPager<T>(source, batchSize)` factory. Exposes `visible` (current slice), `hasMore`, `loadMore()`, `reset()`. Used by the home page for "Load More Results".
-- **Pages** (`src/pages/<name>/Page.svelte`) — `home`, `search`, `catalogue`, `curated`, `video`, `dashboard`.
-  - `home` — fully functional: spotlight video (full-width 21:9 `VideoCard`) + paginated similar-video grid with `Spinner`.
-  - `dashboard` — fully functional: scan controls (reparse filenames, re-read JSON, redo attributes, rehash, path filter); media generation controls (type selector, redo flag, collection/path/days filters, quick-action buttons); TF-IDF rebuild button; per-type coverage percentages; real-time job log via SSE (`GET /api/dashboard/job-stream`). Go-native media types are labelled inline; Python-delegated ones show a "Python" badge.
-  - `video` — fully functional: resolves a `random` sentinel hash, fetches `VideoData` + `VideoInteractions` in parallel, renders `VideoPlayer` / `VideoDetails` / `RelatedVideos` / `SimilarVideos`. F2 opens `RenameOverlay`; the player is unmounted before the rename request and remounted after; an undo bar appears bottom-right after success.
-  - `search`, `catalogue`, `curated` — single-line stubs.
-- Colors/fonts: `src/app.css` defines a global dark `body` background (`#060A0A`), a Tailwind v4 `@theme` block with `--color-*` tokens, and `@font-face` rules for `Jaro-Regular.ttf` and the Inter variable font (copied into `src/assets/fonts/`).
-- The Go server serves `frontend/dist/assets` and `favicon.svg` directly, then falls back to `frontend/dist/index.html` for any other GET request so client-side routes survive a hard refresh/deep link.
-- The Vite dev server proxies `/api`, `/media`, and `/static` to `http://localhost:8124` (the Go backend port, set in `config.yaml`) so API calls work during `npm run dev` without CORS issues.
-- There's no Makefile/tooling integration yet — building means running `npm install` / `npm run build` manually inside `frontend/` (no `make build-frontend` target exists).
+  - `settings.svelte.ts` — singleton `settings` persisted to `localStorage`. Fields: `cardVariant`, `cardSize` ('small'|'medium'|'large'|'xl'), `teaserMode` ('sprite'|'video'), `resultsPerPage` (4|8|16|24|36).
+  - `configBuffer.svelte.ts` — localStorage-backed buffer for unsaved config edits. Fields: `content` (get/set), `savedAt`, `isDirty` ($derived), `clear()`. Used by the config editor page to survive navigation away before saving.
+  - `pager.svelte.ts` — `createPager<T>(source, batchSize)` factory. Exposes `visible`, `hasMore`, `loadMore()`, `reset()`. Used by the home page.
+- **Pages** (`src/pages/<name>/Page.svelte`) — all fully implemented:
+  - `home` — spotlight video (full-width 21:9 `VideoCard`) + paginated similar-video grid.
+  - `search` — URL-driven state (all filter/sort/page params live in `?q=&actor=&page=...`). `$effect` on `routerState.search` fires the search; result grid uses `VideoCard`; `PageNav` handles pagination.
+  - `catalogue` — tab bar (actors / studios / collections / tags), sort modes (alphabetic / count / newest), min-video threshold slider, alphabetic grouping with letter-nav buttons. All tab/sort state in URL params. `CatalogueItem` sub-component per row.
+  - `curated` — list view (`/curated`): cards for each named saved-search defined in `config.yaml`. Detail view (`/curated?c=<name>`): runs the collection's query via `POST /api/query/search-videos`, shows video grid + `PageNav`. Back button returns to list view.
+  - `video` — resolves `random` sentinel, fetches `VideoData` + `VideoInteractions` in parallel, renders `VideoPlayer` / `VideoDetails` / `RelatedVideos` / `SimilarVideos`. F2 opens `RenameOverlay`.
+  - `dashboard` — scan controls, media generation controls, TF-IDF rebuild, "Edit Config" button. Real-time job log via SSE.
+  - `config` — CodeMirror 6 editor (YAML + vim motions + one-dark theme) for editing `config.yaml` in-browser. Saves via `POST /api/config/save`, shows validation errors/warnings, flags `preview_media_dir` changes as requiring restart. Unsaved edits buffered in `configBuffer` store (survives navigation). Discard and Restore Defaults buttons with `ConfirmDialog`.
+- Colors/fonts: `src/app.css` defines a global dark `body` background (`#060A0A`), a Tailwind v4 `@theme` block with `--color-*` tokens, and `@font-face` rules for `Jaro-Regular.ttf` and the Inter variable font.
+- The Go server serves `frontend/dist/assets` and `favicon.svg` directly, then falls back to `frontend/dist/index.html` for any other GET so client-side routes survive a hard refresh.
+- The Vite dev server proxies `/api`, `/media`, and `/static` to `http://localhost:8010` (the Go backend port) so API calls work during `npm run dev` without CORS issues.
+- Building: `npm install` / `npm run build` manually inside `frontend/` (no `make build-frontend` target yet).

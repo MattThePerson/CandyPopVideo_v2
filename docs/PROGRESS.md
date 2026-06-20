@@ -1,30 +1,34 @@
 # Progress
 
-## Stage 1 — Full Svelte Frontend
+## Stage 1 — Full Svelte Frontend ✓ COMPLETE
 
 **Goal:** Replace `frontend_old/` (vanilla JS) entirely with `frontend/` (Svelte 5 + TS + Tailwind v4).
 
 ### Infrastructure
 - [x] Vite + Svelte 5 + Tailwind v4 project scaffold
-- [x] Hand-rolled client-side router (history mode, `:param` support)
+- [x] Hand-rolled client-side router (history mode, `:param` support, URL search params)
 - [x] Header + Footer components
-- [x] Route table (home, search, catalogue, curated, video, dashboard)
+- [x] Route table (home, search, catalogue, curated, video, dashboard, config)
 - [x] Go server serving `frontend/dist` + SPA fallback
 
 ### Pages
-- [x] **Home** — spotlight video, recent videos, in-progress (partially done: video cards, similar videos loading)
-- [x] **Search** — search bar, filters panel, result grid (placeholder)
-- [x] **Catalogue** — browse by actor/studio/collection/tag with counts (placeholder)
-- [x] **Curated** — curated collections list + detail view (placeholder)
-- [x] **Video** — player, metadata panel, markers, similar videos, interactions (placeholder)
-- [ ] **Dashboard** — library management UI (stub; will expand in Stage 3)
+- [x] **Home** — spotlight video + paginated similar-video grid
+- [x] **Search** — URL-driven state; SearchPanel filters; paginated result grid (PageNav)
+- [x] **Catalogue** — tabs (actors/studios/collections/tags); sort modes; alphabetic grouping + letter nav
+- [x] **Curated** — list view of named saved-searches from config.yaml; detail view runs the query + paginates
+- [x] **Video** — player, metadata panel, related/similar videos, interactions, F2 rename
+- [x] **Dashboard** — scan controls, media gen controls, TF-IDF rebuild, SSE job log, Edit Config button
+- [x] **Config** — CodeMirror YAML editor (vim motions), validation, hot-reload, unsaved-change buffer
 
 ### Shared Components
-- [x] **VideoCard** — tile for video grids (in progress)
-- [x] **Search panel** — filters sidebar/drawer
+- [x] **VideoCard / DefaultCard** — tile for video grids, sprite-sheet hover teaser, interactions
+- [x] **SearchPanel** — full filter/sort sidebar with 12 sort modes, all filters sync to URL
 - [x] **Video player** — PassionPlayer
-- [ ] **Markers / timeline** — editable annotation layer on the player
-- [x] **Catalogue cards** — actor, studio, collection, tag tiles
+- [x] **Catalogue cards** — CatalogueItem (actor/studio/collection/tag rows with counts)
+- [x] **PageNav** — smart pagination widget (used by search + curated)
+- [x] **ConfirmDialog** — reusable modal confirmation (used by config editor)
+- [x] **RenameOverlay** — F2 rename modal with real-time validation and undo bar
+- [ ] **Markers / timeline** — editable annotation layer on the player (deferred to Stage 4)
 
 ---
 

@@ -30,3 +30,13 @@ scene_filename_formats: [
 collections:
   Main:
     - /path/to/videos/here # !!! EDIT THIS !!!
+
+# CURATED COLLECTIONS
+# Named saved searches editable via the config editor in the dashboard.
+# Each entry has a name, optional description, and a query object whose fields
+# match the search filters (actor, studio, collection, tags, sortby, etc.).
+curated_collections:
+  - name: "Example Collection"
+    description: "An example curated collection — edit or replace in config.yaml"
+    query:
+      sortby: date_added_desc

@@ -13,6 +13,24 @@ import (
 //go:embed default_config.yaml
 var DefaultConfigBytes []byte
 
+type CuratedQuery struct {
+    SearchString   string   `yaml:"search_string"  json:"search_string,omitempty"`
+    Actor          string   `yaml:"actor"          json:"actor,omitempty"`
+    Studio         string   `yaml:"studio"         json:"studio,omitempty"`
+    Collection     string   `yaml:"collection"     json:"collection,omitempty"`
+    Tags           []string `yaml:"tags"           json:"tags,omitempty"`
+    IncludeTerms   []string `yaml:"include_terms"  json:"include_terms,omitempty"`
+    ExcludeTerms   []string `yaml:"exclude_terms"  json:"exclude_terms,omitempty"`
+    OnlyFavourites string   `yaml:"only_favourites" json:"only_favourites,omitempty"`
+    SortBy         string   `yaml:"sortby"         json:"sortby,omitempty"`
+}
+
+type CuratedCollection struct {
+    Name        string       `yaml:"name"        json:"name"`
+    Description string       `yaml:"description"  json:"description"`
+    Query       CuratedQuery `yaml:"query"        json:"query"`
+}
+
 type Config struct {
     PreviewMediaDir      string              `yaml:"preview_media_dir"`
     DatetimeFormats      string              `yaml:"datetime_format"`
@@ -20,6 +38,7 @@ type Config struct {
     Collections          map[string][]string `yaml:"collections"`
     VideoExtensions      []string            `yaml:"video_extensions"`
     SceneFilenameFormats []string            `yaml:"scene_filename_formats"`
+    CuratedCollections   []CuratedCollection `yaml:"curated_collections"`
 
     // derived from OS — never in config.yaml
     AppDataDir      string

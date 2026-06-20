@@ -63,7 +63,7 @@ func main() {
     }
 
     routes.IncludeMediaRoutes(    e.Group("/media"),         cfg.DBPath, cfg.PreviewMediaDir, cfg.SubtitleFolders)
-    routes.IncludeApiRoutes(      e.Group("/api"),           cfg.DBPath, cfg.ActorInfoDir)
+    routes.IncludeApiRoutes(      e.Group("/api"),           cfg.DBPath, cfg.ActorInfoDir, store)
     routes.IncludeQueryRoutes(    e.Group("/api/query"),     cfg.DBPath, cfg.TfidfMatrixPath)
     routes.IncludeInteractRoutes( e.Group("/api/interact"),  cfg.DBPath)
     routes.IncludeDashboardRoutes(e.Group("/api/dashboard"), store)
