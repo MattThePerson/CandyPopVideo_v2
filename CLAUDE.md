@@ -37,23 +37,24 @@ It's built and run as a single-user local web app: no auth, no multi-tenancy, ju
 
 ## Tech Stack
 
-- **Go backend** (`go_backend/`) — [Echo v4](https://echo.labstack.com/) HTTP server. This is the actively developed server.
-- **Python backend + worker** (`python_src/`) — a FastAPI server (`main.py`) that mirrors the Go server's route layout, plus a CLI tool (`worker.py`) for library scanning, TF-IDF model building, and media generation. The Go server shells out to small Python scripts for functionality not yet native to it.
+- **Go backend** (`go_backend/`) — [Echo v4](https://echo.labstack.com/) HTTP server. This is the actively developed server; it handles scanning, media generation, and all DB access natively.
+- **string_parser** — the author's own Go package (`github.com/MattThePerson/string_parser`), used by the Go scanner to parse structured metadata out of filenames via config-driven format templates.
+- **Python backend + worker** (`python_src/`) — a FastAPI server (`main.py`) kept for reference/fallback, plus a CLI tool (`worker.py`). The Go server still shells out to the Python worker for two things it doesn't yet handle natively: TF-IDF model building/search and ML-based preview thumbnail extraction.
 - **Frontend** (`frontend/`) — Svelte 5 + TypeScript + Tailwind v4, Vite-built. The active frontend served by the Go backend. (The old vanilla JS frontend is preserved at `frontend_old/` for reference.)
 - **SQLite** — the only data store. Both backends talk to it directly (Go via `modernc.org/sqlite`, a pure-Go driver so no CGO toolchain is needed).
 - **ffmpeg** — required system dependency; used directly for poster frames, video "teasers", thumbnail spritesheets, and mkv→mp4 remuxing.
-- **handymatt / handymatt-media** — the author's own Python libraries, used for video hashing and WSL-aware path conversion.
+- **handymatt / handymatt-media** — the author's own Python libraries, used by the Python side for video hashing and WSL-aware path conversion.
 - **launcher** (`launcher/`) — a `pystray` tray-icon app that wraps the server process so it can be started/stopped/restarted without a terminal window.
 
 ## Architecture
 
 Two backend implementations currently coexist, with a CLI worker alongside them:
 
-1. **Go server** (`go_backend/cmd/app/main.go`, entrypoint built to `bin/CandyPopVideo.exe`) — the primary server. Serves the frontend as static files, owns all database reads/writes, and exposes routes grouped under `/media`, `/api`, `/api/query`, and `/api/interact`. Started directly or via the tray-app launcher.
-2. **Python server** (`python_src/main.py`, FastAPI + uvicorn) — the original implementation, kept route-compatible with the Go server (`/media`, `/api`, `/api/query`, `/api/interact`). Functionally a reference/fallback for routes the Go server doesn't yet implement.
-3. **Python worker** (`python_src/worker.py`, run as `python -m python_src.worker <flags>`) — not a server. A CLI for scanning libraries into the DB, building the TF-IDF recommendation model, and mass-generating preview media. Driven manually or via `tools/worker.ps1` / `tools/worker.sh`. See `--help` for the full flag set (`--scan-libraries`, `--generate-media`, `--status`, `--update <filter>`, `--update-media <hours>`, etc).
+1. **Go server** (`go_backend/cmd/app/main.go`, entrypoint built to `bin/CandyPopVideo.exe`) — the primary server. Serves the frontend as static files, owns all database reads/writes, runs library scanning, and drives media generation. Exposes route groups: `/media`, `/api`, `/api/query`, `/api/interact`, and `/api/dashboard`. Started directly or via the tray-app launcher.
+2. **Python server** (`python_src/main.py`, FastAPI + uvicorn) — the original implementation, kept as a reference/fallback. No longer the active server.
+3. **Python worker** (`python_src/worker.py`, run as `python -m python_src.worker <flags>`) — not a server. A CLI with `--generate-tfidf`, `--scan-libraries` (legacy), `--generate-media`, etc. The Go server still shells out to it for TF-IDF model building (called from the dashboard "Rebuild TF-IDF" action and after a scan), and the Python side still handles ML-based preview thumbnail extraction (`preview_thumbs`). The Python interpreter used is whatever lives in the project's `.venv`.
 
-Where the Go server needs functionality not yet ported, it shells out to standalone Python scripts in `python_src/worker_scripts/` and parses their stdout as JSON (see `execPythonSubprocess` / `execPythonSubprocess_Output` in `go_backend/internal/routes/0_routes_helpers.go`). This currently covers: actor info lookups, similar-video recommendations (TF-IDF), and on-demand preview-media generation (teasers, spritesheets). The Python interpreter used is whatever lives in the project's `.venv`.
+The Go server previously delegated scanning, teaser/spritesheet generation, and actor info lookups to Python subprocesses; all of those are now Go-native. The remaining Python subprocess calls (via `execPythonSubprocess` / `execPythonSubprocess_Output` in `go_backend/internal/routes/0_routes_helpers.go`) cover: TF-IDF model building (`--generate-tfidf`), similar-video recommendations (TF-IDF cosine similarity), and preview thumbnail generation (ML-based).
 
 ## Directory Structure
 
@@ -67,16 +68,18 @@ go_backend/             # Go HTTP server (Echo)
         db/             # sqlite access + in-memory video cache
         schemas/        # VideoData, VideoInteractions, query structs
         query/          # search filtering/sorting, catalogue aggregation
-        routes/         # media / api / query / interact route handlers
+        scanner/        # Go-native library scanning: walk, hash, ffprobe, filename parse, DB merge
+        mediagen/       # Go-native media generation: teasers, spritesheets (teaser-thumbs + seek-thumbs)
+        routes/         # media / api / query / interact / dashboard route handlers
 
 python_src/             # Python FastAPI server + CLI worker
-    main.py             # FastAPI app (route-compatible with go_backend)
-    worker.py           # CLI entrypoint: scan / generate media / TF-IDF / status
-    scan/                # filesystem walking + filename/metadata parsing
-    media/               # ffmpeg-based preview media generation + status checks
-    recommender/         # TF-IDF model building, search, similarity
+    main.py             # FastAPI app (route-compatible with go_backend, now reference/fallback only)
+    worker.py           # CLI entrypoint: --generate-tfidf / --scan-libraries (legacy) / --generate-media
+    scan/                # Python scanning (legacy; scanning is now Go-native)
+    media/               # ffmpeg + ML-based preview thumbnail generation (still active for preview_thumbs)
+    recommender/         # TF-IDF model building, search, similarity (still called by Go server)
     schemas/             # VideoData / VideoInteractions / query dataclasses (Python side)
-    server/routers/      # FastAPI routers mirroring go_backend's route groups
+    server/routers/      # FastAPI routers (reference only)
     worker_scripts/      # standalone scripts invoked as subprocesses by Go
     util/                # config loading, db helpers, logging
 
@@ -146,9 +149,13 @@ SQLite is used unconventionally: rather than normalized columns, each table (`vi
 
 ## Backend Subsystems
 
-**Scanning** (`python_src/scan/`) — walks all configured collection folders, filters by extension and ignore-list, hashes new/changed files, and parses each filename against `scene_filename_formats` to populate `VideoData`. Existing DB records are merged with freshly scanned ones rather than replaced outright, so manually-edited fields and interaction history aren't clobbered. Videos no longer found on disk are marked `is_linked: false` rather than deleted, so their interaction history (favorites, ratings, view time) is preserved if the file reappears (e.g. on a reconnected drive).
+**Scanning** (`go_backend/internal/scanner/`) — Go-native. Walks all configured collection folders (`walk.go`), filters by extension and ignore list, computes a stable SHA-256 content hash from three 64 KB chunks of each file (`hash.go`), probes video attributes via ffprobe (`attributes.go`), parses each filename against `scene_filename_formats` using the `string_parser` package (`filename.go`), and merges results into the DB without clobbering manually-edited fields (`merge.go`). Videos no longer found on disk are marked `is_linked: false` rather than deleted, so interaction history survives reconnected drives. Triggered from the dashboard (`POST /api/dashboard/run-scan`) or directly. The legacy Python scanner (`python_src/scan/`) is superseded and kept only for reference.
 
-**Media generation** (`python_src/media/`, invoked either via the worker CLI or on-demand by the Go server's `/media/ensure/*` routes) — ffmpeg-driven generation of poster frames, short "teaser" preview clips, and thumbnail spritesheets (both a small "teaser thumbs" set and a dense "seek thumbs" set used for scrubbing). Generated media is cached to disk under `app_data_dir`, keyed by video hash, and only regenerated if missing or `--redo-media-gen` is passed.
+**Media generation** — split between Go (primary) and Python (ML preview thumbs only):
+- **Go** (`go_backend/internal/mediagen/`) — handles teasers (`teaser.go`: N evenly-spaced clips scaled/concatenated via ffmpeg) and spritesheet thumbnail sets (`spritesheet.go`: tiled JPEG sprites + VTT sidecar). Spritesheets use a channel-based goroutine worker pool: a fixed number of workers (typically 3–6) drain a closed work channel of frame indices, each firing a single `ffmpeg -ss` frame-extract. On-demand routes use a semaphore (`chan struct{}` of capacity 3) to cap concurrent HTTP-triggered ffmpeg processes. Batch generation is gated by collection/path/age filters. Triggered from the dashboard (`POST /api/dashboard/generate-media`) or on-demand by `/media/ensure/*` routes.
+- **Python** (`python_src/media/`, subprocess call) — ML-based preview thumbnail extraction (`preview_thumbs`). Still invoked as a subprocess by the Go server; flagged with a "Python" badge in the dashboard UI.
+
+Generated media is cached to disk under `app_data_dir` keyed by video hash, and only regenerated if missing or forced via `redo` flag.
 
 **Search & recommendations** (`python_src/recommender/`) — builds a TF-IDF model (scikit-learn `TfidfVectorizer` + Snowball stemming, English stopwords from `data/stopwords_eng.txt`) over tokens extracted from each video's metadata, used for free-text search ranking and "similar videos" lookups via cosine similarity. The model + matrix are pickled to `app_data_dir` and rebuilt whenever the worker scans libraries or is told to regenerate it explicitly.
 
@@ -156,15 +163,14 @@ SQLite is used unconventionally: rather than normalized columns, each table (`vi
 
 **Media serving quirks** — non-mp4/webm containers (notably `.mkv`) aren't directly playable in a `<video>` element, so the Go server pipes them through `ffmpeg -c copy -movflags frag_keyframe+empty_moov -f mp4` on the fly rather than transcoding the whole file up front.
 
-## Frontend
+## Frontend (old — reference only)
 
-No build step, no framework — plain JS modules and hand-written custom elements, loaded directly by the browser. Structure:
+`frontend_old/` is the original vanilla-JS frontend, no longer served. Kept as reference. Structure:
 
-- `pages/<name>/` — one folder per route (`home`, `search`, `catalogue`, `video`, `dashboard`, ...), each with its own `page.html`, `script.js`, and `styles.css`. Folders suffixed `_new`/`_old` mark in-progress rewrites of a page living alongside the version currently in use.
-- `shared/components/` — small functions returning HTML strings, injected into `<custom-header>`/`<custom-footer>` placeholder elements at load time by `shared/util/component.js` (a homegrown component system — not a templating library).
-- `shared/web_components/` — real custom elements (`customElements.define`), e.g. the search panel and search-result-card variants.
-- `shared/libraries/` — vendored/in-house JS, most notably **PassionPlayer**, a custom `<video>`-element-based player supporting editable timeline markers/annotations (the backing store for `VideoInteractions.markers`/`dated_markers`).
-- A tiny Express dev server (`frontend/package.json`: `express` + `http-proxy-middleware`) exists for local frontend iteration with API requests proxied to a running backend; in normal operation the frontend is just served as static files by whichever backend (Go or Python) is running.
+- `pages/<name>/` — one folder per route, each with `page.html`, `script.js`, and `styles.css`.
+- `shared/components/` — HTML-string functions injected at load time (homegrown component system).
+- `shared/web_components/` — custom elements (`customElements.define`), e.g. search panel and result cards.
+- `shared/libraries/` — vendored JS, most notably **PassionPlayer**, a custom `<video>`-based player supporting editable timeline markers/annotations (the backing store for `VideoInteractions.markers`/`dated_markers`).
 
 ## Launcher
 
@@ -187,13 +193,14 @@ No build step, no framework — plain JS modules and hand-written custom element
 (See `NOTES.md` for the live, unfiltered TODO list.) Notable unfinished or partial pieces as of now:
 
 - Several Go routes are explicit stubs (`501 Not Implemented`): curated collections, similar-actors, similar-studios, marker get/update.
-- TF-IDF-ranked sorting of free-text search results isn't wired up on the Go side yet (`ECHO_search_videos` filters/sorts structurally but doesn't yet call into the TF-IDF subprocess for the `search_string` case).
+- TF-IDF-ranked sorting of free-text search results isn't wired up on the Go side yet — the search route filters/sorts structurally but doesn't call into the TF-IDF subprocess for ranking `search_string` queries.
 - Performer/studio embeddings (for "similar actor/studio" features) are a planned but unimplemented worker feature (`--generate-embeddings` is a no-op stub).
-- A handful of frontend pages exist in parallel old/new versions (e.g. `dashboard` vs `dashboard_old`, `search` vs `search_new`, `video` vs `video_new`) as features are reworked in place.
+- Preview thumbnail generation (`preview_thumbs`) is still Python-only (ML-based); the Go mediagen package doesn't handle it.
+- Four Svelte pages remain stubs: `search`, `catalogue`, `curated`, `video`.
 
 ## Svelte rewrite
 
-The vanilla-JS frontend (preserved at `frontend_old/` for reference) is being replaced by `frontend/` — a Svelte 5 + TypeScript + Tailwind v4 project (Vite-built, no SvelteKit). The header chrome, client-side router, card system, and home page are all functional; the remaining five pages (`search`, `catalogue`, `curated`, `video`, `dashboard`) are stubs.
+The vanilla-JS frontend (preserved at `frontend_old/` for reference) is being replaced by `frontend/` — a Svelte 5 + TypeScript + Tailwind v4 project (Vite-built, no SvelteKit). The header chrome, client-side router, card system, home page, dashboard page, and video page are all functional; the remaining three pages (`search`, `catalogue`, `curated`) are stubs.
 
 - **Router** (`src/lib/router/`) — hand-rolled, no third-party package, real URL paths (history mode, not hash routing):
   - `router.svelte.ts` — `routerState` (`$state`-backed current path), `navigate(path, { replace? })`, `initRouter()` (wires `popstate` + a delegated `document` click listener that intercepts same-origin `<a>` clicks and routes them client-side, skipping modifier-clicks/`target`/`download`/external links), and `matchRoute`/`matchPattern` (segment-based matching with `:param` support, ready for future params like `/video/:hash`). The `.svelte.ts` suffix is required for top-level rune usage outside a `.svelte` file.
@@ -205,13 +212,18 @@ The vanilla-JS frontend (preserved at `frontend_old/` for reference) is being re
   - `Spinner.svelte` — reusable orange gradient ring animation. Props: `size` (px, default 52) and `bg` (inner-circle colour matching the container background, default `#060A0A`). Used inside card thumbnails while the spritesheet is loading, and on pages while data fetches are in flight.
   - `cards/DefaultCard.svelte` — the full video card. Poster image with a hover sprite-sheet teaser (fires `/media/ensure/teaser-thumbs-small/:hash`, then loads the VTT + spritesheet and scrubs by mouse position); stats overlay (resolution/bitrate/duration chips, views, collection badge, NEW badge); interactions loaded from `/api/interact/get/:hash` (viewtime, likes, rating, favourite toggle with optimistic UI); actor/tag lists with expand-on-click for overflow; four size variants driven by the `size` prop ('small' 20.5rem / 'medium' 25rem / 'large' 33rem / 'xl' 40rem). While hovering and loading the spritesheet the poster is hidden and a `Spinner` is shown centred on the black thumbnail background; unhovered it shows the poster normally.
   - `cards/VideoCard.svelte` — thin wrapper that selects card variant via `settings.cardVariant` (currently only 'default') and passes through `video`, `size`, `width`, `aspectRatio` props.
+  - `RenameOverlay.svelte` — modal overlay (F2 on the video page) for renaming a video file. Validates against Windows/POSIX illegal chars in real time (red input), shows the extension as a read-only suffix beside the text box, unloads the player before sending the request, retries on failure, and shows a dismissable undo bar after success.
 - **Types** (`src/lib/types/`):
   - `video.ts` — `VideoData` and `VideoInteractions` TypeScript interfaces, mirroring the Go schemas.
   - `query.ts` — `SearchQuery` and `CatalogueQuery` interfaces.
 - **Stores / utilities** (`src/lib/stores/`, `src/lib/util/`):
   - `settings.svelte.ts` — singleton `settings` object persisted to `localStorage`. Fields: `cardVariant` ('default'), `cardSize` ('small'|'medium'|'large'|'xl'), `teaserMode` ('sprite'|'video').
   - `pager.svelte.ts` — `createPager<T>(source, batchSize)` factory. Exposes `visible` (current slice), `hasMore`, `loadMore()`, `reset()`. Used by the home page for "Load More Results".
-- **Pages** (`src/pages/<name>/Page.svelte`) — `home`, `search`, `catalogue`, `curated`, `video`, `dashboard`. The home page is fully functional: fetches a random spotlight video and renders it as a full-width `VideoCard` (21:9 aspect ratio), then fetches similar videos and shows them in a paginated card grid, with a `Spinner` during both loading phases. The remaining five pages are single-line stubs.
+- **Pages** (`src/pages/<name>/Page.svelte`) — `home`, `search`, `catalogue`, `curated`, `video`, `dashboard`.
+  - `home` — fully functional: spotlight video (full-width 21:9 `VideoCard`) + paginated similar-video grid with `Spinner`.
+  - `dashboard` — fully functional: scan controls (reparse filenames, re-read JSON, redo attributes, rehash, path filter); media generation controls (type selector, redo flag, collection/path/days filters, quick-action buttons); TF-IDF rebuild button; per-type coverage percentages; real-time job log via SSE (`GET /api/dashboard/job-stream`). Go-native media types are labelled inline; Python-delegated ones show a "Python" badge.
+  - `video` — fully functional: resolves a `random` sentinel hash, fetches `VideoData` + `VideoInteractions` in parallel, renders `VideoPlayer` / `VideoDetails` / `RelatedVideos` / `SimilarVideos`. F2 opens `RenameOverlay`; the player is unmounted before the rename request and remounted after; an undo bar appears bottom-right after success.
+  - `search`, `catalogue`, `curated` — single-line stubs.
 - Colors/fonts: `src/app.css` defines a global dark `body` background (`#060A0A`), a Tailwind v4 `@theme` block with `--color-*` tokens, and `@font-face` rules for `Jaro-Regular.ttf` and the Inter variable font (copied into `src/assets/fonts/`).
 - The Go server serves `frontend/dist/assets` and `favicon.svg` directly, then falls back to `frontend/dist/index.html` for any other GET request so client-side routes survive a hard refresh/deep link.
 - The Vite dev server proxies `/api`, `/media`, and `/static` to `http://localhost:8124` (the Go backend port, set in `config.yaml`) so API calls work during `npm run dev` without CORS issues.

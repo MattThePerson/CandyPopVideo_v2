@@ -63,7 +63,7 @@
 <div class="details">
 
     <div class="title-row">
-        <h1 class="title">{video.title || video.scene_title || video.filename}</h1>
+        <h1 class="title">{(video.title || video.scene_title || video.filename).replaceAll(';', ':')}</h1>
         {#if video.date_released}
             <span class="year">{video.date_released.slice(0, 4)}</span>
         {/if}
