@@ -37,24 +37,23 @@ It's built and run as a single-user local web app: no auth, no multi-tenancy, ju
 
 ## Tech Stack
 
-- **Go backend** (`go_backend/`) — [Echo v4](https://echo.labstack.com/) HTTP server. This is the actively developed server; it handles scanning, media generation, and all DB access natively.
+- **Go backend** (`go_backend/`) — [Echo v4](https://echo.labstack.com/) HTTP server. This is the primary server; it handles scanning, media generation, and all DB access natively.
 - **string_parser** — the author's own Go package (`github.com/MattThePerson/string_parser`), used by the Go scanner to parse structured metadata out of filenames via config-driven format templates.
-- **Python backend + worker** (`python_src/`) — a FastAPI server (`main.py`) kept for reference/fallback, plus a CLI tool (`worker.py`). The Go server still shells out to the Python worker for two things it doesn't yet handle natively: TF-IDF model building/search and ML-based preview thumbnail extraction.
+- **Python workers** (`py/`) — minimal, self-contained CLI scripts called as subprocesses by Go for two things Go doesn't handle natively: TF-IDF model building/querying and ML-based preview thumbnail extraction. Each script is one-job-only; all paths are passed as explicit CLI flags. The venv lives at `py/.venv`, managed by `uv`.
+- **handymatt-media** — the author's own Python library (`py/` dep), used by `py/cmd/generatePreviewThumbs.py` for ML-based frame selection (`extractPreviewThumbs`).
 - **Frontend** (`frontend/`) — Svelte 5 + TypeScript + Tailwind v4, Vite-built. The active frontend served by the Go backend. (The old vanilla JS frontend is preserved at `frontend_old/` for reference.)
-- **SQLite** — the only data store. Both backends talk to it directly (Go via `modernc.org/sqlite`, a pure-Go driver so no CGO toolchain is needed).
+- **SQLite** — the only data store. Go talks to it directly via `modernc.org/sqlite` (pure-Go, no CGO needed).
 - **ffmpeg** — required system dependency; used directly for poster frames, video "teasers", thumbnail spritesheets, and mkv→mp4 remuxing.
-- **handymatt / handymatt-media** — the author's own Python libraries, used by the Python side for video hashing and WSL-aware path conversion.
 - **launcher** (`launcher/`) — a `pystray` tray-icon app that wraps the server process so it can be started/stopped/restarted without a terminal window.
 
 ## Architecture
 
-Two backend implementations currently coexist, with a CLI worker alongside them:
+One server, plus "dumb" Python workers for two specific tasks:
 
-1. **Go server** (`go_backend/cmd/app/main.go`, entrypoint built to `bin/CandyPopVideo.exe`) — the primary server. Serves the frontend as static files, owns all database reads/writes, runs library scanning, and drives media generation. Exposes route groups: `/media`, `/api`, `/api/query`, `/api/interact`, and `/api/dashboard`. Started directly or via the tray-app launcher.
-2. **Python server** (`python_src/main.py`, FastAPI + uvicorn) — the original implementation, kept as a reference/fallback. No longer the active server.
-3. **Python worker** (`python_src/worker.py`, run as `python -m python_src.worker <flags>`) — not a server. A CLI with `--generate-tfidf`, `--scan-libraries` (legacy), `--generate-media`, etc. The Go server still shells out to it for TF-IDF model building (called from the dashboard "Rebuild TF-IDF" action and after a scan), and the Python side still handles ML-based preview thumbnail extraction (`preview_thumbs`). The Python interpreter used is whatever lives in the project's `.venv`.
+1. **Go server** (`go_backend/cmd/app/main.go`, entrypoint built to `bin/CandyPopVideo.exe`) — the only server. Serves the frontend as static files, owns all database reads/writes, runs library scanning, and drives media generation. Exposes route groups: `/media`, `/api`, `/api/query`, `/api/interact`, and `/api/dashboard`. Started directly or via the tray-app launcher.
+2. **Python workers** (`py/cmd/`) — one-job-per-script CLI entrypoints: `generateTFIDF.py`, `getSimilarVideos.py`, `getActorInfo.py`, `generatePreviewThumbs.py`. Each script receives everything it needs via explicit CLI flags — no config reading, no app state. Go invokes them via the `internal/pyworker` package (`pyworker.Exec` / `pyworker.ExecOutput`), which discovers `py/` by walking up from the executable dir (or cwd for `go run`), sets `cmd.Dir = py/` so modules resolve as `from lib.X import Y`, and caches the result with `sync.Once`.
 
-The Go server previously delegated scanning, teaser/spritesheet generation, and actor info lookups to Python subprocesses; all of those are now Go-native. The remaining Python subprocess calls (via `execPythonSubprocess` / `execPythonSubprocess_Output` in `go_backend/internal/routes/0_routes_helpers.go`) cover: TF-IDF model building (`--generate-tfidf`), similar-video recommendations (TF-IDF cosine similarity), and preview thumbnail generation (ML-based).
+Python subprocess calls cover: TF-IDF model building (`cmd.generateTFIDF`, triggered from dashboard and after scan), similar-video recommendations (`cmd.getSimilarVideos`, TF-IDF cosine similarity), actor info scraping (`cmd.getActorInfo`, Babepedia), and ML-based preview thumbnail extraction (`cmd.generatePreviewThumbs`, opt-in only — not included in "all" media type).
 
 ## Directory Structure
 
@@ -64,24 +63,28 @@ go_backend/             # Go HTTP server (Echo)
         app/main.go     # entrypoint, route registration, static file serving
         worker/main.go  # Go worker stub (not yet implemented)
     internal/
-        config/         # config.yaml loader
+        config/         # config.yaml loader + ConfigStore (RWMutex-protected, hot-reloadable)
         db/             # sqlite access + in-memory video cache
         schemas/        # VideoData, VideoInteractions, query structs
         query/          # search filtering/sorting, catalogue aggregation
         scanner/        # Go-native library scanning: walk, hash, ffprobe, filename parse, DB merge
         mediagen/       # Go-native media generation: teasers, spritesheets (teaser-thumbs + seek-thumbs)
+        pyworker/       # Python subprocess helpers: interpreter discovery, Exec, ExecOutput
         routes/         # media / api / query / interact / dashboard route handlers
 
-python_src/             # Python FastAPI server + CLI worker
-    main.py             # FastAPI app (route-compatible with go_backend, now reference/fallback only)
-    worker.py           # CLI entrypoint: --generate-tfidf / --scan-libraries (legacy) / --generate-media
-    scan/                # Python scanning (legacy; scanning is now Go-native)
-    media/               # ffmpeg + ML-based preview thumbnail generation (still active for preview_thumbs)
-    recommender/         # TF-IDF model building, search, similarity (still called by Go server)
-    schemas/             # VideoData / VideoInteractions / query dataclasses (Python side)
-    server/routers/      # FastAPI routers (reference only)
-    worker_scripts/      # standalone scripts invoked as subprocesses by Go
-    util/                # config loading, db helpers, logging
+py/                     # Python workers — minimal, self-contained, called as subprocesses by Go
+    cmd/                # one-job entrypoints (run as: python -m cmd.<name> --flag val ...)
+        generateTFIDF.py        # build + pickle TF-IDF model from DB
+        getSimilarVideos.py     # cosine similarity lookup via pickled matrix
+        getActorInfo.py         # Babepedia scraper / actor info cache
+        generatePreviewThumbs.py # ML-based poster frame selection (handymatt-media)
+    lib/                # shared library modules
+        recommender/    # tfidf.py, tfidf_light.py, tfidf_model.py, model_matrix.py, stopwords_eng.py
+        actor/          # actor_api.py — Babepedia scraper
+        schemas/        # video_data.py — VideoData dataclass
+        util/           # db.py (read from sqlite), general.py (pickle save/load)
+    pyproject.toml      # uv-managed deps: scikit-learn, scipy, numpy, nltk, requests, bs4, handymatt-media
+    .venv/              # created by: cd py && uv sync
 
 frontend/               # Svelte 5 + TS + Tailwind v4 frontend (Vite-built, served by Go backend)
     src/
@@ -129,7 +132,7 @@ Key config.yaml fields:
 - `datetime_format` — display format for dates in the frontend.
 - `curated_collections` — list of named saved searches shown on the `/curated` page. Each entry has `name`, `description`, and a `query` object whose fields (`actor`, `studio`, `tags`, `sortby`, etc.) map to the standard search filters.
 
-The Go config package (`go_backend/internal/config/config.go`) exposes `ConfigStore` (RWMutex-protected, hot-reloadable) and `NewConfigStore()` (handles first-run bootstrap). Python subprocesses no longer read config.yaml; instead, the Go server passes all needed paths as explicit CLI flags (`--db-path`, `--model-dir`, `--model-path`, `--actor-info-dir`).
+The Go config package (`go_backend/internal/config/config.go`) exposes `ConfigStore` (RWMutex-protected, hot-reloadable) and `NewConfigStore()` (handles first-run bootstrap). Python worker scripts never read config.yaml — the Go server passes all needed paths as explicit CLI flags (`--db-path`, `--model-dir`, `--model-path`, `--actor-info-dir`, `--media-dir`).
 
 ## Data Model
 
@@ -137,7 +140,7 @@ Videos are identified by a **content hash**, not by file path or filename — th
 
 SQLite is used unconventionally: rather than normalized columns, each table (`videos`, `interactions`) stores one row per video keyed by `id` (the hash) with a single `data` column holding a JSON blob of the full struct (see `ReadSerializedRowFromTable` / `WriteSerializedRowToTable` in `go_backend/internal/db/db.go`). A `views` table is the one exception — it's appended to as a plain log of `(timestamp, video_hash, duration_sec)` rows rather than serialized. The DB runs in WAL mode for concurrent reads/writes. The Go server also keeps a short-lived in-process cache of the entire deserialized `videos` table (`internal/db/cache.go`) to avoid re-parsing JSON on every request — it's invalidated after a base timeout *and* no further access within an access timeout.
 
-**`VideoData`** (`go_backend/internal/schemas/video_data.go`, mirrored in `python_src/schemas/video_data.py`) — everything derived from the file itself plus parsed/external metadata:
+**`VideoData`** (`go_backend/internal/schemas/video_data.go`, mirrored as a Python dataclass in `py/lib/schemas/video_data.py`) — everything derived from the file itself plus parsed/external metadata:
 - identity/file info: `hash`, `path`, `filename`, `date_added`, `duration`, `filesize_mb`, `fps`, `resolution`, `bitrate`, `is_linked` (false if the file backing this record can no longer be found on disk)
 - collection placement: `collection`, `parent_dir`, `path_relative`
 - scene/title metadata: `title`, `scene_title`, `scene_number`, `movie_title`, `movie_series`, `studio`, `line`, `date_released`, `description`, `dvd_code`, `source_id`
@@ -155,15 +158,15 @@ SQLite is used unconventionally: rather than normalized columns, each table (`vi
 
 ## Backend Subsystems
 
-**Scanning** (`go_backend/internal/scanner/`) — Go-native. Walks all configured collection folders (`walk.go`), filters by extension and ignore list, computes a stable SHA-256 content hash from three 64 KB chunks of each file (`hash.go`), probes video attributes via ffprobe (`attributes.go`), parses each filename against `scene_filename_formats` using the `string_parser` package (`filename.go`), and merges results into the DB without clobbering manually-edited fields (`merge.go`). Videos no longer found on disk are marked `is_linked: false` rather than deleted, so interaction history survives reconnected drives. Triggered from the dashboard (`POST /api/dashboard/run-scan`) or directly. The legacy Python scanner (`python_src/scan/`) is superseded and kept only for reference.
+**Scanning** (`go_backend/internal/scanner/`) — Go-native. Walks all configured collection folders (`walk.go`), filters by extension and ignore list, computes a stable SHA-256 content hash from three 64 KB chunks of each file (`hash.go`), probes video attributes via ffprobe (`attributes.go`), parses each filename against `scene_filename_formats` using the `string_parser` package (`filename.go`), and merges results into the DB without clobbering manually-edited fields (`merge.go`). Videos no longer found on disk are marked `is_linked: false` rather than deleted, so interaction history survives reconnected drives. Triggered from the dashboard (`POST /api/dashboard/run-scan`) or directly. After a scan completes, Go shells out to `py/cmd/generateTFIDF.py` to rebuild the TF-IDF model.
 
 **Media generation** — split between Go (primary) and Python (ML preview thumbs only):
 - **Go** (`go_backend/internal/mediagen/`) — handles teasers (`teaser.go`: N evenly-spaced clips scaled/concatenated via ffmpeg) and spritesheet thumbnail sets (`spritesheet.go`: tiled JPEG sprites + VTT sidecar). Spritesheets use a channel-based goroutine worker pool: a fixed number of workers (typically 3–6) drain a closed work channel of frame indices, each firing a single `ffmpeg -ss` frame-extract. On-demand routes use a semaphore (`chan struct{}` of capacity 3) to cap concurrent HTTP-triggered ffmpeg processes. Batch generation is gated by collection/path/age filters. Triggered from the dashboard (`POST /api/dashboard/generate-media`) or on-demand by `/media/ensure/*` routes.
-- **Python** (`python_src/media/`, subprocess call) — ML-based preview thumbnail extraction (`preview_thumbs`). Still invoked as a subprocess by the Go server; flagged with a "Python" badge in the dashboard UI.
+- **Python** (`py/cmd/generatePreviewThumbs.py`, subprocess call) — ML-based preview thumbnail extraction via `handymatt_media.media_generator.extractPreviewThumbs`. Creates `<media-dir>/0x<hash>/previewthumbs/` with ~10 images at 360 and 1080 resolution. Opt-in only — not included when `media_type` is `"all"` (too slow for bulk runs). Flagged with a "Python" badge in the dashboard UI.
 
 Generated media is cached to `preview_media_dir` keyed by video hash, and only regenerated if missing or forced via `redo` flag.
 
-**Search & recommendations** (`python_src/recommender/`) — builds a TF-IDF model (scikit-learn `TfidfVectorizer` + Snowball stemming, English stopwords embedded in `python_src/recommender/stopwords_eng.py`) over tokens extracted from each video's metadata, used for free-text search ranking and "similar videos" lookups via cosine similarity. The model + matrix are pickled to the OS app data dir and rebuilt whenever the worker scans libraries or is told to regenerate it explicitly.
+**Search & recommendations** (`py/lib/recommender/`, `py/cmd/`) — `generateTFIDF.py` builds a TF-IDF model (scikit-learn `TfidfVectorizer` + Snowball stemming, English stopwords in `py/lib/recommender/stopwords_eng.py`) over tokens from each video's metadata and pickles the result (`tdidf.pkl`, `tdidf_matrix.pkl`) to the OS app data dir. `getSimilarVideos.py` loads the lighter matrix-only pickle and computes cosine similarity on demand. Both are invoked as subprocesses by the Go server via `pyworker.Exec`/`pyworker.ExecOutput`.
 
 **Filtering/sorting/catalogue** (`go_backend/internal/query/`) — the Go-native, non-TF-IDF half of search: structural filtering by actor/studio/collection/tags/date ranges/favorites, configurable sort (including a natural-sort-aware title comparator that treats embedded numbers as numbers, see `formatStringForIntComparability`), and catalogue aggregation (grouping videos by actor/studio/collection/tag with counts and "newest video" info for browsing pages).
 
@@ -184,13 +187,11 @@ Generated media is cached to `preview_media_dir` keyed by video hash, and only r
 
 ## Build & Run
 
-- `make install` — creates `.venv`, installs `requirements.txt` (via `uv` for speed).
+- `cd py && uv sync` — creates `py/.venv` and installs Python worker dependencies.
 - `make build-go` — builds the Go server to `bin/CandyPopVideo.exe` (or unsuffixed on Linux).
 - `make build-launcher` — packages the tray app to `bin/CandyPopVideoTrayApp.exe` via PyInstaller.
 - `make build` — both of the above.
 - `tools/run_go.ps1` / equivalent — runs the built Go server.
-- `tools/run_python.ps1 [--dev] [--reinstall-venv]` — runs the Python FastAPI server directly via uvicorn (creates `.venv` on first run if missing).
-- `tools/worker.ps1` / `tools/worker.sh` — runs the Python worker CLI (`python -m python_src.worker`) with whatever args are forwarded.
 - Both Makefiles are OS-gated through the root `Makefile`, which includes `tools/Windows.mak` on Windows and `tools/Linux.mak` otherwise.
 - Docker is also supported as an alternative to the tray app/native install — see `Dockerfile`; requires mounting `app_data_dir`, the video library paths, and `config.yaml` as volumes.
 
@@ -199,9 +200,8 @@ Generated media is cached to `preview_media_dir` keyed by video hash, and only r
 (See `NOTES.md` for the live, unfiltered TODO list.) Notable unfinished or partial pieces as of now:
 
 - Go routes still stubbed (`501 Not Implemented`): `GET /api/query/get/similar-actors/:name`, `GET /api/query/get/similar-studios/:name`, marker get/update.
-- TF-IDF-ranked sorting of free-text search results isn't wired up on the Go side yet — the search route filters/sorts structurally but doesn't call into the TF-IDF subprocess for ranking `search_string` queries.
-- Performer/studio embeddings (for "similar actor/studio" features) are a planned but unimplemented worker feature (`--generate-embeddings` is a no-op stub).
-- Preview thumbnail generation (`preview_thumbs`) is still Python-only (ML-based); the Go mediagen package doesn't handle it.
+- TF-IDF-ranked sorting of free-text search results isn't wired up on the Go side yet — the search route filters/sorts structurally but doesn't call the TF-IDF subprocess for `search_string` ranking.
+- Performer/studio embeddings (for "similar actor/studio" features) are planned but unimplemented (`py/lib/recommender/similarity.py` has the stub).
 
 ## Svelte rewrite
 

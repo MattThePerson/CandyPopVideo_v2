@@ -8,6 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"cpv_backend/internal/db"
+	"cpv_backend/internal/pyworker"
 	"cpv_backend/internal/query"
 	"cpv_backend/internal/schemas"
 )
@@ -116,9 +117,9 @@ func ECHO_get_similar_videos(c echo.Context, db_path string, tfidfMatrixPath str
 	// [subprocess] get similar videos
 	fmt.Printf("[EXEC] Fetching similar videos for `%s` ...\n", video_hash)
 	start := time.Now()
-	response, err := execPythonSubprocess_Output[SubprocessResponse](
-		"-m", "python_src.worker_scripts.getSimilarVideos",
-		"-target", video_hash,
+	response, err := pyworker.ExecOutput[SubprocessResponse](
+		"-m", "cmd.getSimilarVideos",
+		"--target", video_hash,
 		"--model-path", tfidfMatrixPath,
 	)
 	if err != nil {

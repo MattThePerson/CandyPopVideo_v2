@@ -81,7 +81,7 @@ func main() {
     e.Static("/assets", "frontend/dist/assets")
     e.File("/favicon.svg", "frontend/dist/favicon.svg")
 
-    e.Static("/static/preview-media", cfg.PreviewMediaDir)
+    e.Static("/static/preview-media", cfg.PreviewMediaDir+"/preview")
     e.Static("/static/actor-store", cfg.ActorInfoDir)
 
     e.GET("/*", func(c echo.Context) error {

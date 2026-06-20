@@ -14,6 +14,7 @@ import (
 
 	"cpv_backend/internal/config"
 	"cpv_backend/internal/db"
+	"cpv_backend/internal/pyworker"
 	"cpv_backend/internal/schemas"
 )
 
@@ -205,10 +206,9 @@ func ECHO_get_actor(c echo.Context, db_path string, actorInfoDir string) error {
 	name := c.Param("name")
 
 	// [subprocess]
-	data, err := execPythonSubprocess_Output[map[string]any](
-		"-m", "python_src.worker_scripts.getActorInfo",
-		"-name", name,
-		"-redo", "false",
+	data, err := pyworker.ExecOutput[map[string]any](
+		"-m", "cmd.getActorInfo",
+		"--name", name,
 		"--actor-info-dir", actorInfoDir,
 	)
 	if err != nil {

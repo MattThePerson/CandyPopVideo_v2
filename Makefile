@@ -14,19 +14,25 @@ LD_FLAGS := -s -w
 EXE_NAME := CandyPopVideo
 EXE_PATH := bin/$(EXE_NAME)$(EXE_SUFFIX)
 
-.PHONY: all build build-go build-npm install-npm run-dev-go run-dev-npm clean
+.PHONY: all install install-python install-npm build build-go build-npm run-dev-go run-dev-npm clean
 
-all: build
+all: install build
 
-# BUILDING
+# INSTALLING (py, npm)
 install-npm:
 	cd frontend && npm install
 
+install-python:
+	cd py && uv sync
+
+install: install-python install-npm
+
+# BUILDING (go, npm)
 build-go:
 	go mod tidy -C $(GO_BACKEND) && \
 	go build -C $(GO_BACKEND) -ldflags="$(LD_FLAGS)" -o ../$(EXE_PATH) ./cmd/app
 
-build-npm: install-npm
+build-npm:
 	cd frontend && npm run build
 
 build: build-go build-npm

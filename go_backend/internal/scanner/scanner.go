@@ -3,14 +3,13 @@ package scanner
 import (
     "fmt"
     "os"
-    "os/exec"
     "path/filepath"
-    "runtime"
     "strings"
     "time"
 
     "cpv_backend/internal/config"
     "cpv_backend/internal/db"
+    "cpv_backend/internal/pyworker"
     "cpv_backend/internal/schemas"
 )
 
@@ -108,7 +107,7 @@ func ScanLibraries(cfg config.Config, opts ScanOptions, emit func(string)) error
     }
 
     emit(fmt.Sprintf("[SCAN] Done. %d videos processed, %d errors.", len(loaded), errCount))
-    rebuildTFIDF(emit)
+    rebuildTFIDF(cfg, emit)
     return nil
 }
 
@@ -201,21 +200,16 @@ func fileCtime(path string) string {
 
 // rebuildTFIDF shells out to the Python worker to regenerate the TF-IDF model
 // so similar-video lookups stay current after a scan.
-func rebuildTFIDF(emit func(string)) {
+func rebuildTFIDF(cfg config.Config, emit func(string)) {
     emit("[TFIDF] Building TF-IDF model…")
-    out, err := exec.Command(localPythonInterpreter(), "-m", "python_src.worker", "--generate-tfidf").CombinedOutput()
+    _, err := pyworker.Exec(
+        "-m", "cmd.generateTFIDF",
+        "--db-path", cfg.DBPath,
+        "--model-dir", cfg.AppDataDir,
+    )
     if err != nil {
-        emit(fmt.Sprintf("[TFIDF] Failed: %v — %s", err, strings.TrimSpace(string(out))))
+        emit(fmt.Sprintf("[TFIDF] Failed: %v", err))
         return
     }
     emit("[TFIDF] Model built successfully.")
-}
-
-// localPythonInterpreter returns the path to the project .venv interpreter.
-// Mirrors getLocalPythonInterpreter in routes/0_routes_helpers.go.
-func localPythonInterpreter() string {
-    if runtime.GOOS == "windows" {
-        return `.venv\Scripts\python.exe`
-    }
-    return ".venv/bin/python3"
 }

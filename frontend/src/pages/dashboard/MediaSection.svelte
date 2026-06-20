@@ -32,11 +32,12 @@
     let pathFilter = $state('');
     let daysFilter = $state(0);
 
-    const mediaTypes = [
-        { value: 'all',          label: 'All' },
-        { value: 'teasers',      label: 'Teasers' },
-        { value: 'teaser_thumbs',label: 'Teaser Thumbs' },
-        { value: 'seek_thumbs',  label: 'Seek Thumbs' },
+    const mediaTypes: { value: string; label: string; python?: boolean }[] = [
+        { value: 'all',           label: 'All' },
+        { value: 'teasers',       label: 'Teasers' },
+        { value: 'teaser_thumbs', label: 'Teaser Thumbs' },
+        { value: 'seek_thumbs',   label: 'Seek Thumbs' },
+        { value: 'preview_thumbs', label: 'Preview Thumbs', python: true },
     ];
 
     const coverageRows: { key: keyof MediaStatusResponse; label: string; python?: boolean }[] = [
@@ -80,7 +81,7 @@
         {#each mediaTypes as t}
             <label class="type-opt">
                 <input type="radio" name="media-type" value={t.value} bind:group={mediaType} {disabled} />
-                {t.label}
+                {t.label}{#if t.python}<span class="py-badge">Python</span>{/if}
             </label>
         {/each}
     </div>

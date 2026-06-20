@@ -1,13 +1,10 @@
 package routes
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
-	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -32,57 +29,9 @@ func handleServerError(c echo.Context, status int, msg string, err error) error 
 }
 
 func getVideoMediaDir(media_dir string, video_hash string) string {
-	return media_dir + "/0x" + video_hash
+	return media_dir + "/preview/0x" + video_hash
 }
 
-
-// execPythonSubprocess will find local python interpreter and execute commands using it
-func execPythonSubprocess(args ...string) (float64, error) {
-	var python_exec = getLocalPythonInterpreter()
-	var start = time.Now()
-	cmd := exec.Command( python_exec, args... )
-	if output, err := cmd.CombinedOutput(); err != nil {
-		log.Printf("STDOUT\n****\n%s\n****", string(output))
-		return -1, err
-	}
-	return time.Since(start).Seconds(), nil
-}
-
-
-// execPythonSubprocess will find local python interpreter and execute commands using it
-func execPythonSubprocess_Output[R any](args ...string) (R, error) {
-	var reply R
-	
-	var python_exec = getLocalPythonInterpreter()
-	cmd := exec.Command( python_exec, args... )
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Printf("STDOUT\n****\n%s\n****", string(output))
-		return reply, err
-	}
-	// unmarshal
-	if err := json.Unmarshal(output, &reply); err != nil {
-		return reply, err
-	}
-	return reply, nil
-}
-
-
-func getLocalPythonInterpreter() string {
-    var path string
-    if runtime.GOOS == "windows" {
-        path = ".venv\\Scripts\\python.exe"
-    } else {
-        path = ".venv/bin/python3"
-    }
-
-	if _, err := os.Stat(path); err == nil {
-		return path
-	}
-
-    log.Fatal("No local Python interpreter found in .venv")
-    return "" // unreachable, but required
-}
 
 
 func getPreviewThumbnail(vid_media_dir string, large_thumbs bool) (string, error) {

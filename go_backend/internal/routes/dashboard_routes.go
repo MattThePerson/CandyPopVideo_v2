@@ -12,6 +12,7 @@ import (
     "cpv_backend/internal/config"
     "cpv_backend/internal/db"
     "cpv_backend/internal/mediagen"
+    "cpv_backend/internal/pyworker"
     "cpv_backend/internal/scanner"
 )
 
@@ -222,8 +223,8 @@ func ECHO_dashboard_generate_media(c echo.Context, cfg config.Config) error {
 func ECHO_dashboard_rebuild_tfidf(c echo.Context, cfg config.Config) error {
     started := dashBroker.start(func(emit func(string)) {
         emit("[TFIDF] Building TF-IDF model…")
-        tt, err := execPythonSubprocess(
-            "-m", "python_src.worker", "--generate-tfidf",
+        tt, err := pyworker.Exec(
+            "-m", "cmd.generateTFIDF",
             "--db-path", cfg.DBPath,
             "--model-dir", cfg.AppDataDir,
         )

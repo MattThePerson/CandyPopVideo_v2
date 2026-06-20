@@ -1,0 +1,14 @@
+[project]
+name = "candypop-workers"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "scikit-learn",
+    "scipy",
+    "numpy",
+    "nltk",
+    "requests",
+    "beautifulsoup4",
+    "handymatt-media",
+    "send2trash>=2.1.0",
+]
