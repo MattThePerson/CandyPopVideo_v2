@@ -98,15 +98,6 @@
 - [ ] Migration from blob schema (include hash migration from Stage 2)
 - [ ] Proper indices for common query patterns
 
-### Profiles
-- [ ] Profile entity (name, config overrides, per-profile interaction history)
-- [ ] Profile-aware DB reads/writes throughout
-- [ ] Frontend: profile switcher in Header
-- [ ] Frontend: per-profile settings page
-
-### Dashboard (frontend + backend)
-- [ ] Dashboard enhancements post-Stage-2 (profile-aware stats, per-profile media status)
-
 ---
 
 ## Stage 4 — General Improvements

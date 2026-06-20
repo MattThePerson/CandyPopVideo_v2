@@ -50,6 +50,8 @@ func main() {
         log.Fatalf("Failed to initialize database: %v", err)
     }
 
+    stateStore := config.NewAppStateStore(cfg.AppDataDir)
+
     e := echo.New()
 
     e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
@@ -69,6 +71,7 @@ func main() {
     routes.IncludeDashboardRoutes(e.Group("/api/dashboard"), store)
     routes.IncludeRenameRoutes(   e.Group("/api"),           store)
     routes.IncludeConfigRoutes(   e.Group("/api"),           store)
+    routes.IncludeStateRoutes(    e.Group("/api"),           stateStore)
 
     e.GET("/hello-there", func(c echo.Context) error {
         return c.String(200, "General Kenobi!")

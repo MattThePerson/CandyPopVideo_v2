@@ -76,11 +76,10 @@ func ScanLibraries(cfg config.Config, opts ScanOptions, emit func(string)) error
             vd.TagsFromFilename = tags
 
             // Build rel_parent/cleanStem for the parser
-            collectionFolderName := filepath.Base(vf.CollectionRoot)
             relParent := relativeParent(vf.Path, vf.CollectionRoot)
             var parseInput string
             if relParent != "" {
-                parseInput = collectionFolderName + "/" + relParent + "/" + cleanStem
+                parseInput = filepath.Dir(vf.Path) + "/" + cleanStem
             } else {
                 parseInput = cleanStem
             }
