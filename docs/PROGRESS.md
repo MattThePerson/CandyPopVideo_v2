@@ -45,17 +45,17 @@
 
 ---
 
-### Stage 2a — Dashboard UI
+### Stage 2a — Dashboard UI ✓
 
 **Goal:** Full Svelte dashboard page; Go provides SSE/polling skeleton endpoints (stub data initially, filled in as 2b/2c land).
 
-- [ ] Dashboard page layout (library stats panel, scan controls, media-gen controls, TF-IDF rebuild controls)
-- [ ] SSE endpoint for job progress (Go stub: streams placeholder events)
-- [ ] Library health view — unlinked videos, missing media by type, DB stats
-- [ ] Scan trigger UI (options: reparse filenames, reread JSON, rehash)
-- [ ] Media generation trigger UI (type selector, path filter, redo toggle)
-- [ ] TF-IDF rebuild trigger UI (shells out to Python worker, as before)
-- [ ] Job log / output panel (streams SSE lines while a job runs)
+- [x] Dashboard page layout (library stats panel, scan controls, media-gen controls, TF-IDF rebuild controls)
+- [x] SSE endpoint for job progress (Go stub: streams placeholder events)
+- [x] Library health view — unlinked videos, missing media by type, DB stats
+- [x] Scan trigger UI (options: reparse filenames, reread JSON, rehash)
+- [x] Media generation trigger UI (type selector, path filter, redo toggle)
+- [x] TF-IDF rebuild trigger UI (shells out to Python worker, as before)
+- [x] Job log / output panel (streams SSE lines while a job runs)
 
 ---
 
@@ -74,18 +74,18 @@
 
 ---
 
-### Stage 2c — Go Media Generator
+### Stage 2c — Go Media Generator ✓
 
 **Goal:** Go handles all ffmpeg-based media generation; on-demand routes no longer shell out to Python for these types.
 
-- [ ] Poster frame — ffmpeg at 20% duration
-- [ ] Teaser clip — duration-based clip-count formula, N×1.3s clips spread 0–98%, ffmpeg concat demuxer
-- [ ] Teaser thumbs small — ffmpeg `fps+scale+tile`, 16 frames @ 300px, VTT file
-- [ ] Seek thumbs — ffmpeg `fps+scale+tile`, 400 frames @ 300px, VTT file
-- [ ] Media status checks — file-existence helpers for all Go-generated media types
-- [ ] Batch media generation with filter/limit/redo options (wired to dashboard)
-- [ ] On-demand `/media/ensure/*` routes updated to use Go generators (except ML preview thumbs)
-- [ ] ML preview thumbs remain as Python subprocess (`handymatt_media.extractPreviewThumbs` / nudenet)
+- [x] Poster frame — ffmpeg at 20% duration
+- [x] Teaser clip — duration-based clip-count formula, N×1.3s clips spread 0–98%, ffmpeg concat demuxer
+- [x] Teaser thumbs small — ffmpeg `fps+scale+tile`, 16 frames @ 300px, VTT file
+- [x] Seek thumbs — ffmpeg `fps+scale+tile`, 400 frames @ 300px, VTT file
+- [x] Media status checks — file-existence helpers for all Go-generated media types
+- [x] Batch media generation with filter/limit/redo options (wired to dashboard)
+- [x] On-demand `/media/ensure/*` routes updated to use Go generators (except ML preview thumbs)
+- [x] ML preview thumbs remain as Python subprocess (`handymatt_media.extractPreviewThumbs` / nudenet)
 
 ---
 
