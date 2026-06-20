@@ -78,12 +78,12 @@ func (b *jobBroker) start(fn func(emit func(string))) bool {
 
 // ─── Route registration ──────────────────────────────────────────────────────
 
-func IncludeDashboardRoutes(e *echo.Group, cfg config.Config) {
-    e.GET("/stats",           func(c echo.Context) error { return ECHO_dashboard_stats(c, cfg.DBPath) })
-    e.GET("/media-status",    func(c echo.Context) error { return ECHO_dashboard_media_status(c, cfg.DBPath, cfg.PreviewMediaDir) })
-    e.POST("/run-scan",       func(c echo.Context) error { return ECHO_dashboard_run_scan(c, cfg) })
-    e.POST("/generate-media", func(c echo.Context) error { return ECHO_dashboard_generate_media(c, cfg) })
-    e.POST("/rebuild-tfidf",  func(c echo.Context) error { return ECHO_dashboard_rebuild_tfidf(c) })
+func IncludeDashboardRoutes(e *echo.Group, store *config.ConfigStore) {
+    e.GET("/stats",           func(c echo.Context) error { return ECHO_dashboard_stats(c, store.Current().DBPath) })
+    e.GET("/media-status",    func(c echo.Context) error { cfg := store.Current(); return ECHO_dashboard_media_status(c, cfg.DBPath, cfg.PreviewMediaDir) })
+    e.POST("/run-scan",       func(c echo.Context) error { return ECHO_dashboard_run_scan(c, store.Current()) })
+    e.POST("/generate-media", func(c echo.Context) error { return ECHO_dashboard_generate_media(c, store.Current()) })
+    e.POST("/rebuild-tfidf",  func(c echo.Context) error { return ECHO_dashboard_rebuild_tfidf(c, store.Current()) })
     e.GET("/job-stream",      ECHO_dashboard_job_stream)
 }
 
@@ -219,10 +219,14 @@ func ECHO_dashboard_generate_media(c echo.Context, cfg config.Config) error {
     return c.JSON(202, map[string]string{"status": "started"})
 }
 
-func ECHO_dashboard_rebuild_tfidf(c echo.Context) error {
+func ECHO_dashboard_rebuild_tfidf(c echo.Context, cfg config.Config) error {
     started := dashBroker.start(func(emit func(string)) {
         emit("[TFIDF] Building TF-IDF model…")
-        tt, err := execPythonSubprocess("-m", "python_src.worker", "--generate-tfidf")
+        tt, err := execPythonSubprocess(
+            "-m", "python_src.worker", "--generate-tfidf",
+            "--db-path", cfg.DBPath,
+            "--model-dir", cfg.AppDataDir,
+        )
         if err != nil {
             emit(fmt.Sprintf("[TFIDF] Failed: %v", err))
             return

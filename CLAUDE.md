@@ -108,22 +108,27 @@ frontend_old/           # original vanilla JS frontend (reference only, no longe
 launcher/               # pystray tray-icon app + subprocess ProcessManager
 tools/                  # install/run/worker scripts (.ps1 for Windows, .sh for Linux), Makefiles
 assets/                 # app/tray icons
-data/                   # static data files (e.g. English stopwords for TF-IDF)
-config.yaml             # runtime configuration (see below)
+data/                   # static data files (e.g. English stopwords reference for TF-IDF)
 ```
 
 ## Configuration
 
-Runtime config lives in `config.yaml` at the project root (kept out of git via `git update-index --assume-unchanged` rather than `.gitignore`, since a real path-bearing copy has to exist locally). Both backends read it directly — the Go side via `go_backend/internal/config/config.go`, the Python side via `python_src/util/config.py`.
+Config is stored in `<OS UserConfigDir>/CandyPopVideo/config.yaml` (Windows: `%AppData%\Roaming\CandyPopVideo\config.yaml`, Linux: `~/.config/CandyPopVideo/config.yaml`). The Go binary embeds a default template at `go_backend/internal/config/default_config.yaml` and writes it on first run if the directory doesn't exist. `data/config.yaml` is a reference copy of the same template. Config can be edited via the dashboard's "Edit Config" button, which opens `/config` — a CodeMirror (YAML + vim) editor with live validation and hot-reload.
 
-Key fields:
+Storage is split by responsibility:
+- **OS app data dir** (`<OS UserConfigDir>/CandyPopVideo/`) — `app.db`, TF-IDF model pickles (`tdidf.pkl`, `tdidf_matrix.pkl`), actor-info cache (`actors/`), `config.yaml` itself.
+- **`preview_media_dir`** (user-configured in config.yaml) — generated preview media (teasers, spritesheets, etc.). Changing this field requires a server restart.
 
-- `app_data_dir` — where the app stores everything it generates: the SQLite DB (`app.db`), the TF-IDF model pickle, preview media, and actor-info cache. Library video files themselves are never touched/moved.
+Key config.yaml fields:
+
+- `preview_media_dir` — where preview media is written. Cannot be hot-reloaded; requires restart.
 - `video_extensions` — which file extensions count as videos when scanning.
 - `scene_filename_formats` — an ordered list of pattern templates (most-specific first) used to parse structured metadata (performers, studio, title, year, release date, source id, ...) straight out of filenames. The first pattern that matches a given filename wins.
 - `collections` — maps a collection name to one or more absolute folder paths. A path prefixed with `!` is scanned for exclusion only (its contents are ignored even if nested inside an included path).
 - `subtitle_folders` — extra folders to search for `.srt` files when serving subtitles.
 - `datetime_format` — display format for dates in the frontend.
+
+The Go config package (`go_backend/internal/config/config.go`) exposes `ConfigStore` (RWMutex-protected, hot-reloadable) and `NewConfigStore()` (handles first-run bootstrap). Python subprocesses no longer read config.yaml; instead, the Go server passes all needed paths as explicit CLI flags (`--db-path`, `--model-dir`, `--model-path`, `--actor-info-dir`).
 
 ## Data Model
 
@@ -155,9 +160,9 @@ SQLite is used unconventionally: rather than normalized columns, each table (`vi
 - **Go** (`go_backend/internal/mediagen/`) — handles teasers (`teaser.go`: N evenly-spaced clips scaled/concatenated via ffmpeg) and spritesheet thumbnail sets (`spritesheet.go`: tiled JPEG sprites + VTT sidecar). Spritesheets use a channel-based goroutine worker pool: a fixed number of workers (typically 3–6) drain a closed work channel of frame indices, each firing a single `ffmpeg -ss` frame-extract. On-demand routes use a semaphore (`chan struct{}` of capacity 3) to cap concurrent HTTP-triggered ffmpeg processes. Batch generation is gated by collection/path/age filters. Triggered from the dashboard (`POST /api/dashboard/generate-media`) or on-demand by `/media/ensure/*` routes.
 - **Python** (`python_src/media/`, subprocess call) — ML-based preview thumbnail extraction (`preview_thumbs`). Still invoked as a subprocess by the Go server; flagged with a "Python" badge in the dashboard UI.
 
-Generated media is cached to disk under `app_data_dir` keyed by video hash, and only regenerated if missing or forced via `redo` flag.
+Generated media is cached to `preview_media_dir` keyed by video hash, and only regenerated if missing or forced via `redo` flag.
 
-**Search & recommendations** (`python_src/recommender/`) — builds a TF-IDF model (scikit-learn `TfidfVectorizer` + Snowball stemming, English stopwords from `data/stopwords_eng.txt`) over tokens extracted from each video's metadata, used for free-text search ranking and "similar videos" lookups via cosine similarity. The model + matrix are pickled to `app_data_dir` and rebuilt whenever the worker scans libraries or is told to regenerate it explicitly.
+**Search & recommendations** (`python_src/recommender/`) — builds a TF-IDF model (scikit-learn `TfidfVectorizer` + Snowball stemming, English stopwords embedded in `python_src/recommender/stopwords_eng.py`) over tokens extracted from each video's metadata, used for free-text search ranking and "similar videos" lookups via cosine similarity. The model + matrix are pickled to the OS app data dir and rebuilt whenever the worker scans libraries or is told to regenerate it explicitly.
 
 **Filtering/sorting/catalogue** (`go_backend/internal/query/`) — the Go-native, non-TF-IDF half of search: structural filtering by actor/studio/collection/tags/date ranges/favorites, configurable sort (including a natural-sort-aware title comparator that treats embedded numbers as numbers, see `formatStringForIntComparability`), and catalogue aggregation (grouping videos by actor/studio/collection/tag with counts and "newest video" info for browsing pages).
 

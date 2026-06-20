@@ -50,6 +50,7 @@
             loadError = String(e);
             return;
         }
+        console.debug('video_data:', video);
 
         similarLoading = true;
         try {

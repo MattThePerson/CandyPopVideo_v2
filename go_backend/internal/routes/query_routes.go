@@ -25,12 +25,12 @@ func StrictBind(c echo.Context, s any) error {
 	return nil
 }
 
-func IncludeQueryRoutes(e *echo.Group, db_path string) {
+func IncludeQueryRoutes(e *echo.Group, db_path string, tfidfMatrixPath string) {
 
 	e.POST("/search-videos", 		func(c echo.Context) error { return ECHO_search_videos(c, db_path) })
 	e.POST("/get/catalogue", 		func(c echo.Context) error { return ECHO_get_catalogue(c, db_path) })
 
-	e.GET("/get/similar-videos/:video_hash", 	func(c echo.Context) error { return ECHO_get_similar_videos(c, db_path) })
+	e.GET("/get/similar-videos/:video_hash", 	func(c echo.Context) error { return ECHO_get_similar_videos(c, db_path, tfidfMatrixPath) })
 	e.GET("/get/similar-actors/:name",   		func(c echo.Context) error { return ECHO_get_similar_actors(c) })
 	e.GET("/get/similar-studios/:name", 		func(c echo.Context) error { return ECHO_get_similar_studios(c) })
 
@@ -103,7 +103,7 @@ func ECHO_get_catalogue(c echo.Context, db_path string) error {
 
 // ECHO_get_similar_videos
 // query/get/similar-videos/:video_hash/:start_from/:limit
-func ECHO_get_similar_videos(c echo.Context, db_path string) error {
+func ECHO_get_similar_videos(c echo.Context, db_path string, tfidfMatrixPath string) error {
 	video_hash := c.Param("video_hash")
 
 	// unmarshal subprocess response
@@ -112,13 +112,14 @@ func ECHO_get_similar_videos(c echo.Context, db_path string) error {
 		SimsList 	[]float64
 		Report 		string
 	}
-	
+
 	// [subprocess] get similar videos
 	fmt.Printf("[EXEC] Fetching similar videos for `%s` ...\n", video_hash)
 	start := time.Now()
 	response, err := execPythonSubprocess_Output[SubprocessResponse](
 		"-m", "python_src.worker_scripts.getSimilarVideos",
 		"-target", video_hash,
+		"--model-path", tfidfMatrixPath,
 	)
 	if err != nil {
 		return handleServerError(c, 500, "Python subprocess failed", err)

@@ -1,6 +1,7 @@
 <!-- pages/dashboard/Page.svelte -->
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
+    import { navigate } from '../../lib/router/router.svelte';
     import ScanSection  from './ScanSection.svelte';
     import MediaSection from './MediaSection.svelte';
     import JobLog       from './JobLog.svelte';
@@ -133,6 +134,13 @@
                 <button class="btn-secondary" disabled={jobRunning} onclick={handleTfidf}>
                     Rebuild TF-IDF Model
                 </button>
+            </section>
+
+            <!-- Configuration -->
+            <section class="card">
+                <h2 class="section-title">Configuration</h2>
+                <p class="card-desc">Edit config.yaml — collections, filename formats, preview media path.</p>
+                <button class="btn-secondary" onclick={() => navigate('/config')}>Edit Config</button>
             </section>
 
             <!-- Maintenance -->

@@ -17,8 +17,8 @@ import (
     "cpv_backend/internal/schemas"
 )
 
-func IncludeRenameRoutes(e *echo.Group, cfg config.Config) {
-    e.POST("/rename/:hash", func(c echo.Context) error { return ECHO_rename_video(c, cfg) })
+func IncludeRenameRoutes(e *echo.Group, store *config.ConfigStore) {
+    e.POST("/rename/:hash", func(c echo.Context) error { return ECHO_rename_video(c, store.Current()) })
 }
 
 type renameRequest struct {

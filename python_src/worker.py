@@ -79,14 +79,20 @@ def backend_manager(args: argparse.Namespace, ws=None):
         return filtered
     
 
+    tfidf_model_path   = (args.model_dir + '/tdidf.pkl')        if args.model_dir else config.TFIDF_MODEL_PATH
+    tfidf_matrix_path  = (args.model_dir + '/tdidf_matrix.pkl') if args.model_dir else config.TFIDF_MODEL_MATRIX_PATH
+
+    if args.db_path:
+        db.DB_PATH = args.db_path
+
     def save_tfidf_model(model: TFIDFModel):
         print('Saving TF-IDF model and model matrix')
-        pickle_save(model, config.TFIDF_MODEL_PATH)
+        pickle_save(model, tfidf_model_path)
         model_mat = TFIDFModelMatrix(
             matrix =        model.matrix,
             id_index_map =  model.id_index_map,
         )
-        pickle_save(model_mat, config.TFIDF_MODEL_MATRIX_PATH)
+        pickle_save(model_mat, tfidf_matrix_path)
 
 
 
@@ -276,8 +282,9 @@ def create_argument_parser(non_exiting=False):
     parser.add_argument('--update-media', '-um', type=float,                    help='[Number of hours] for which to Generate all preview media')
     parser.add_argument('--redo-info', '-ri',       action='store_true',        help='[scan] combines --reparse-filenames and --reread-json-metadata')
 
-    # 
-    # parser.add_argument('--verbose',               action='store_true',         help='')
+    # Path overrides (passed by Go server; avoids reading config.yaml)
+    parser.add_argument('--db-path',    default=None, help='Override DB path')
+    parser.add_argument('--model-dir',  default=None, help='Directory for TF-IDF model pickle files')
 
     return parser
 

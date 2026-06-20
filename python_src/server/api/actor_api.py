@@ -6,7 +6,6 @@ from bs4 import BeautifulSoup
 # from http.cookiejar import MozillaCookieJar
 from urllib.parse import unquote
 
-from python_src.util.config import ACTOR_INFO_DIR
 
 
 REQUEST_HEADERS = {
@@ -19,9 +18,9 @@ REQUEST_HEADERS = {
 #region - PUBLIC -------------------------------------------------------------------------------------------------------
 
 
-def get_actor_info(name: str) -> dict|None:
-    
-    info_file = f'{ACTOR_INFO_DIR}/{name}/info.json'
+def get_actor_info(name: str, actor_info_dir: str) -> dict|None:
+
+    info_file = f'{actor_info_dir}/{name}/info.json'
     
     if not os.path.exists(info_file):
         return None
@@ -37,9 +36,9 @@ def get_actor_info(name: str) -> dict|None:
 
 
 
-def fetch_actor_info(name):
-    
-    info = _scrape_actor_info(name, ACTOR_INFO_DIR, download_media=True)
+def fetch_actor_info(name: str, actor_info_dir: str):
+
+    info = _scrape_actor_info(name, actor_info_dir, download_media=True)
     
     return info
 

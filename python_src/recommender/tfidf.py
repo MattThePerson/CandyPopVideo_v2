@@ -9,8 +9,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from python_src.schemas import VideoData
 from python_src.recommender.tfidf_model import TFIDFModel
 
-with open('data/stopwords_eng.txt', 'r') as f:
-    STOPWORDS_ENG = [ line.strip() for line in f ]
+from python_src.recommender.stopwords_eng import STOPWORDS_ENG
 
 
 def generate_tfidf_model(video_objects: list[VideoData]) -> TFIDFModel:

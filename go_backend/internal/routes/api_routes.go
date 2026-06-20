@@ -16,7 +16,7 @@ import (
 	"cpv_backend/internal/schemas"
 )
 
-func IncludeApiRoutes(e *echo.Group, db_path string) {
+func IncludeApiRoutes(e *echo.Group, db_path string, actorInfoDir string) {
 
 	e.GET("/get/video-data/:hash", 				func(c echo.Context) error { return ECHO_get_video_data(c, db_path) })
 	e.GET("/get/random-video-hash", 			func(c echo.Context) error { return ECHO_get_random_hash(c, db_path) })
@@ -24,7 +24,7 @@ func IncludeApiRoutes(e *echo.Group, db_path string) {
 	e.GET("/get/movie/:movie_title", 			func(c echo.Context) error { return ECHO_get_movie(c, db_path) })
 	e.GET("/get/movie-series/:movie_series", 	func(c echo.Context) error { return ECHO_get_movie_series(c, db_path) })
 	e.GET("/get/line/:line", 					func(c echo.Context) error { return ECHO_get_line(c, db_path) })
-	e.GET("/get/actor/:name", 					func(c echo.Context) error { return ECHO_get_actor(c, db_path) })
+	e.GET("/get/actor/:name", 					func(c echo.Context) error { return ECHO_get_actor(c, db_path, actorInfoDir) })
 	e.GET("/get/actor-video-count/:name", 		func(c echo.Context) error { return ECHO_get_actor_vid_count(c, db_path) })
 	e.GET("/get/studio-video-count/:name", 		func(c echo.Context) error { return ECHO_studio_vid_count(c, db_path) })
 	e.GET("/get/curated-collections", 			func(c echo.Context) error { return ECHO_get_curated_collection(c) })
@@ -200,7 +200,7 @@ func ECHO_get_line(c echo.Context, db_path string) error {
 
 // ECHO_get_actor
 // params: name
-func ECHO_get_actor(c echo.Context, db_path string) error {
+func ECHO_get_actor(c echo.Context, db_path string, actorInfoDir string) error {
 	name := c.Param("name")
 
 	// [subprocess]
@@ -208,6 +208,7 @@ func ECHO_get_actor(c echo.Context, db_path string) error {
 		"-m", "python_src.worker_scripts.getActorInfo",
 		"-name", name,
 		"-redo", "false",
+		"--actor-info-dir", actorInfoDir,
 	)
 	if err != nil {
 		return handleServerError(c, 500, "Python subprocess failed", err)
