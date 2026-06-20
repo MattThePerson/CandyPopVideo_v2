@@ -2,9 +2,10 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
     import { navigate } from '../../lib/router/router.svelte';
-    import ScanSection  from './ScanSection.svelte';
-    import MediaSection from './MediaSection.svelte';
-    import JobLog       from './JobLog.svelte';
+    import ScanSection         from './ScanSection.svelte';
+    import MediaSection        from './MediaSection.svelte';
+    import JobLog              from './JobLog.svelte';
+    import ContentFilterSection from './ContentFilterSection.svelte';
     import type { ScanOptions }  from './ScanSection.svelte';
     import type { MediaOptions } from './MediaSection.svelte';
 
@@ -117,6 +118,7 @@
     <div class="grid">
         <!-- Left: controls -->
         <div class="left-col">
+            <ContentFilterSection disabled={jobRunning} />
             <ScanSection  disabled={jobRunning} onStart={handleScan} />
             <MediaSection
                 {stats}
