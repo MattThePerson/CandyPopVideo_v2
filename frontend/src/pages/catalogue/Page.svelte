@@ -50,6 +50,10 @@
 
     const presentLetters = $derived(alphGroups.map(g => g.letter));
 
+    $effect(() => {
+        document.title = `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} | Catalogue | CandyPop`;
+    });
+
     onMount(async () => {
         const query: CatalogueQuery = {
             query_type: 'actors', query_string: '', use_primary_actors: true,

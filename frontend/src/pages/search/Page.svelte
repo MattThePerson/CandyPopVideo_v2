@@ -58,6 +58,28 @@
     }
 
     $effect(() => {
+        const p          = new URLSearchParams(routerState.search);
+        const q          = p.get('q');
+        const actor      = p.get('actor');
+        const studio     = p.get('studio');
+        const collection = p.get('collection');
+        const include    = p.get('include');
+        const exclude    = p.get('exclude');
+        const tags       = p.get('tags');
+        const favourites = p.get('favourites');
+        const parts: string[] = [];
+        if (q)                   parts.push(`"${q}"`);
+        if (actor)               parts.push(actor);
+        if (studio)              parts.push(studio);
+        if (collection)          parts.push(collection);
+        if (include)             parts.push(...include.split(',').map(t => t.trim()).filter(Boolean));
+        if (exclude)             parts.push(`(exclude) ${exclude.split(',').map(t => t.trim()).filter(Boolean).join(', ')}`);
+        if (tags)                parts.push(...tags.split(',').map(t => `#${t.trim()}`));
+        if (favourites === '1')  parts.push('favs');
+        document.title = parts.length ? `${parts.join(' - ')} | Search | CandyPop` : 'Search | CandyPop';
+    });
+
+    $effect(() => {
         if (!routerState.search) return;
 
         const q = queryFromParams(routerState.search);

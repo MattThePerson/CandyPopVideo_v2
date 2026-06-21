@@ -46,6 +46,7 @@
     }
 
     onMount(async () => {
+        document.title = 'Config | CandyPop';
         const serverContent = await loadFromServer();
         const initialContent = configBuffer.isDirty ? configBuffer.content : serverContent;
 

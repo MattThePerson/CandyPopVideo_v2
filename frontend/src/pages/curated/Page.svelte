@@ -19,6 +19,11 @@
     const activeName = $derived(
         new URLSearchParams(routerState.search).get('c') ?? ''
     );
+
+    $effect(() => {
+        document.title = activeName ? `${activeName} | Curated | CandyPop` : 'Curated | CandyPop';
+    });
+
     const activeCollection = $derived(
         collections.find(c => c.name === activeName) ?? null
     );

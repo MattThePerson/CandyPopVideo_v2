@@ -15,6 +15,7 @@
     const today = new Date().toDateString();
 
     onMount(async () => {
+        document.title = 'CandyPop';
         try {
             const hash = await fetch('/api/get/random-spotlight-video-hash').then(r => r.text());
             // const hash = await fetch('/api/get/random-video-hash')

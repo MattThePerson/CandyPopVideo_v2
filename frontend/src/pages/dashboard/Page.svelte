@@ -38,6 +38,7 @@
         mediaStatus  = await fetch('/api/dashboard/media-status').then(r => r.json()).catch(() => null).finally(() => { mediaLoading = false; });
     }
 
+    onMount(() => { document.title = 'Dashboard | CandyPop'; });
     onMount(fetchStats);
     onDestroy(() => es?.close());
 

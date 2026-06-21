@@ -27,6 +27,16 @@
 
     let keydownHandler: ((e: KeyboardEvent) => void) | undefined;
 
+    $effect(() => {
+        const parts: string[] = [];
+        const label = video?.title || video?.scene_title || video?.filename;
+        if (label)                    parts.push(label);
+        if (video?.actors?.length)    parts.push(video.actors.join(', '));
+        if (video?.studio)            parts.push(video.studio);
+        parts.push('CandyPop');
+        document.title = parts.join(' | ');
+    });
+
     onMount(async () => {
         /* Resolve the sentinel 'random' hash to a real one and update the URL
            (replace so the back button skips the /video/random entry). */
