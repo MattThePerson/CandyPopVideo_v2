@@ -74,15 +74,7 @@ func ScanLibraries(cfg config.Config, opts ScanOptions, emit func(string)) error
             stem := strings.TrimSuffix(filepath.Base(vf.Path), filepath.Ext(vf.Path))
             tags, cleanStem := ExtractTags(stem)
             vd.TagsFromFilename = tags
-
-            // Build rel_parent/cleanStem for the parser
-            relParent := relativeParent(vf.Path, vf.CollectionRoot)
-            var parseInput string
-            if relParent != "" {
-                parseInput = filepath.Dir(vf.Path) + "/" + cleanStem
-            } else {
-                parseInput = cleanStem
-            }
+            parseInput := filepath.Dir(vf.Path) + "/" + cleanStem
             parsed := ParseFilename(parseInput, cfg.SceneFilenameFormats)
             PopulateFromParseResult(vd, parsed)
         }

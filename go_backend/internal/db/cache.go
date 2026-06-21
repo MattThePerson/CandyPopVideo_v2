@@ -18,7 +18,7 @@ var (
 func GetCachedVideos(db_path string, cache_base_timeout int, cache_access_timeout int) (map[string]schemas.VideoData, error) {
 
 	mpfil := map[string]schemas.VideoData{}
-	
+
 	// Get from cache
 	cacheMutex.Lock()
 	defer cacheMutex.Unlock()
@@ -30,7 +30,7 @@ func GetCachedVideos(db_path string, cache_base_timeout int, cache_access_timeou
 		fmt.Printf("___USING CACHE___ cacheTime: %.2fs  lastAccess: %.2fs\n", time.Since(cacheTime).Seconds(), time.Since(cacheLastAccess).Seconds())
 		return cachedVideos, nil
 	}
-	
+
 	// Get from db
 	mp, err := ReadSerializedMapFromTable[schemas.VideoData](db_path, "videos")
 	if err != nil {
@@ -46,7 +46,7 @@ func GetCachedVideos(db_path string, cache_base_timeout int, cache_access_timeou
 	cachedVideos = mp
     cacheTime = time.Now()
 	cacheLastAccess = time.Now()
-	
+
 	return mpfil, nil
 
 }
@@ -64,7 +64,7 @@ func InvalidateCache() {
 // func GetCachedInteractions(db_path string, cache_base_timeout int, cache_access_timeout int) (map[string]schemas.VideoInteractions, error) {
 
 // 	mpfil := map[string]schemas.VideoInteractions{}
-	
+
 // 	// Get from cache
 // 	cacheMutex.Lock()
 // 	defer cacheMutex.Unlock()
@@ -76,7 +76,7 @@ func InvalidateCache() {
 // 		fmt.Printf("___USING CACHE___ cacheTime: %.2fs  lastAccess: %.2fs\n", time.Since(cacheTime).Seconds(), time.Since(cacheLastAccess).Seconds())
 // 		return cachedVideos, nil
 // 	}
-	
+
 // 	// Get from db
 // 	mp, err := ReadSerializedMapFromTable[schemas.VideoInteractions](db_path, "videos")
 // 	if err != nil {
@@ -86,7 +86,7 @@ func InvalidateCache() {
 // 	cachedVideos = mp
 //     cacheTime = time.Now()
 // 	cacheLastAccess = time.Now()
-	
+
 // 	return mpfil, nil
-	
+
 // }

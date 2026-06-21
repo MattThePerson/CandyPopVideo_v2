@@ -15,7 +15,6 @@ import (
     "cpv_backend/internal/config"
     "cpv_backend/internal/db"
     "cpv_backend/internal/pyworker"
-    "cpv_backend/internal/query"
     "cpv_backend/internal/schemas"
 )
 
@@ -48,38 +47,30 @@ func ECHO_get_video_data(c echo.Context, db_path string) error {
 
 // ECHO_get_random_hash
 func ECHO_get_random_hash(c echo.Context, db_path string, stateStore *config.AppStateStore) error {
-    mp, err := db.GetCachedVideos(db_path, 15, 3)
+    vids, err := getFilteredVideos(db_path, stateStore)
     if err != nil {
         return handleServerError(c, 500, "Unable to read table", err)
     }
-
-    vids := query.ApplyGlobalFilter(extractValuesFromMap(mp), stateStore.GetFilter())
     if len(vids) == 0 {
         return c.String(404, "No linked videos in db")
     }
-
-    randVid := vids[rand.Intn(len(vids))]
-    return c.JSON(200, map[string]string{"hash": randVid.Hash})
+    return c.JSON(200, map[string]string{"hash": vids[rand.Intn(len(vids))].Hash})
 }
 
 
 // ECHO_get_spotlight_hash — seeded daily spotlight, stable within a 6-hour window
 func ECHO_get_spotlight_hash(c echo.Context, db_path string, stateStore *config.AppStateStore) error {
-    mp, err := db.GetCachedVideos(db_path, 15, 3)
+    vids, err := getFilteredVideos(db_path, stateStore)
     if err != nil {
         return handleServerError(c, 500, "Unable to read table", err)
     }
-
-    vids := query.ApplyGlobalFilter(extractValuesFromMap(mp), stateStore.GetFilter())
     if len(vids) == 0 {
         return c.String(404, "No linked videos in db")
     }
 
-    // Generate seeded random hash
     tm := time.Now().Add(-6 * time.Hour)
     seed_str := fmt.Sprintf("%d%d", tm.Year(), tm.YearDay())
     seed, _ := strconv.Atoi(seed_str)
-
     r := rand.New(rand.NewSource(int64(seed)))
     hsh := fmt.Sprintf("%012x", r.Intn(int(math.Pow(16, 12))))
     fmt.Println("[SPOTLIGHT] Generated random hash: " + hsh)
@@ -93,21 +84,17 @@ func ECHO_get_spotlight_hash(c echo.Context, db_path string, stateStore *config.
             fmt.Printf("[SPOTLIGHT] New closest_i: %012x  (diff = %d)\n", closest_i, absDiff(hsh_i, closest_i))
         }
     }
-    closest_hsh := fmt.Sprintf("%012x", closest_i)
-
-    return c.String(200, closest_hsh)
+    return c.String(200, fmt.Sprintf("%012x", closest_i))
 }
 
 
 // ECHO_get_movie
 func ECHO_get_movie(c echo.Context, db_path string, stateStore *config.AppStateStore) error {
     movie_title := strings.ToLower(c.Param("movie_title"))
-    mp, err := db.GetCachedVideos(db_path, 15, 3)
+    vids, err := getFilteredVideos(db_path, stateStore)
     if err != nil {
         return handleServerError(c, 500, "Unable to read table", err)
     }
-
-    vids := query.ApplyGlobalFilter(extractValuesFromMap(mp), stateStore.GetFilter())
 
     var filtered []schemas.VideoData
     for _, vd := range vids {
@@ -126,7 +113,6 @@ func ECHO_get_movie(c echo.Context, db_path string, stateStore *config.AppStateS
         }
         return cmp.Compare(title_cmp[a.Hash], title_cmp[b.Hash])
     })
-
     return c.JSON(200, filtered)
 }
 
@@ -134,12 +120,10 @@ func ECHO_get_movie(c echo.Context, db_path string, stateStore *config.AppStateS
 // ECHO_get_movie_series
 func ECHO_get_movie_series(c echo.Context, db_path string, stateStore *config.AppStateStore) error {
     movie_series := strings.ToLower(c.Param("movie_series"))
-    mp, err := db.GetCachedVideos(db_path, 15, 3)
+    vids, err := getFilteredVideos(db_path, stateStore)
     if err != nil {
         return handleServerError(c, 500, "Unable to read table", err)
     }
-
-    vids := query.ApplyGlobalFilter(extractValuesFromMap(mp), stateStore.GetFilter())
 
     var filtered []schemas.VideoData
     for _, vd := range vids {
@@ -158,7 +142,6 @@ func ECHO_get_movie_series(c echo.Context, db_path string, stateStore *config.Ap
         }
         return cmp.Compare(title_cmp[a.Hash], title_cmp[b.Hash])
     })
-
     return c.JSON(200, filtered)
 }
 
@@ -169,12 +152,10 @@ func ECHO_get_line(c echo.Context, db_path string, stateStore *config.AppStateSt
     if line == "" {
         return c.String(400, "Line cannot be empty")
     }
-    mp, err := db.GetCachedVideos(db_path, 15, 3)
+    vids, err := getFilteredVideos(db_path, stateStore)
     if err != nil {
         return handleServerError(c, 500, "Unable to read table", err)
     }
-
-    vids := query.ApplyGlobalFilter(extractValuesFromMap(mp), stateStore.GetFilter())
 
     var filtered []schemas.VideoData
     for _, vd := range vids {
@@ -188,7 +169,6 @@ func ECHO_get_line(c echo.Context, db_path string, stateStore *config.AppStateSt
         }
         return cmp.Compare(a.DateAdded, b.DateAdded)
     })
-
     return c.JSON(200, filtered)
 }
 
@@ -196,7 +176,6 @@ func ECHO_get_line(c echo.Context, db_path string, stateStore *config.AppStateSt
 // ECHO_get_actor — actor info from Babepedia; not pool-filtered
 func ECHO_get_actor(c echo.Context, db_path string, actorInfoDir string) error {
     name := c.Param("name")
-
     data, err := pyworker.ExecOutput[map[string]any](
         "-m", "cmd.getActorInfo",
         "--name", name,
@@ -205,7 +184,6 @@ func ECHO_get_actor(c echo.Context, db_path string, actorInfoDir string) error {
     if err != nil {
         return handleServerError(c, 500, "Python subprocess failed", err)
     }
-
     return c.JSON(200, data)
 }
 
@@ -213,12 +191,10 @@ func ECHO_get_actor(c echo.Context, db_path string, actorInfoDir string) error {
 // ECHO_get_actor_vid_count
 func ECHO_get_actor_vid_count(c echo.Context, db_path string, stateStore *config.AppStateStore) error {
     name := strings.ToLower(c.Param("name"))
-    mp, err := db.GetCachedVideos(db_path, 15, 3)
+    vids, err := getFilteredVideos(db_path, stateStore)
     if err != nil {
         return handleServerError(c, 500, "Unable to read table", err)
     }
-
-    vids := query.ApplyGlobalFilter(extractValuesFromMap(mp), stateStore.GetFilter())
 
     count := 0
     for _, vd := range vids {
@@ -235,12 +211,10 @@ func ECHO_get_actor_vid_count(c echo.Context, db_path string, stateStore *config
 // ECHO_studio_vid_count
 func ECHO_studio_vid_count(c echo.Context, db_path string, stateStore *config.AppStateStore) error {
     name := strings.ToLower(c.Param("name"))
-    mp, err := db.GetCachedVideos(db_path, 15, 3)
+    vids, err := getFilteredVideos(db_path, stateStore)
     if err != nil {
         return handleServerError(c, 500, "Unable to read table", err)
     }
-
-    vids := query.ApplyGlobalFilter(extractValuesFromMap(mp), stateStore.GetFilter())
 
     count := 0
     for _, vd := range vids {

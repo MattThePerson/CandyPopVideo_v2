@@ -10,7 +10,21 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+
+	"cpv_backend/internal/config"
+	"cpv_backend/internal/db"
+	"cpv_backend/internal/query"
+	"cpv_backend/internal/schemas"
 )
+
+// getFilteredVideos loads the cached video slice with the global content filter applied.
+func getFilteredVideos(db_path string, stateStore *config.AppStateStore) ([]schemas.VideoData, error) {
+	mp, err := db.GetCachedVideos(db_path, 15, 3)
+	if err != nil {
+		return nil, err
+	}
+	return query.ApplyGlobalFilter(extractValuesFromMap(mp), stateStore.GetFilter()), nil
+}
 
 func extractValuesFromMap[S any](mp map[string]S) []S {
 	values := []S{}
