@@ -215,8 +215,8 @@
         return t.length > 80 ? t.slice(0, 80) + '…' : t;
     });
 
-    let addedAgo    = $derived(video.date_added ? timeAgo(video.date_added) : '');
-    let isNewVideo  = $derived(video.date_added ? isNew(video.date_added) : false);
+    let addedAgo    = $derived(video.date_downloaded ? timeAgo(video.date_downloaded) : '');
+    let isNewVideo  = $derived(video.date_downloaded ? isNew(video.date_downloaded) : false);
     let viewtimeStr = $derived(interactions ? formatViewtime(interactions.viewtime) : '');
 </script>
 

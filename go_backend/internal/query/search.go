@@ -21,7 +21,7 @@ type FilterAndSortResult struct {
 }
 
 func FilterAndSortVideos(vids []schemas.VideoData, q schemas.SearchQuery, i map[string]schemas.VideoInteractions) (FilterAndSortResult, error) {
-	
+
 	start := time.Now()
 	var result FilterAndSortResult
 	var err error
@@ -37,10 +37,15 @@ func FilterAndSortVideos(vids []schemas.VideoData, q schemas.SearchQuery, i map[
 	// filters
 	vids = filterVideosBySearchQuery(vids, q, i)
 
-	// sort
+	// sort by hash
+	slices.SortFunc(vids, func(a, b schemas.VideoData) int {
+	    return cmp.Compare(b.Hash, a.Hash)
+	})
+
+	// sort rest
 	if q.SortBy == "" {
 		slices.SortFunc(vids, func(a, b schemas.VideoData) int {
-			return cmp.Compare(b.DateAdded, a.DateAdded)
+			return cmp.Compare(b.DateDownloaded, a.DateDownloaded)
 		})
 	} else {
 		vids, err = sortVideos(vids, q.SortBy, i)
@@ -48,7 +53,7 @@ func FilterAndSortVideos(vids []schemas.VideoData, q schemas.SearchQuery, i map[
 			return result, err
 		}
 	}
-	
+
 	// get word cloud
 	result.WordCloud = nil
 
@@ -64,7 +69,7 @@ func FilterAndSortVideos(vids []schemas.VideoData, q schemas.SearchQuery, i map[
 // #region - METHODS ---------------------------------------------------------------------------------------------------
 
 
-// 
+//
 func filterVideosBySearchQuery(vids []schemas.VideoData, q schemas.SearchQuery, i map[string]schemas.VideoInteractions) []schemas.VideoData {
 
 	// filter only favourites
@@ -167,11 +172,11 @@ func filterVideosBySearchQuery(vids []schemas.VideoData, q schemas.SearchQuery, 
 }
 
 
-// 
+//
 func sortVideos(vids []schemas.VideoData, sortby string, i map[string]schemas.VideoInteractions) ([]schemas.VideoData, error) {
 
 	var err error
-	
+
 	// OPTION 1: sort random
 	if strings.Contains(sortby, "random") {
 		vids, err = handleSortVideosRandom(vids, sortby)
@@ -199,7 +204,16 @@ func sortVideos(vids []schemas.VideoData, sortby string, i map[string]schemas.Vi
 		return vids, nil
 	}
 
-	// OPTION 3: sort by video data
+    // OPTION 3: direct sort for known fields (avoids JSON round-trip)
+    vids, applied, err := handleSortByDirectFields(vids, sortby_attr, sort_reverse)
+    if err != nil {
+        return vids, err
+    }
+    if applied {
+        return vids, nil
+    }
+
+	// OPTION 4: generic JSON round-trip sort for any other field
 	vids, err = handleSortByVideoData(vids, sortby_attr, sort_reverse)
 	if err != nil {
 		return vids, err
@@ -208,8 +222,49 @@ func sortVideos(vids []schemas.VideoData, sortby string, i map[string]schemas.Vi
 
 }
 
+// handleSortByDirectFields
+func handleSortByDirectFields(vids []schemas.VideoData, attr string, reverse bool) ([]schemas.VideoData, bool, error) {
+   	dir := func(a, b string) int {
+		if reverse { return cmp.Compare(b, a) }
+		return cmp.Compare(a, b)
+	}
+	dirN := func(a, b float64) int {
+		if reverse { return cmp.Compare(b, a) }
+		return cmp.Compare(a, b)
+	}
+	switch attr {
+	case "date_added":
+		slices.SortFunc(vids, func(a, b schemas.VideoData) int { return dir(a.DateAdded, b.DateAdded) })
+		return vids, true, nil
+	case "date_downloaded":
+		slices.SortFunc(vids, func(a, b schemas.VideoData) int { return dir(a.DateDownloaded, b.DateDownloaded) })
+		return vids, true, nil
+	case "date_released":
+		slices.SortFunc(vids, func(a, b schemas.VideoData) int { return dir(a.DateReleased, b.DateReleased) })
+		return vids, true, nil
+	case "title":
+		slices.SortFunc(vids, func(a, b schemas.VideoData) int { return dir(a.Title, b.Title) })
+		return vids, true, nil
+	case "filename":
+		slices.SortFunc(vids, func(a, b schemas.VideoData) int { return dir(a.Filename, b.Filename) })
+		return vids, true, nil
+	case "path":
+		slices.SortFunc(vids, func(a, b schemas.VideoData) int { return dir(a.Path, b.Path) })
+		return vids, true, nil
+	case "duration":
+		slices.SortFunc(vids, func(a, b schemas.VideoData) int { return dirN(a.DurationSeconds, b.DurationSeconds) })
+		return vids, true, nil
+	case "bitrate":
+		slices.SortFunc(vids, func(a, b schemas.VideoData) int { return dirN(float64(a.Bitrate), float64(b.Bitrate)) })
+		return vids, true, nil
+	case "resolution":
+		slices.SortFunc(vids, func(a, b schemas.VideoData) int { return dirN(float64(a.Resolution), float64(b.Resolution)) })
+		return vids, true, nil
+	}
+	return vids, false, nil
+}
 
-//handleSortByVideoData
+// handleSortByVideoData
 func handleSortByVideoData(vids []schemas.VideoData, attr string, reverse bool) ([]schemas.VideoData, error) {
 
 	// convert to maps
@@ -217,7 +272,7 @@ func handleSortByVideoData(vids []schemas.VideoData, attr string, reverse bool) 
 	if err != nil {
 		return vids, nil
 	}
-	
+
 	// sort by attribute
 	slices.SortFunc(vid_maps, func(a, b map[string]any) int {
 		va, vb := a[attr], b[attr]
@@ -268,7 +323,7 @@ func handleSortByInteractions(vids []schemas.VideoData, attr string, reverse boo
 		if reverse {
 			a, b = b, a
 		}
-		
+
 		i1, i2 := i[a.Hash], i[b.Hash]
 
 		switch attr {
@@ -281,10 +336,10 @@ func handleSortByInteractions(vids []schemas.VideoData, attr string, reverse boo
 		case "popularity":
 			return int(popularity[a.Hash] - popularity[b.Hash])
 		}
-		
+
 		return 0
 	})
-	
+
 	return filtered, nil
 }
 
@@ -317,7 +372,7 @@ func handleSortVideosRandom(vids []schemas.VideoData, sortby string) ([]schemas.
 	}
 	// shuffle random
 	vids = seededShuffle_Perm(vids, int64(seed))
-	
+
 	return vids, nil
 }
 
@@ -344,7 +399,7 @@ func structsToMaps[S any](input []S) ([]map[string]any, error) {
 		// append
 		output[i] = b
 	}
-	
+
 	return output, nil
 }
 
@@ -371,7 +426,7 @@ func mapsToStructs[S any](input []map[string]any) ([]S, error) {
 		// append
 		output[i] = b
 	}
-	
-	
+
+
 	return output, nil
 }

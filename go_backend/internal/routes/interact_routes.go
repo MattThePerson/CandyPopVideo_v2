@@ -180,7 +180,7 @@ func updateInteractionsTable(c echo.Context, db_path string, callback_func func(
 	if err != nil {
 		return handleServerError(c, 500, "Unable to write to interactions table", err)
 	}
-	
+	db.InvalidateInteractionsCache()
 	return nil
 }
 

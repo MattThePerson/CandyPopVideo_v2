@@ -45,7 +45,7 @@ func ECHO_search_videos(c echo.Context, db_path string, stateStore *config.AppSt
         return handleServerError(c, 500, "Unable to read videos table", err)
     }
 
-    i, err := db.ReadSerializedMapFromTable[schemas.VideoInteractions](db_path, "interactions")
+    i, err := db.GetCachedInteractions(db_path, 15, 3)
     if err != nil {
         return handleServerError(c, 500, "Unable to read interactions table", err)
     }

@@ -44,7 +44,7 @@
             date_released_from: '',
             date_released_to:   '',
             only_favourites:    p.get('favourites') === '1' ? 'true' : '',
-            sortby:             p.get('sortby')      ?? 'date_added_desc',
+            sortby:             p.get('sortby')      ?? 'date_downloaded_desc',
             limit:              perPage,
             startfrom:          (page - 1) * perPage,
         };

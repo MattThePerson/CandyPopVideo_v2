@@ -8,10 +8,17 @@ import (
 )
 
 var (
-	cachedVideos map[string]schemas.VideoData
-	cacheTime time.Time // time when cache was created
+	cachedVideos    map[string]schemas.VideoData
+	cacheTime       time.Time
 	cacheLastAccess time.Time
-	cacheMutex sync.Mutex
+	cacheMutex      sync.Mutex
+)
+
+var (
+	cachedInteractions    map[string]schemas.VideoInteractions
+	cacheITime            time.Time
+	cacheILastAccess      time.Time
+	cacheMutexInteractions sync.Mutex
 )
 
 // GetCachedVideos returns a map of all linked videos, deserializing from SQLite
@@ -52,6 +59,40 @@ func InvalidateCache() {
     cachedVideos = nil
     cacheTime = time.Time{}
     cacheLastAccess = time.Time{}
+}
+
+// GetCachedInteractions returns all VideoInteractions, deserializing from SQLite
+// on cache miss. Uses the same TTL semantics as GetCachedVideos.
+func GetCachedInteractions(db_path string, cache_base_timeout int, cache_access_timeout int) (map[string]schemas.VideoInteractions, error) {
+    cacheMutexInteractions.Lock()
+    defer cacheMutexInteractions.Unlock()
+
+    baseTimeout   := time.Since(cacheITime)        > time.Duration(cache_base_timeout)*time.Second
+    accessTimeout := time.Since(cacheILastAccess)  > time.Duration(cache_access_timeout)*time.Second
+    if !(baseTimeout && accessTimeout) && cachedInteractions != nil {
+        cacheILastAccess = time.Now()
+        return cachedInteractions, nil
+    }
+
+    mp, err := ReadSerializedMapFromTable[schemas.VideoInteractions](db_path, "interactions")
+    if err != nil {
+        return mp, err
+    }
+
+    cachedInteractions = mp
+    cacheITime = time.Now()
+    cacheILastAccess = time.Now()
+
+    return mp, nil
+}
+
+// InvalidateInteractionsCache forces the next GetCachedInteractions call to re-read from DB.
+func InvalidateInteractionsCache() {
+    cacheMutexInteractions.Lock()
+    defer cacheMutexInteractions.Unlock()
+    cachedInteractions = nil
+    cacheITime = time.Time{}
+    cacheILastAccess = time.Time{}
 }
 
 // func GetCachedInteractions(db_path string, cache_base_timeout int, cache_access_timeout int) (map[string]schemas.VideoInteractions, error) {

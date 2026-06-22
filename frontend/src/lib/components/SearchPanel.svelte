@@ -13,13 +13,13 @@
     let excludeTerms   = $state('');
     let tags           = $state('');
     let onlyFavourites = $state(false);
-    let sortField      = $state('date_added');
+    let sortField      = $state('date_downloaded');
     let sortDir        = $state<'asc' | 'desc'>('desc');
     let sortDropOpen   = $state(false);
 
     const SORT_OPTIONS = [
-        { field: 'date_added',      label: 'date added',      defaultDir: 'desc' as const, alphabetic: false, group: 0 },
         { field: 'date_downloaded', label: 'date downloaded',  defaultDir: 'desc' as const, alphabetic: false, group: 0 },
+        { field: 'date_added',      label: 'date added',      defaultDir: 'desc' as const, alphabetic: false, group: 0 },
         { field: 'date_released',   label: 'date released',   defaultDir: 'desc' as const, alphabetic: false, group: 0 },
         { field: 'title',           label: 'title',           defaultDir: 'asc'  as const, alphabetic: true,  group: 0 },
         { field: 'filename',        label: 'filename',        defaultDir: 'asc'  as const, alphabetic: true,  group: 0 },
@@ -52,7 +52,7 @@
         excludeTerms   = p.get('exclude')     ?? '';
         tags           = p.get('tags')        ?? '';
         onlyFavourites = p.get('favourites') === '1';
-        const rawSortby = p.get('sortby') ?? 'date_added_desc';
+        const rawSortby = p.get('sortby') ?? 'date_downloaded_desc';
         if (rawSortby.startsWith('random')) {
             sortField = 'random';
         } else {
@@ -78,7 +78,7 @@
         if (tags)           p.set('tags',        tags);
         if (onlyFavourites) p.set('favourites',  '1');
         const sortParam = buildSortParam();
-        if (sortParam !== 'date_added_desc') p.set('sortby', sortParam);
+        if (sortParam !== 'date_downloaded_desc') p.set('sortby', sortParam);
         const qs = p.toString();
         navigate('/search' + (qs ? '?' + qs : ''));
     }

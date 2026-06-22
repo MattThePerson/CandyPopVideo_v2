@@ -143,12 +143,12 @@ ActorInfoDir    — AppDataDir/actors/
 SQLite, WAL mode. Three tables, created by `db.InitDB()`:
 
 ```sql
-CREATE TABLE videos       (id TEXT PRIMARY KEY, data TEXT)
+CREATE TABLE videos       (id TEXT PRIMARY KEY, date_added TEXT, path TEXT NOT NULL DEFAULT '', is_linked INTEGER NOT NULL DEFAULT 1, data TEXT)
 CREATE TABLE interactions (id TEXT PRIMARY KEY, data TEXT)
 CREATE TABLE views        (timestamp TEXT, video_hash TEXT, duration_sec REAL)
 ```
 
-`videos` and `interactions` store one JSON blob per row. `views` is an append-only log.
+`videos` has three shadow columns (`date_added`, `path`, `is_linked`) that are dual-written alongside the JSON blob for SQL-level queries. The blob remains authoritative for API responses. `interactions` stores one JSON blob per row. `views` is an append-only log.
 
 ### Generic row helpers (`db/db.go`)
 
@@ -156,21 +156,40 @@ CREATE TABLE views        (timestamp TEXT, video_hash TEXT, duration_sec REAL)
 // Read one row
 vd, err := db.ReadSerializedRowFromTable[schemas.VideoData](db_path, "videos", hash)
 
-// Read all rows as map[id]struct
+// Read all rows as map[id]struct (all rows, regardless of is_linked)
 mp, err := db.ReadSerializedMapFromTable[schemas.VideoData](db_path, "videos")
 
-// Write one row (INSERT OR REPLACE)
-err = db.WriteSerializedRowToTable(db_path, "videos", vd.Hash, vd)
+// Write one row for non-videos tables (INSERT OR REPLACE, no shadow columns)
+err = db.WriteSerializedRowToTable(db_path, "interactions", hash, inter)
 
 // Append a row with arbitrary columns (used for views table)
 err = db.InsertDataIntoTable(db_path, "views", map[string]any{...})
+```
+
+### Videos-specific helpers (`db/db.go`)
+
+```go
+// Write a video row — use instead of WriteSerializedRowToTable for the videos table.
+// Always sets is_linked=1 and keeps shadow columns (path, date_added) in sync with the blob.
+err = db.WriteVideoRow(db_path, hash, vd)
+
+// Mark all videos is_linked=0 in one SQL UPDATE. Called at start of a full scan.
+err = db.SetAllUnlinked(db_path)
+
+// Return only linked videos (WHERE is_linked=1) as map[hash]VideoData.
+mp, err := db.ReadLinkedVideosMap(db_path)
+
+// Return (linked, unlinked) counts via GROUP BY. Used by dashboard stats.
+linked, unlinked, err := db.CountVideosByLinkedStatus(db_path)
 ```
 
 Each call opens and closes its own connection. No connection pool — this is intentional; WAL mode handles concurrency.
 
 ### Cache (`db/cache.go`)
 
-`db.GetCachedVideos(db_path, base_ttl_s, access_ttl_s)` returns `map[hash]VideoData` of **linked-only** entries. Cache is valid until both the base TTL (15 s) AND the access TTL (3 s) have expired simultaneously. Invalidated explicitly by `db.InvalidateCache()` after any write that changes the video set.
+`db.GetCachedVideos(db_path, base_ttl_s, access_ttl_s)` returns `map[hash]VideoData` of **linked-only** entries (via `ReadLinkedVideosMap` — SQL does the filtering). Cache is valid until both the base TTL (15 s) AND the access TTL (3 s) have expired simultaneously. Invalidated explicitly by `db.InvalidateCache()` after any write that changes the video set.
+
+`db.GetCachedInteractions(db_path, base_ttl_s, access_ttl_s)` — same TTL semantics, independent mutex. Returns `map[hash]VideoInteractions`. Invalidated by `db.InvalidateInteractionsCache()` after any interaction write. Used by the search route instead of a per-request DB read.
 
 Always call `db.InvalidateCache()` after writing to the `videos` table so the next request re-reads from SQLite.
 
@@ -180,7 +199,11 @@ Always call `db.InvalidateCache()` after writing to the `videos` table so the ne
 
 ### `VideoData` (`schemas/video_data.go`)
 
-Content-addressed by `Hash` (12-char hex SHA-256 prefix). `IsLinked=false` means the file is gone from disk but the record (and all interactions) survive.
+Content-addressed by `Hash` (12-char hex SHA-256 prefix). Whether a video is linked is tracked via the SQL `is_linked` column — it is not a field on the struct. Unlinked records stay in the DB so interaction history survives reconnected drives.
+
+Key timestamps (both set once at first scan, never overwritten on re-scan):
+- `DateAdded` — `time.Now()` at first scan, ms precision (`"2006-01-02 15:04:05.000"`). Also written to the SQL `date_added` shadow column.
+- `DateDownloaded` — file mtime via `os.Stat().ModTime()`, second precision (`"2006-01-02 15:04:05"`).
 
 Field sources:
 - **ffprobe**: `Duration`, `DurationSeconds`, `FPS`, `Resolution`, `Bitrate`, `FilesizeMB`
@@ -214,14 +237,13 @@ Takes `[]VideoData`, `SearchQuery`, and `map[hash]VideoInteractions`. Pure funct
 
 Filter order: favourites → actor (comma-separated AND) → studio/line → collection → date ranges → include/exclude path terms → tags.
 
-Sort options via `SortBy` field:
-- Default (empty): descending `DateAdded`
-- VideoData fields: any JSON field name, e.g. `"title_asc"`, `"resolution_desc"`, `"date_released_asc"`. Sorting works by marshal→map→sort→unmarshal via JSON round-trip (`structsToMaps` / `mapsToStructs`), so the field name must match the JSON tag exactly.
-- Interaction fields: `"viewtime"`, `"last_viewed"`, `"favourited_date"`, `"popularity"`. Videos without interactions are dropped from results when sorting by interactions.
-- Random: `"random-<seed>"` — deterministic seeded shuffle.
+Sort options via `SortBy` field (format: `"<field>_asc"` / `"<field>_desc"`):
+- Default (empty `SortBy`): descending `DateAdded`
+- **OPTION 2 — interaction fields**: `"viewtime"`, `"last_viewed"`, `"favourited_date"`, `"popularity"`. Videos without interactions are dropped from results.
+- **OPTION 3 — direct struct sort** (`handleSortByDirectFields`): `date_added`, `date_downloaded`, `date_released`, `title`, `filename`, `path`, `duration`, `bitrate`, `resolution`. Uses `slices.SortFunc` directly on struct fields — no JSON round-trip.
+- **OPTION 4 — JSON round-trip fallback** (`handleSortByVideoData`): any other field name. Works by marshal→map→sort→unmarshal (`structsToMaps` / `mapsToStructs`); field name must match the JSON tag exactly.
+- **Random**: `"random-<seed>"` — deterministic seeded shuffle.
 - `popularity` score = `viewtime/60 + likes*2 + isFavourite*2 + comments*3 + markers + datedMarkers*5 + ratingScore*2`
-
-`formatStringForIntComparability()` (`0_routes_helpers.go:88`) is used for title sorting — strips punctuation, pads embedded numbers to 60 chars so `"Part 2"` sorts before `"Part 10"`.
 
 ---
 
@@ -239,7 +261,7 @@ Pipeline per file:
    - `PopulateFromParseResult(vd, parsed)` — maps result map to struct fields.
 5. **path tags** (`filename.go:ExtractPathTags`) — always re-derived; directory names excluding already-captured actors/studio/line.
 6. **frequency sort** (`merge.go:SortTagsByFrequency`) — sorts each video's tags by how common they are across the whole loaded set (most common first).
-7. **merge + save** (`merge.go:MergeAndSave`) — merges with existing DB records without clobbering manually-edited fields. Videos no longer found on disk are marked `IsLinked=false`.
+7. **merge + save** (`merge.go:MergeAndSave`) — for a full scan, calls `SetAllUnlinked` first (one SQL UPDATE); then for each scanned video calls `WriteVideoRow` (INSERT OR REPLACE, sets `is_linked=1`). Existing `DateAdded`, `DateDownloaded`, `Description`, and `Metadata` are preserved from the DB record. Unlinked records are left untouched with `is_linked=0`.
 8. **TF-IDF rebuild** — shells out to `py/cmd/generateTFIDF.py` after every scan.
 
 **Hashing** (`hash.go`): reads three 64 KB chunks (offset 0, size/2, size−64KB) through a single `crypto/sha256` hasher. Returns first 12 hex chars. Stable across renames; fast on large files.
@@ -335,9 +357,9 @@ type jobBroker struct {
 
 ## Gotchas
 
-- **Cache returns only linked videos**: `GetCachedVideos` filters to `IsLinked=true`. If you need unlinked records (e.g. for a rename or re-link flow), use `ReadSerializedMapFromTable` directly.
+- **Cache returns only linked videos**: `GetCachedVideos` calls `ReadLinkedVideosMap` which filters via SQL `WHERE is_linked=1`. If you need unlinked records too (e.g. for field-preservation during a re-scan), use `ReadSerializedMapFromTable` directly.
 - **Cache TTLs are hardcoded**: 15 s base, 3 s access — not configurable. Both must expire simultaneously for a cache miss.
-- **Sort by VideoData fields uses JSON round-trip**: `structsToMaps` → sort → `mapsToStructs`. The field name passed to `SortBy` must exactly match the JSON tag, not the Go field name.
+- **Sort by VideoData fields**: common fields use `handleSortByDirectFields` (direct struct access, no allocation). Unknown fields fall back to `handleSortByVideoData` which does a JSON round-trip (`structsToMaps` → sort → `mapsToStructs`) — field name must match the JSON tag exactly.
 - **Interaction sort drops videos without interactions**: `handleSortByInteractions` filters out any video that has no entry in the interactions map.
 - **`normalizeVideoDataSlices` before writing**: Ensures slice fields marshal as `[]` not `null` for Python TF-IDF compatibility. Call it before `WriteSerializedRowToTable` on a `VideoData`.
 - **No busy_timeout on SQLite**: The `PRAGMA busy_timeout` call is commented out in `db.go:49`. Under high concurrency, writes can fail with `SQLITE_BUSY` rather than waiting.

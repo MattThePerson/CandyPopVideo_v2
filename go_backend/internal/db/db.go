@@ -22,7 +22,7 @@ func InitDB(db_path string) error {
     defer db.Close()
 
     stmts := []string{
-        `CREATE TABLE IF NOT EXISTS videos (id TEXT PRIMARY KEY, path TEXT NOT NULL DEFAULT '', is_linked INTEGER NOT NULL DEFAULT 1, date_added TEXT, data TEXT)`,
+        `CREATE TABLE IF NOT EXISTS videos (id TEXT PRIMARY KEY, date_added TEXT, path TEXT NOT NULL DEFAULT '', is_linked INTEGER NOT NULL DEFAULT 1, data TEXT)`,
         `CREATE TABLE IF NOT EXISTS interactions (id TEXT PRIMARY KEY, data TEXT)`,
         `CREATE TABLE IF NOT EXISTS views (timestamp TEXT, video_hash TEXT, duration_sec REAL)`,
     }

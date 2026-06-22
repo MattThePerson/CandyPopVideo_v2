@@ -159,7 +159,7 @@ func resolveVideo(
         Hash:           hash,
         Path:           vf.Path,
         Filename:       filepath.Base(vf.Path),
-        DateAdded:      time.Now().Format("2006-01-02 15:04"),
+        DateAdded:      time.Now().Format("2006-01-02 15:04:05.000"),
         DateDownloaded: fileModTime(vf.Path),
         Collection:     vf.CollectionName,
         ParentDir:      vf.CollectionRoot,
@@ -189,13 +189,13 @@ func relPathRelative(path, root string) string {
     return rel
 }
 
-// fileModTime returns the file's modification time as "YYYY-MM-DD HH:MM".
+// fileModTime returns the file's modification time as "YYYY-MM-DD HH:MM:SS".
 func fileModTime(path string) string {
     info, err := os.Stat(path)
     if err != nil {
-        return time.Now().Format("2006-01-02 15:04")
+        return time.Now().Format("2006-01-02 15:04:05")
     }
-    return info.ModTime().Format("2006-01-02 15:04")
+    return info.ModTime().Format("2006-01-02 15:04:05")
 }
 
 // rebuildTFIDF shells out to the Python worker to regenerate the TF-IDF model

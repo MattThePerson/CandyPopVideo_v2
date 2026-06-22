@@ -1,7 +1,7 @@
 export interface VideoData {
     hash:             string;
     date_added:       string;
-    date_downloaded?: string;
+    date_downloaded:  string;
     path:             string;
     filename:         string;
 
