@@ -1,7 +1,6 @@
 <script lang="ts">
     export interface ScanOptions {
-        reparse_filenames: boolean;
-        reread_json:       boolean;
+        rederive_metadata: boolean;
         redo_attributes:   boolean;
         rehash:            boolean;
         path_filter:       string;
@@ -13,8 +12,7 @@
         onStart: (opts: ScanOptions) => void;
     } = $props();
 
-    let reparseFilenames = $state(false);
-    let rereadJson       = $state(false);
+    let rederiveMetadata = $state(false);
     let redoAttributes   = $state(false);
     let rehash           = $state(false);
     let pathFilter       = $state('');
@@ -31,12 +29,8 @@
 
     <div class="opts">
         <label class="opt">
-            <input type="checkbox" bind:checked={reparseFilenames} {disabled} />
-            Reparse filenames
-        </label>
-        <label class="opt">
-            <input type="checkbox" bind:checked={rereadJson} {disabled} />
-            Reread JSON sidecar metadata
+            <input type="checkbox" bind:checked={rederiveMetadata} {disabled} />
+            Re-derive metadata (filenames + sidecar)
         </label>
         <label class="opt">
             <input type="checkbox" bind:checked={redoAttributes} {disabled} />
@@ -59,7 +53,7 @@
     <button
         class="btn-primary"
         {disabled}
-        onclick={() => onStart({ reparse_filenames: reparseFilenames, reread_json: rereadJson, redo_attributes: redoAttributes, rehash, path_filter: pathFilter })}
+        onclick={() => onStart({ rederive_metadata: rederiveMetadata, redo_attributes: redoAttributes, rehash, path_filter: pathFilter })}
     >
         Scan Libraries
     </button>

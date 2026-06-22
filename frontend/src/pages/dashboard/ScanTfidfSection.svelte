@@ -1,7 +1,8 @@
 <script lang="ts">
     export interface ScanOptions {
-        reparse_filenames: boolean;
-        reread_json:       boolean;
+        // reparse_filenames: boolean;
+        // reread_json:       boolean;
+        rederive_metadata: boolean;
         redo_attributes:   boolean;
         rehash:            boolean;
         path_filter:       string;
@@ -14,8 +15,9 @@
         onStartTfidf: () => void;
     } = $props();
 
-    let reparseFilenames = $state(false);
-    let rereadJson       = $state(false);
+    // let reparseFilenames = $state(false);
+    // let rereadJson       = $state(false);
+    let redoMetadata     = $state(false);
     let redoAttributes   = $state(false);
     let rehash           = $state(false);
     let pathFilter       = $state('');
@@ -34,16 +36,12 @@
 
         <div class="opts">
             <label class="opt">
-                <input type="checkbox" bind:checked={reparseFilenames} {disabled} />
-                Reparse filenames
-            </label>
-            <label class="opt">
-                <input type="checkbox" bind:checked={rereadJson} {disabled} />
-                Reread JSON sidecar
+                <input type="checkbox" bind:checked={redoMetadata} {disabled} />
+                Redo metadata extraction (filenames and JSON sidecar)
             </label>
             <label class="opt">
                 <input type="checkbox" bind:checked={redoAttributes} {disabled} />
-                Redo video attributes
+                Redo video attributes (filedata, ffmpeg)
             </label>
             <label class="opt">
                 <input type="checkbox" bind:checked={rehash} {disabled} />
@@ -62,7 +60,7 @@
         <button
             class="btn-primary"
             {disabled}
-            onclick={() => onStartScan({ reparse_filenames: reparseFilenames, reread_json: rereadJson, redo_attributes: redoAttributes, rehash, path_filter: pathFilter })}
+            onclick={() => onStartScan({ rederive_metadata: redoMetadata, redo_attributes: redoAttributes, rehash, path_filter: pathFilter })}
         >
             Scan Libraries
         </button>

@@ -15,8 +15,7 @@ import (
 
 // ScanOptions mirrors the JSON body sent from the dashboard scan form.
 type ScanOptions struct {
-    ReparseFilenames bool   `json:"reparse_filenames"`
-    RereadJSON       bool   `json:"reread_json"`
+    RederiveMetadata bool   `json:"rederive_metadata"` // reparse filenames + reload sidecar JSON
     RedoAttributes   bool   `json:"redo_attributes"`
     Rehash           bool   `json:"rehash"`
     PathFilter       string `json:"path_filter"`
@@ -69,8 +68,8 @@ func ScanLibraries(cfg config.Config, opts ScanOptions, emit func(string)) error
             }
         }
 
-        // Filename parsing
-        if isNew || opts.ReparseFilenames {
+        // Filename parsing + sidecar JSON loading (always done together)
+        if isNew || opts.RederiveMetadata {
             stem := strings.TrimSuffix(filepath.Base(vf.Path), filepath.Ext(vf.Path))
             tags, cleanStem := ExtractTags(stem)
             vd.TagsFromFilename = tags
@@ -78,6 +77,16 @@ func ScanLibraries(cfg config.Config, opts ScanOptions, emit func(string)) error
             parsed := ParseFilename(parseInput, cfg.SceneFilenameFormats)
             clearFilenameFields(vd)
             PopulateFromParseResult(vd, parsed)
+
+            // Sidecar loading runs after filename parse so SourceID is available
+            sidecarFiles := FindSidecarFiles(vf.Path, vd.SourceID)
+            if len(sidecarFiles) > 0 {
+                vd.TagsFromJSON = nil
+                vd.Views = 0
+                vd.Likes = 0
+                vd.Metadata = nil
+                ApplySidecarToVideoData(vd, MergeSidecarFiles(sidecarFiles))
+            }
         }
 
         // Path tags (always — cheap, and depends on Actors/Studio set above)
