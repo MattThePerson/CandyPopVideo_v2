@@ -13,25 +13,36 @@
     let excludeTerms   = $state('');
     let tags           = $state('');
     let onlyFavourites = $state(false);
-    let sortby         = $state('date_added_desc');
+    let sortField      = $state('date_added');
+    let sortDir        = $state<'asc' | 'desc'>('desc');
+    let sortDropOpen   = $state(false);
 
     const SORT_OPTIONS = [
-        { value: 'date_added_desc',      label: 'date added ↓' },
-        { value: 'date_added_asc',       label: 'date added ↑' },
-        { value: 'date_released_desc',   label: 'date released ↓' },
-        { value: 'date_released_asc',    label: 'date released ↑' },
-        { value: 'title_asc',            label: 'title A–Z' },
-        { value: 'title_desc',           label: 'title Z–A' },
-        { value: 'duration_desc',        label: 'longest first' },
-        { value: 'duration_asc',         label: 'shortest first' },
-        { value: 'viewtime_desc',        label: 'most watched' },
-        { value: 'last_viewed_desc',     label: 'recently watched' },
-        { value: 'favourited_date_desc', label: 'recently favourited' },
-        { value: 'random',               label: 'random' },
+        { field: 'date_added',      label: 'date added',      defaultDir: 'desc' as const, alphabetic: false, group: 0 },
+        { field: 'date_released',   label: 'date released',   defaultDir: 'desc' as const, alphabetic: false, group: 0 },
+        { field: 'title',           label: 'title',           defaultDir: 'asc'  as const, alphabetic: true,  group: 0 },
+        { field: 'filename',        label: 'filename',        defaultDir: 'asc'  as const, alphabetic: true,  group: 0 },
+        { field: 'path',            label: 'filepath',        defaultDir: 'asc'  as const, alphabetic: true,  group: 0 },
+        { field: 'duration',        label: 'duration',        defaultDir: 'desc' as const, alphabetic: false, group: 0 },
+        { field: 'bitrate',         label: 'bitrate',         defaultDir: 'desc' as const, alphabetic: false, group: 0 },
+        { field: 'views',           label: 'views',           defaultDir: 'desc' as const, alphabetic: false, group: 1 },
+        { field: 'likes',           label: 'likes',           defaultDir: 'desc' as const, alphabetic: false, group: 1 },
+        { field: 'popularity',      label: 'popularity',      defaultDir: 'desc' as const, alphabetic: false, group: 2 },
+        { field: 'viewtime',        label: 'viewtime',        defaultDir: 'desc' as const, alphabetic: false, group: 2 },
+        { field: 'last_viewed',     label: 'last watched',    defaultDir: 'desc' as const, alphabetic: false, group: 2 },
+        { field: 'favourited_date', label: 'favourited time', defaultDir: 'desc' as const, alphabetic: false, group: 2 },
+        { field: 'random',          label: 'random',          defaultDir: null,             alphabetic: false, group: 3 },
     ];
 
+    const GROUP_HEADERS: Record<number, { label: string; color: string } | null> = {
+        0: null,
+        1: { label: 'platform data',     color: '#D79C29' },
+        2: { label: 'user interactions', color: '#3EA7A7' },
+        3: null,
+    };
+
     function hydrateFromUrl() {
-        const p      = new URLSearchParams(window.location.search);
+        const p = new URLSearchParams(window.location.search);
         searchString   = p.get('q')          ?? '';
         actor          = p.get('actor')       ?? '';
         studio         = p.get('studio')      ?? '';
@@ -41,7 +52,18 @@
         tags           = p.get('tags')        ?? '';
         onlyFavourites = p.get('favourites') === '1';
         const rawSortby = p.get('sortby') ?? 'date_added_desc';
-        sortby         = rawSortby.startsWith('random') ? 'random' : rawSortby;
+        if (rawSortby.startsWith('random')) {
+            sortField = 'random';
+        } else {
+            const cut = rawSortby.lastIndexOf('_');
+            sortField = rawSortby.slice(0, cut);
+            sortDir   = rawSortby.slice(cut + 1) as 'asc' | 'desc';
+        }
+    }
+
+    function buildSortParam(): string {
+        if (sortField === 'random') return `random-${Math.floor(Math.random() * 1_000_000)}`;
+        return `${sortField}_${sortDir}`;
     }
 
     function apply() {
@@ -54,20 +76,42 @@
         if (excludeTerms)   p.set('exclude',     excludeTerms);
         if (tags)           p.set('tags',        tags);
         if (onlyFavourites) p.set('favourites',  '1');
-        if (sortby && sortby !== 'date_added_desc') {
-            const sortbyParam = sortby === 'random'
-                ? `random-${Math.floor(Math.random() * 1_000_000)}`
-                : sortby;
-            p.set('sortby', sortbyParam);
-        }
+        const sortParam = buildSortParam();
+        if (sortParam !== 'date_added_desc') p.set('sortby', sortParam);
         const qs = p.toString();
         navigate('/search' + (qs ? '?' + qs : ''));
     }
 
+    function clickSortLabel(field: string, alphabetic: boolean) {
+        if (sortField === field) {
+            sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            sortField = field;
+            sortDir   = alphabetic ? 'asc' : 'desc';
+        }
+        sortDropOpen = false;
+        apply();
+    }
+
+    function clickSortDir(field: string, dir: 'asc' | 'desc') {
+        sortField    = field;
+        sortDir      = dir;
+        sortDropOpen = false;
+        apply();
+    }
+
+    const currentSortLabel = $derived.by(() => {
+        if (sortField === 'random') return 'random';
+        const opt = SORT_OPTIONS.find(o => o.field === sortField);
+        if (!opt) return sortField;
+        return opt.alphabetic
+            ? `${opt.label} ${sortDir === 'asc' ? 'A→Z' : 'Z→A'}`
+            : `${opt.label} ${sortDir === 'asc' ? '↑' : '↓'}`;
+    });
+
     let searchInputEl:  HTMLInputElement;
     let includeInputEl: HTMLInputElement;
 
-    /* Enter in any panel field applies the search and drops focus. */
     function onFieldKeydown(e: KeyboardEvent) {
         if (e.key === 'Enter') {
             e.stopPropagation();
@@ -81,7 +125,6 @@
         navigate(`/search?sortby=random-${seed}`);
     }
 
-    /* Returns true if the currently focused element is any kind of text input. */
     function activeIsInput(): boolean {
         const el = document.activeElement;
         if (!el) return false;
@@ -89,7 +132,6 @@
         return tag === 'input' || tag === 'textarea' || tag === 'select' || (el as HTMLElement).isContentEditable;
     }
 
-    /* Global shortcuts: Enter → focus include field; / → focus search bar. */
     function onGlobalKeydown(e: KeyboardEvent) {
         if (activeIsInput()) return;
         if (e.key === 'Enter') {
@@ -135,11 +177,44 @@
         </div>
         <div class="top-right">
             <span class="sort-label">sort by</span>
-            <select class="sort-select" bind:value={sortby} onchange={apply}>
-                {#each SORT_OPTIONS as opt}
-                    <option value={opt.value}>{opt.label}</option>
-                {/each}
-            </select>
+            <div class="sort-control">
+                <button class="sort-trigger" onclick={() => sortDropOpen = !sortDropOpen}>
+                    {currentSortLabel} <span class="sort-caret">▾</span>
+                </button>
+                {#if sortDropOpen}
+                    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+                    <div class="sort-backdrop" onclick={() => sortDropOpen = false}></div>
+                    <div class="sort-dropdown">
+                        {#each SORT_OPTIONS as opt, i}
+                            {#if i > 0 && opt.group !== SORT_OPTIONS[i - 1].group}
+                                {#if GROUP_HEADERS[opt.group]}
+                                    <div class="sort-group-header" style="color: {GROUP_HEADERS[opt.group]!.color}">
+                                        <span class="sort-group-label">{GROUP_HEADERS[opt.group]!.label}</span>
+                                    </div>
+                                {:else}
+                                    <hr class="sort-sep" />
+                                {/if}
+                            {/if}
+                            <div class="sort-row" class:active={sortField === opt.field}>
+                                <button class="sort-row-label" onclick={() => clickSortLabel(opt.field, opt.alphabetic)}>
+                                    {opt.label}
+                                </button>
+                                {#if opt.field !== 'random'}
+                                    <div class="dir-group">
+                                        {#if opt.alphabetic}
+                                            <button class="dir-btn" class:dir-active={sortField === opt.field && sortDir === 'asc'} onclick={() => clickSortDir(opt.field, 'asc')}>A→Z</button>
+                                            <button class="dir-btn" class:dir-active={sortField === opt.field && sortDir === 'desc'} onclick={() => clickSortDir(opt.field, 'desc')}>Z→A</button>
+                                        {:else}
+                                            <button class="dir-btn" class:dir-active={sortField === opt.field && sortDir === 'asc'} onclick={() => clickSortDir(opt.field, 'asc')}>↑</button>
+                                            <button class="dir-btn" class:dir-active={sortField === opt.field && sortDir === 'desc'} onclick={() => clickSortDir(opt.field, 'desc')}>↓</button>
+                                        {/if}
+                                    </div>
+                                {/if}
+                            </div>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
             <span class="sort-label">per page</span>
             <select class="sort-select" bind:value={settings.resultsPerPage} onchange={apply}>
                 {#each PER_PAGE_OPTIONS as n}
@@ -294,6 +369,138 @@
         font-size: 0.9rem;
         white-space: nowrap;
     }
+
+    /* ── Sort control ─────────────────────────────────────────────────────────── */
+
+    .sort-control {
+        position: relative;
+    }
+
+    .sort-trigger {
+        background: #111;
+        color: #ccc;
+        border: 1px solid #444;
+        border-radius: 4px;
+        padding: 3px 8px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        white-space: nowrap;
+        min-width: 11rem;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.4rem;
+    }
+    .sort-trigger:hover { border-color: #666; }
+    .sort-trigger:focus { outline: 1px solid #666; }
+
+    .sort-caret {
+        color: #555;
+        font-size: 0.75rem;
+    }
+
+    .sort-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 99;
+    }
+
+    .sort-dropdown {
+        position: absolute;
+        top: calc(100% + 4px);
+        right: 0;
+        background: #0d0d0d;
+        border: 1px solid #3a3a3a;
+        border-radius: 6px;
+        padding: 4px;
+        z-index: 100;
+        min-width: 14rem;
+        box-shadow: 0 6px 18px #0009;
+    }
+
+    .sort-sep {
+        border: none;
+        border-top: 1px solid #222;
+        margin: 3px 4px;
+    }
+
+    .sort-row {
+        display: flex;
+        align-items: stretch;
+        border-radius: 4px;
+        padding: 0 0 0 2px;
+        gap: 2px;
+        min-height: 1.7rem;
+    }
+    .sort-row:hover      { background: #161616; }
+    .sort-row.active     { background: #1c1c1c; }
+
+    .sort-row-label {
+        flex: 1;
+        text-align: left;
+        background: none;
+        border: none;
+        color: #999;
+        font-size: 0.88rem;
+        padding: 4px 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        border-radius: 3px;
+        white-space: nowrap;
+    }
+    .sort-row-label:hover  { color: #eee; }
+    .sort-row.active .sort-row-label { color: #ddd; }
+
+    .dir-group {
+        display: flex;
+        align-self: stretch;
+    }
+
+    .dir-btn {
+        background: none;
+        border: none;
+        border-left: 1px solid #1e1e1e;
+        color: #444;
+        font-size: 0.8rem;
+        width: 3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+    .dir-btn:first-child { border-left: none; }
+    .dir-btn:hover    { color: #aaa; background: #1a1a1a; }
+    .dir-btn.dir-active {
+        color: #ddd;
+        background: #252525;
+    }
+
+    .sort-group-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 8px 3px;
+    }
+    .sort-group-header::before,
+    .sort-group-header::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: currentColor;
+        opacity: 0.25;
+    }
+    .sort-group-label {
+        font-size: 0.7rem;
+        font-family: 'Inter', sans-serif;
+        opacity: 0.6;
+        letter-spacing: 0.04em;
+        white-space: nowrap;
+    }
+
+    /* ── Per-page select ─────────────────────────────────────────────────────── */
 
     .sort-select {
         background: #111;
