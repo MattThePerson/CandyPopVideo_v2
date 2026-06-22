@@ -52,6 +52,9 @@ func main() {
     if err := db.MigrateInteractionsTable(cfg.DBPath); err != nil {
         log.Fatalf("Failed to migrate interactions table: %v", err)
     }
+    if err := db.MigrateViewingsTable(cfg.DBPath); err != nil {
+        log.Fatalf("Failed to migrate viewings table: %v", err)
+    }
 
     stateStore := config.NewAppStateStore(cfg.AppDataDir)
 

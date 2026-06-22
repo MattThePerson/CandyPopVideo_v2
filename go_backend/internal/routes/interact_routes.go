@@ -1,14 +1,13 @@
 package routes
 
 import (
-	"cpv_backend/internal/db"
-	"cpv_backend/internal/schemas"
-	"database/sql"
-	"errors"
-	"strconv"
-	"strings"
+    "cpv_backend/internal/db"
+    "cpv_backend/internal/schemas"
+    "database/sql"
+    "errors"
+    "strings"
 
-	"github.com/labstack/echo/v4"
+    "github.com/labstack/echo/v4"
 )
 
 func IncludeInteractRoutes(e *echo.Group, db_path string) {
@@ -22,9 +21,8 @@ func IncludeInteractRoutes(e *echo.Group, db_path string) {
 	e.POST("/favourites/remove/:video_hash", 				func(c echo.Context) error { return ECHO_fav_remove(c, db_path) })
 	e.POST("/favourites/update-time/:video_hash/:new_date", func(c echo.Context) error { return ECHO_fav_update_time(c, db_path) })
 
-	e.POST("/likes/add/:video_hash", 				func(c echo.Context) error { return ECHO_likes_add(c, db_path) })
-	e.POST("/last-viewed/add/:video_hash", 			func(c echo.Context) error { return ECHO_last_viewed_add(c, db_path) })
-	e.POST("/viewtime/add/:video_hash/:viewtime", 	func(c echo.Context) error { return ECHO_viewtime_add(c, db_path) })
+    e.POST("/likes/add/:video_hash",        func(c echo.Context) error { return ECHO_likes_add(c, db_path) })
+    e.POST("/viewing/add/:video_hash",      func(c echo.Context) error { return ECHO_viewing_add(c, db_path) })
 	
 	// markers
 	e.POST("/markers/update/:video_hash", 	func(c echo.Context) error { return c.String(501, "Not implemented") })
@@ -115,46 +113,51 @@ func ECHO_fav_update_time(c echo.Context, db_path string) error {
 // #region OTHER
 
 func ECHO_likes_add(c echo.Context, db_path string) error {
-	return updateInteractionsTable(c, db_path, func(inter *schemas.VideoInteractions) error {
-		
-		inter.Likes += 1
-
-		return c.String(200, "Liked video ❤️")
-	})
+    return updateInteractionsTable(c, db_path, func(inter *schemas.VideoInteractions) error {
+        inter.Likes += 1
+        return c.String(200, "Liked video ❤️")
+    })
 }
 
-// ECHO_last_viewed_add
-func ECHO_last_viewed_add(c echo.Context, db_path string) error {
-	return updateInteractionsTable(c, db_path, func(inter *schemas.VideoInteractions) error {
-		
-		inter.LastViewed = getCurrentTime()
+// ECHO_viewing_add records a completed playback section. The frontend sends
+// the section's start position and duration; this handler updates interactions
+// (last_viewed + cumulative viewtime) and appends a row to the viewings log.
+// Sections shorter than 1.5s are silently ignored.
+func ECHO_viewing_add(c echo.Context, db_path string) error {
+    hash := c.Param("video_hash")
 
-		return c.String(200, "Favourite added")
-	})
-}
+    var body struct {
+        TimeStart   float64 `json:"time_start"`
+        DurationSec float64 `json:"duration_sec"`
+    }
+    if err := c.Bind(&body); err != nil {
+        return c.JSON(400, map[string]string{"error": "invalid body"})
+    }
+    if body.DurationSec < 1.5 {
+        return c.String(200, "section too short")
+    }
 
-// ECHO_viewtime_add
-func ECHO_viewtime_add(c echo.Context, db_path string) error {
-	return updateInteractionsTable(c, db_path, func(inter *schemas.VideoInteractions) error {
-		
-		viewtime, err := strconv.ParseFloat( c.Param("viewtime"), 64 )
-		if err != nil {
-			return handleServerError(c, 500, "Unable to parse float", err)
-		}
-		inter.Viewtime += viewtime
-		
-		// update views table
-		err = db.InsertDataIntoTable(db_path, "views", map[string]any{
-			"timestamp": getCurrentTime(),
-			"video_hash": c.Param("video_hash"),
-			"duration_sec": viewtime,
-		})
-		if err != nil {
-			return err
-		}
+    inter, err := db.ReadInteractionsRow(db_path, hash)
+    if err != nil && !errors.Is(err, sql.ErrNoRows) {
+        return handleServerError(c, 500, "Unable to read interactions", err)
+    }
+    inter.LastViewed = getCurrentTime()
+    inter.Viewtime += body.DurationSec
+    if err := db.WriteInteractionsRow(db_path, hash, inter); err != nil {
+        return handleServerError(c, 500, "Unable to write interactions", err)
+    }
+    db.InvalidateInteractionsCache()
 
-		return c.String(200, "Favourite aded")
-	})
+    if err := db.InsertDataIntoTable(db_path, "viewings", map[string]any{
+        "video_hash":   hash,
+        "datetime":     getCurrentTime(),
+        "time_start":   body.TimeStart,
+        "duration_sec": body.DurationSec,
+    }); err != nil {
+        return handleServerError(c, 500, "Unable to insert viewing", err)
+    }
+
+    return c.String(200, "viewing recorded")
 }
 
 

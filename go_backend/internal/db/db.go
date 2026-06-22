@@ -24,7 +24,7 @@ func InitDB(db_path string) error {
     stmts := []string{
         `CREATE TABLE IF NOT EXISTS videos (id TEXT PRIMARY KEY, date_added TEXT, path TEXT NOT NULL DEFAULT '', is_linked INTEGER NOT NULL DEFAULT 1, data TEXT)`,
         interactionsSchema,
-        `CREATE TABLE IF NOT EXISTS views (timestamp TEXT, video_hash TEXT, duration_sec REAL)`,
+        `CREATE TABLE IF NOT EXISTS viewings (id INTEGER PRIMARY KEY AUTOINCREMENT, video_hash TEXT, datetime TEXT, time_start REAL, duration_sec REAL)`,
     }
     for _, stmt := range stmts {
         if _, err := db.Exec(stmt); err != nil {

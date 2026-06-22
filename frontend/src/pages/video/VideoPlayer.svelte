@@ -8,6 +8,39 @@
     let hostEl: HTMLDivElement;
     let player: PassionPlayer | null = null;
 
+    // Viewing section tracking
+    let sectionStart: number | null = null;
+    let lastKnownTime = 0;
+    // Prevents timeupdate from overwriting lastKnownTime during the seek event sequence
+    // (browser fires: seeking → timeupdate → seeked; timeupdate fires with the NEW time).
+    let isSeeking = false;
+
+    // Cleanup refs for event listeners
+    let videoEl: HTMLVideoElement | null = null;
+    let onTimeUpdate:   (() => void) | null = null;
+    let onPlay:         (() => void) | null = null;
+    let onPause:        (() => void) | null = null;
+    let onSeeking:      (() => void) | null = null;
+    let onSeeked:       (() => void) | null = null;
+    let onEnded:        (() => void) | null = null;
+    let onBeforeUnload: (() => void) | null = null;
+
+    // Sends a completed section to the backend (start position + duration).
+    // Sections shorter than 1.5s are dropped — the backend enforces the same floor.
+    function submitSection(start: number | null, end: number) {
+        if (start === null) return;
+        const duration = Math.round((end - start) * 1000) / 1000;
+        if (duration < 1.5) return;
+        fetch(`/api/interact/viewing/add/${hash}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                time_start:   Math.round(start * 1000) / 1000,
+                duration_sec: duration,
+            }),
+        }).catch(() => {});
+    }
+
     // Ensures the seek spritesheet is generated server-side, then fetches both
     // the VTT and the JPEG and passes them to PassionPlayer as a data URL.
     // PassionPlayer's setSeekThumbs requires an inline data URL, not a path.
@@ -53,10 +86,70 @@
 
         loadSeekThumbs(player);
 
-        fetch(`/api/interact/last-viewed/add/${hash}`, { method: 'POST' }).catch(() => {});
+        // PassionPlayer's _init() is async: it awaits a style injection before calling
+        // _addHTML (which inserts <video>). Query immediately after construction returns
+        // null. Wait for the element to appear via MutationObserver instead.
+        const shadow = hostEl.shadowRoot!;
+        videoEl = await new Promise<HTMLVideoElement>((resolve) => {
+            const existing = shadow.querySelector('video');
+            if (existing) { resolve(existing as HTMLVideoElement); return; }
+            const mo = new MutationObserver(() => {
+                const el = shadow.querySelector('video');
+                if (el) { mo.disconnect(); resolve(el as HTMLVideoElement); }
+            });
+            mo.observe(shadow, { childList: true, subtree: true });
+        });
+
+        // Gate timeupdate on !isSeeking: the browser fires seeking→timeupdate→seeked,
+        // so timeupdate would overwrite lastKnownTime with the new position before seeked runs.
+        onTimeUpdate = () => { if (!isSeeking) lastKnownTime = videoEl!.currentTime; };
+        onPlay       = () => { sectionStart = videoEl!.currentTime; };
+        onPause      = () => { submitSection(sectionStart, videoEl!.currentTime); sectionStart = null; };
+        onSeeking    = () => { isSeeking = true; };
+        onSeeked     = () => {
+            submitSection(sectionStart, lastKnownTime);
+            isSeeking = false;
+            sectionStart = videoEl!.paused ? null : videoEl!.currentTime;
+        };
+        onEnded      = () => { submitSection(sectionStart, videoEl!.currentTime); sectionStart = null; };
+        // sendBeacon is the only reliable way to fire a POST on tab close.
+        onBeforeUnload = () => {
+            if (sectionStart === null) return;
+            const duration = Math.round((lastKnownTime - sectionStart) * 1000) / 1000;
+            if (duration < 1.5) return;
+            navigator.sendBeacon(
+                `/api/interact/viewing/add/${hash}`,
+                new Blob([JSON.stringify({
+                    time_start:   Math.round(sectionStart * 1000) / 1000,
+                    duration_sec: duration,
+                })], { type: 'application/json' })
+            );
+        };
+
+        videoEl.addEventListener('timeupdate',  onTimeUpdate);
+        videoEl.addEventListener('play',        onPlay);
+        videoEl.addEventListener('pause',       onPause);
+        videoEl.addEventListener('seeking',     onSeeking);
+        videoEl.addEventListener('seeked',      onSeeked);
+        videoEl.addEventListener('ended',       onEnded);
+        window.addEventListener('beforeunload', onBeforeUnload);
     });
 
     onDestroy(() => {
+        // Flush any in-progress section before the component unmounts (client-side navigation).
+        if (sectionStart !== null && videoEl !== null) {
+            submitSection(sectionStart, videoEl.currentTime);
+            sectionStart = null;
+        }
+        if (videoEl) {
+            if (onTimeUpdate)   videoEl.removeEventListener('timeupdate',  onTimeUpdate);
+            if (onPlay)         videoEl.removeEventListener('play',        onPlay);
+            if (onPause)        videoEl.removeEventListener('pause',       onPause);
+            if (onSeeking)      videoEl.removeEventListener('seeking',     onSeeking);
+            if (onSeeked)       videoEl.removeEventListener('seeked',      onSeeked);
+            if (onEnded)        videoEl.removeEventListener('ended',       onEnded);
+        }
+        if (onBeforeUnload) window.removeEventListener('beforeunload', onBeforeUnload);
         player?.destroy();
         player = null;
     });
