@@ -30,7 +30,6 @@ func ScanLibraries(cfg config.Config, opts ScanOptions, emit func(string)) error
 
     exts := extensionSet(cfg.VideoExtensions)
     files := collectVideoFiles(cfg.Collections, exts, opts.PathFilter)
-    emit(fmt.Sprintf("[SCAN] Found %d video files", len(files)))
 
     // Load all existing DB records and build a path→hash reverse lookup
     emit("[SCAN] Loading existing database records…")
@@ -55,7 +54,9 @@ func ScanLibraries(cfg config.Config, opts ScanOptions, emit func(string)) error
             }
         }
         files = newFiles
-        emit(fmt.Sprintf("[SCAN] Quick scan: %d new files to process, %d known skipped", len(files), skipped))
+        emit(fmt.Sprintf("[SCAN] Found %d new/unrecognised files (%d already known, skipped)", len(files), skipped))
+    } else {
+        emit(fmt.Sprintf("[SCAN] Found %d video files", len(files)))
     }
 
     loaded := map[string]*schemas.VideoData{}

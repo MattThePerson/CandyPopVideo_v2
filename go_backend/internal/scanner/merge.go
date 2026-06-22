@@ -87,6 +87,7 @@ func MergeAndSave(dbPath string, loaded map[string]*schemas.VideoData, isFiltere
         }
     }
 
+    toWrite := make(map[string]schemas.VideoData, len(loaded))
     for hash, scanned := range loaded {
         if old, exists := existing[hash]; exists {
             if scanned.DateAdded == "" {
@@ -103,9 +104,11 @@ func MergeAndSave(dbPath string, loaded map[string]*schemas.VideoData, isFiltere
             }
         }
         normalizeVideoDataSlices(scanned)
-        if err := db.WriteVideoRow(dbPath, hash, *scanned); err != nil {
-            return err
-        }
+        toWrite[hash] = *scanned
+    }
+
+    if err := db.BatchWriteVideoRows(dbPath, toWrite); err != nil {
+        return err
     }
 
     db.InvalidateCache()

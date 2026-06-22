@@ -170,12 +170,11 @@ func getVideoTags(vd schemas.VideoData) []string {
 
 
 func secondsFromNow(date string) float64 {
-    const layout = "2006-01-02 15:04"
-    t, err := time.Parse(layout, date)
-    if err != nil {
-        log.Println("error parsing date: "+err.Error())
-        return 0
+    for _, layout := range []string{"2006-01-02 15:04:05.000", "2006-01-02 15:04:05", "2006-01-02 15:04"} {
+        if t, err := time.Parse(layout, date); err == nil {
+            return time.Since(t).Seconds()
+        }
     }
-    duration := time.Since(t)
-    return duration.Seconds()
+    log.Println("error parsing date: unrecognised format: " + date)
+    return 0
 }

@@ -172,6 +172,40 @@ func WriteVideoRow(db_path string, hash string, vd schemas.VideoData) error {
 }
 
 
+// BatchWriteVideoRows writes all provided VideoData records in a single
+// transaction. Always marks each row as is_linked=1.
+func BatchWriteVideoRows(dbPath string, videos map[string]schemas.VideoData) error {
+    db, err := openDbConnection(dbPath)
+    if err != nil {
+        return err
+    }
+    defer db.Close()
+
+    tx, err := db.Begin()
+    if err != nil {
+        return err
+    }
+    defer tx.Rollback()
+
+    stmt, err := tx.Prepare("INSERT OR REPLACE INTO videos (id, path, is_linked, date_added, data) VALUES (?, ?, 1, ?, ?)")
+    if err != nil {
+        return err
+    }
+    defer stmt.Close()
+
+    for hash, vd := range videos {
+        data, err := json.Marshal(vd)
+        if err != nil {
+            return err
+        }
+        if _, err := stmt.Exec(hash, vd.Path, vd.DateAdded, data); err != nil {
+            return err
+        }
+    }
+    return tx.Commit()
+}
+
+
 // SetAllUnlinked marks every row in the videos table as is_linked=0 in a single
 // SQL statement. Called at the start of a full (unfiltered) scan.
 func SetAllUnlinked(db_path string) error {
