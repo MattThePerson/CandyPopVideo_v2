@@ -35,6 +35,16 @@
         } catch { /* ignore */ }
     }
 
+    function formatDuration(d: string): string {
+        const parts = d.split(':').map(Number);
+        if (parts.length === 3) {
+            const [h, m, s] = parts;
+            if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            return `${m}:${String(s).padStart(2, '0')}`;
+        }
+        return d;
+    }
+
     function formatViewtime(seconds: number): string {
         const h = Math.floor(seconds / 3600);
         const m = Math.floor((seconds % 3600) / 60);
@@ -92,7 +102,7 @@
     {/if}
 
     <div class="meta-row specs">
-        {#if video.duration}<span class="spec">{video.duration}</span>{/if}
+        {#if video.duration}<span class="spec">{formatDuration(video.duration)}</span>{/if}
         {#if video.resolution}<span class="spec">{video.resolution}p</span>{/if}
         {#if video.bitrate}<span class="spec">{video.bitrate} kbps</span>{/if}
         {#if video.fps}<span class="spec">{video.fps} fps</span>{/if}

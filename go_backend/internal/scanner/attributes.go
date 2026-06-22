@@ -86,14 +86,12 @@ func parseFrameRate(s string) float64 {
     return math.Round(num/den*100) / 100
 }
 
-// formatDuration converts seconds to "H:MM:SS".
+// formatDuration converts seconds to "HH:MM:SS" (always zero-padded) so
+// direct string comparison matches chronological order.
 func formatDuration(secs float64) string {
     total := int(secs)
     h := total / 3600
     m := (total % 3600) / 60
     s := total % 60
-    if h > 0 {
-        return fmt.Sprintf("%d:%02d:%02d", h, m, s)
-    }
-    return fmt.Sprintf("%d:%02d", m, s)
+    return fmt.Sprintf("%02d:%02d:%02d", h, m, s)
 }

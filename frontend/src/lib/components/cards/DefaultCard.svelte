@@ -161,7 +161,13 @@
     // ── Formatting ───────────────────────────────────────────────────────────
 
     function formatDuration(d: string): string {
-        return d.startsWith('0:') ? d.slice(2) : d;
+        const parts = d.split(':').map(Number);
+        if (parts.length === 3) {
+            const [h, m, s] = parts;
+            if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+            return `${m}:${String(s).padStart(2, '0')}`;
+        }
+        return d;
     }
     function formatBitrate(kbps: number): string {
         return Math.round(kbps / 100) / 10 + 'mb';

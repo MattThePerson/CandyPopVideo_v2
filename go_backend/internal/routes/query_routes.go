@@ -40,6 +40,10 @@ func ECHO_search_videos(c echo.Context, db_path string, stateStore *config.AppSt
         return c.String(400, "Invalid JSON: "+err.Error())
     }
 
+    // TEMP
+    bts, _ := json.MarshalIndent(&q, "", "  ")
+    fmt.Printf("search_query:\n%s\n\n", bts)
+
     vids, err := getFilteredVideos(db_path, stateStore)
     if err != nil {
         return handleServerError(c, 500, "Unable to read videos table", err)
