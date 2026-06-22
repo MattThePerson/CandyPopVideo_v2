@@ -14,10 +14,9 @@ var (
 	cacheMutex sync.Mutex
 )
 
-// GetCachedVideos reads a serialized table into a map containing structs (deserialized data) and caches it
+// GetCachedVideos returns a map of all linked videos, deserializing from SQLite
+// on cache miss. Only linked videos (is_linked=1) are ever stored or returned.
 func GetCachedVideos(db_path string, cache_base_timeout int, cache_access_timeout int) (map[string]schemas.VideoData, error) {
-
-	mpfil := map[string]schemas.VideoData{}
 
 	// Get from cache
 	cacheMutex.Lock()
@@ -31,23 +30,17 @@ func GetCachedVideos(db_path string, cache_base_timeout int, cache_access_timeou
 		return cachedVideos, nil
 	}
 
-	// Get from db
-	mp, err := ReadSerializedMapFromTable[schemas.VideoData](db_path, "videos")
+	// Get from db (linked only)
+	mp, err := ReadLinkedVideosMap(db_path)
 	if err != nil {
 		return mp, err
 	}
 
-	for hsh, vd := range mp {
-		if vd.IsLinked {
-			mpfil[hsh] = vd
-		}
-	}
-
 	cachedVideos = mp
-    cacheTime = time.Now()
+	cacheTime = time.Now()
 	cacheLastAccess = time.Now()
 
-	return mpfil, nil
+	return mp, nil
 
 }
 

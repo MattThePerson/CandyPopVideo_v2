@@ -6,6 +6,7 @@ import (
 
 	"database/sql"
 
+	"cpv_backend/internal/schemas"
 	_ "modernc.org/sqlite"
 )
 
@@ -21,7 +22,7 @@ func InitDB(db_path string) error {
     defer db.Close()
 
     stmts := []string{
-        `CREATE TABLE IF NOT EXISTS videos (id TEXT PRIMARY KEY, data TEXT)`,
+        `CREATE TABLE IF NOT EXISTS videos (id TEXT PRIMARY KEY, path TEXT NOT NULL DEFAULT '', is_linked INTEGER NOT NULL DEFAULT 1, date_added TEXT, data TEXT)`,
         `CREATE TABLE IF NOT EXISTS interactions (id TEXT PRIMARY KEY, data TEXT)`,
         `CREATE TABLE IF NOT EXISTS views (timestamp TEXT, video_hash TEXT, duration_sec REAL)`,
     }
@@ -145,6 +146,103 @@ func WriteSerializedRowToTable[S any](db_path string, table string, id string, d
 	}
 	
 	return nil
+}
+
+
+// WriteVideoRow writes a VideoData record to the videos table, always marking
+// it as is_linked=1. Shadow columns (path, date_added) are kept in sync with
+// the JSON blob so SQL-level queries and DB-browser sorting work correctly.
+func WriteVideoRow(db_path string, hash string, vd schemas.VideoData) error {
+    db, err := openDbConnection(db_path)
+    if err != nil {
+        return err
+    }
+    defer db.Close()
+
+    data, err := json.Marshal(vd)
+    if err != nil {
+        return err
+    }
+
+    _, err = db.Exec(
+        "INSERT OR REPLACE INTO videos (id, path, is_linked, date_added, data) VALUES (?, ?, 1, ?, ?)",
+        hash, vd.Path, vd.DateAdded, data,
+    )
+    return err
+}
+
+
+// SetAllUnlinked marks every row in the videos table as is_linked=0 in a single
+// SQL statement. Called at the start of a full (unfiltered) scan.
+func SetAllUnlinked(db_path string) error {
+    db, err := openDbConnection(db_path)
+    if err != nil {
+        return err
+    }
+    defer db.Close()
+    _, err = db.Exec("UPDATE videos SET is_linked = 0")
+    return err
+}
+
+
+// ReadLinkedVideosMap returns only linked videos (is_linked=1), deserializing
+// each JSON blob. Used by the cache and mediagen batch.
+func ReadLinkedVideosMap(db_path string) (map[string]schemas.VideoData, error) {
+    items := map[string]schemas.VideoData{}
+
+    db, err := openDbConnection(db_path)
+    if err != nil {
+        return items, err
+    }
+    defer db.Close()
+
+    rows, err := db.Query("SELECT id, data FROM videos WHERE is_linked = 1")
+    if err != nil {
+        return items, err
+    }
+
+    for rows.Next() {
+        var id string
+        var data_serialized string
+        if err := rows.Scan(&id, &data_serialized); err != nil {
+            return items, err
+        }
+        var data schemas.VideoData
+        if err := json.Unmarshal([]byte(data_serialized), &data); err != nil {
+            fmt.Println("hash: " + id)
+            return items, err
+        }
+        items[id] = data
+    }
+    return items, nil
+}
+
+
+// CountVideosByLinkedStatus returns the number of linked and unlinked videos
+// via a single GROUP BY query. Used by dashboard stats.
+func CountVideosByLinkedStatus(db_path string) (linked int, unlinked int, err error) {
+    db, err := openDbConnection(db_path)
+    if err != nil {
+        return 0, 0, err
+    }
+    defer db.Close()
+
+    rows, err := db.Query("SELECT is_linked, COUNT(*) FROM videos GROUP BY is_linked")
+    if err != nil {
+        return 0, 0, err
+    }
+    for rows.Next() {
+        var status, count int
+        if scanErr := rows.Scan(&status, &count); scanErr != nil {
+            return 0, 0, scanErr
+        }
+        if status == 1 {
+            linked = count
+        } else {
+            unlinked = count
+        }
+    }
+    return linked, unlinked, nil
 }
 
 

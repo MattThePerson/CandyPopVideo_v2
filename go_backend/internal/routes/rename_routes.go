@@ -145,7 +145,7 @@ func ECHO_rename_video(c echo.Context, cfg config.Config) error {
     vd.Tags = mergedTags
 
     // Persist to DB. On failure, revert the file rename to keep fs and DB in sync.
-    if err := db.WriteSerializedRowToTable(cfg.DBPath, "videos", hash, vd); err != nil {
+    if err := db.WriteVideoRow(cfg.DBPath, hash, vd); err != nil {
         if revertErr := os.Rename(newPath, oldPath); revertErr != nil {
             log.Printf("[RENAME] CRITICAL: DB write failed and rename-back failed: %v", revertErr)
             return c.JSON(http.StatusInternalServerError, map[string]string{

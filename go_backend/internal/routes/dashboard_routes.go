@@ -103,19 +103,18 @@ type CollectionStat struct {
 }
 
 func ECHO_dashboard_stats(c echo.Context, dbPath string) error {
+    linked, unlinked, err := db.CountVideosByLinkedStatus(dbPath)
+    if err != nil {
+        return handleServerError(c, 500, "Unable to count videos", err)
+    }
+
     mp, err := db.GetCachedVideos(dbPath, 15, 3)
     if err != nil {
         return handleServerError(c, 500, "Unable to read database", err)
     }
 
-    linked, unlinked := 0, 0
     colls := map[string]int{}
     for _, vd := range mp {
-        if vd.IsLinked {
-            linked++
-        } else {
-            unlinked++
-        }
         if vd.Collection != "" {
             colls[vd.Collection]++
         }
@@ -130,7 +129,7 @@ func ECHO_dashboard_stats(c echo.Context, dbPath string) error {
     })
 
     return c.JSON(200, DashboardStats{
-        TotalVideos:    len(mp),
+        TotalVideos:    linked + unlinked,
         LinkedVideos:   linked,
         UnlinkedVideos: unlinked,
         Collections:    collections,
@@ -163,9 +162,6 @@ func ECHO_dashboard_media_status(c echo.Context, dbPath, previewMediaDir string)
     exists := func(path string) bool { _, e := os.Stat(path); return e == nil }
 
     for _, vd := range mp {
-        if !vd.IsLinked {
-            continue
-        }
         dir := getVideoMediaDir(previewMediaDir, vd.Hash)
 
         if exists(dir + "/teaser_thumbs_small.jpg") { tt.With++ } else { tt.Without++ }

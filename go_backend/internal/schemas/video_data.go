@@ -3,9 +3,10 @@ package schemas
 type VideoData struct {
 
 	//
-	Hash      string `json:"hash"`
-	DateAdded string `json:"date_added"`
-	Path      string `json:"path"`
+	Hash           string `json:"hash"`
+	DateAdded      string `json:"date_added"`      // when first scanned into DB; set once
+	DateDownloaded string `json:"date_downloaded"` // file ModTime at first scan; set once
+	Path           string `json:"path"`
 	Filename  string `json:"filename"`
 
 	// video attributes
@@ -56,6 +57,4 @@ type VideoData struct {
 	Likes int `json:"likes"`
 
 	Metadata map[string]any `json:"metadata"`
-
-	IsLinked bool `json:"is_linked"`
 }

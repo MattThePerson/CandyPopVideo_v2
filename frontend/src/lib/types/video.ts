@@ -1,6 +1,7 @@
 export interface VideoData {
     hash:             string;
     date_added:       string;
+    date_downloaded?: string;
     path:             string;
     filename:         string;
 
@@ -43,8 +44,6 @@ export interface VideoData {
     likes:    number;
 
     metadata: Record<string, unknown> | null;
-
-    is_linked: boolean;
 }
 
 export interface VideoInteractions {

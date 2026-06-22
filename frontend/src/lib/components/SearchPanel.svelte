@@ -19,6 +19,7 @@
 
     const SORT_OPTIONS = [
         { field: 'date_added',      label: 'date added',      defaultDir: 'desc' as const, alphabetic: false, group: 0 },
+        { field: 'date_downloaded', label: 'date downloaded',  defaultDir: 'desc' as const, alphabetic: false, group: 0 },
         { field: 'date_released',   label: 'date released',   defaultDir: 'desc' as const, alphabetic: false, group: 0 },
         { field: 'title',           label: 'title',           defaultDir: 'asc'  as const, alphabetic: true,  group: 0 },
         { field: 'filename',        label: 'filename',        defaultDir: 'asc'  as const, alphabetic: true,  group: 0 },

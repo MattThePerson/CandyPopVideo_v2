@@ -20,7 +20,7 @@ from lib.util.general import pickle_save
 def main(db_path: str, model_dir: str):
     print(f'[TFIDF] Reading videos from: {db_path}')
     rows = read_videos_from_db(db_path)
-    videos = [VideoData.from_dict(row, strict=False) for row in rows if row.get('is_linked')]
+    videos = [VideoData.from_dict(row, strict=False) for row in rows]
     print(f'[TFIDF] Building model for {len(videos):_} linked videos ...')
 
     model = generate_tfidf_model(videos)

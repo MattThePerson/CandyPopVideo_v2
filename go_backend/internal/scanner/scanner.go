@@ -153,18 +153,17 @@ func resolveVideo(
     }
 
     // Brand-new video
-    dateAdded := fileCtime(vf.Path)
     rel := relPathRelative(vf.Path, vf.CollectionRoot)
 
     vd = &schemas.VideoData{
         Hash:           hash,
         Path:           vf.Path,
         Filename:       filepath.Base(vf.Path),
-        DateAdded:      dateAdded,
+        DateAdded:      time.Now().Format("2006-01-02 15:04"),
+        DateDownloaded: fileModTime(vf.Path),
         Collection:     vf.CollectionName,
-        ParentDir: vf.CollectionRoot,
+        ParentDir:      vf.CollectionRoot,
         PathRelative:   rel,
-        IsLinked:       true,
     }
     return hash, vd, true, nil
 }
@@ -190,8 +189,8 @@ func relPathRelative(path, root string) string {
     return rel
 }
 
-// fileCtime returns the file creation/change time as "YYYY-MM-DD HH:MM".
-func fileCtime(path string) string {
+// fileModTime returns the file's modification time as "YYYY-MM-DD HH:MM".
+func fileModTime(path string) string {
     info, err := os.Stat(path)
     if err != nil {
         return time.Now().Format("2006-01-02 15:04")

@@ -23,7 +23,7 @@ type GenerateMediaOptions struct {
 
 // BatchGenerate runs media generation for all matching linked videos.
 func BatchGenerate(cfg config.Config, opts GenerateMediaOptions, emit func(string)) error {
-    all, err := db.ReadSerializedMapFromTable[schemas.VideoData](cfg.DBPath, "videos")
+    all, err := db.ReadLinkedVideosMap(cfg.DBPath)
     if err != nil {
         return fmt.Errorf("reading DB: %w", err)
     }
@@ -35,9 +35,6 @@ func BatchGenerate(cfg config.Config, opts GenerateMediaOptions, emit func(strin
 
     var videos []schemas.VideoData
     for _, vd := range all {
-        if !vd.IsLinked {
-            continue
-        }
         if opts.Collection != "" && vd.Collection != opts.Collection {
             continue
         }

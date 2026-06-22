@@ -70,46 +70,40 @@ func SortTagsByFrequency(videos map[string]*schemas.VideoData) {
     }
 }
 
-// MergeAndSave loads the existing DB records, merges newly-scanned videos in,
-// marks anything not found in the scan as is_linked=false (when !isFiltered),
-// and writes everything back to the DB.
+// MergeAndSave writes newly-scanned videos to the DB. For a full (unfiltered)
+// scan, all existing rows are first marked is_linked=0 via a single SQL UPDATE;
+// each scanned video is then written with is_linked=1. Unlinked records that
+// weren't scanned are left untouched in the DB with their is_linked=0 status.
 func MergeAndSave(dbPath string, loaded map[string]*schemas.VideoData, isFiltered bool) error {
+    // Load all existing records to preserve once-set fields on rescan.
     existing, err := db.ReadSerializedMapFromTable[schemas.VideoData](dbPath, "videos")
     if err != nil {
         return err
     }
 
-    // Start from existing; mark all unlinked if this is a full scan
-    merged := map[string]schemas.VideoData{}
-    for hash, vd := range existing {
-        if !isFiltered {
-            vd.IsLinked = false
+    if !isFiltered {
+        if err := db.SetAllUnlinked(dbPath); err != nil {
+            return err
         }
-        merged[hash] = vd
     }
 
-    // Overlay newly-scanned videos, preserving fields the scan didn't touch
     for hash, scanned := range loaded {
-        scanned.IsLinked = true
-        if old, exists := merged[hash]; exists {
-            // Preserve fields populated by other means (sidecar, manual edits)
+        if old, exists := existing[hash]; exists {
+            if scanned.DateAdded == "" {
+                scanned.DateAdded = old.DateAdded
+            }
+            if scanned.DateDownloaded == "" {
+                scanned.DateDownloaded = old.DateDownloaded
+            }
             if scanned.Description == "" {
                 scanned.Description = old.Description
             }
             if scanned.Metadata == nil {
                 scanned.Metadata = old.Metadata
             }
-            if scanned.DateAdded == "" {
-                scanned.DateAdded = old.DateAdded
-            }
         }
-        merged[hash] = *scanned
-    }
-
-    // Write all records back, ensuring nil slices become [] not null in JSON
-    for hash, vd := range merged {
-        normalizeVideoDataSlices(&vd)
-        if err := db.WriteSerializedRowToTable(dbPath, "videos", hash, vd); err != nil {
+        normalizeVideoDataSlices(scanned)
+        if err := db.WriteVideoRow(dbPath, hash, *scanned); err != nil {
             return err
         }
     }
