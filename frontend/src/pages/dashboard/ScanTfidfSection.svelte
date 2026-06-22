@@ -1,11 +1,11 @@
 <script lang="ts">
     export interface ScanOptions {
-        // reparse_filenames: boolean;
-        // reread_json:       boolean;
         rederive_metadata: boolean;
         redo_attributes:   boolean;
         rehash:            boolean;
         path_filter:       string;
+        quick_scan:        boolean;
+        read_json:         boolean;
     }
 
     /* Props */
@@ -15,12 +15,22 @@
         onStartTfidf: () => void;
     } = $props();
 
-    // let reparseFilenames = $state(false);
-    // let rereadJson       = $state(false);
-    let redoMetadata     = $state(false);
-    let redoAttributes   = $state(false);
-    let rehash           = $state(false);
-    let pathFilter       = $state('');
+    let redoMetadata   = $state(false);
+    let redoAttributes = $state(false);
+    let rehash         = $state(false);
+    let pathFilter     = $state('');
+    let readJson       = $state(true);
+
+    function startScan(quick: boolean) {
+        onStartScan({
+            rederive_metadata: redoMetadata,
+            redo_attributes:   redoAttributes,
+            rehash,
+            path_filter:       pathFilter,
+            quick_scan:        quick,
+            read_json:         readJson,
+        });
+    }
 </script>
 
 <!--
@@ -57,13 +67,29 @@
             {disabled}
         />
 
-        <button
-            class="btn-primary"
-            {disabled}
-            onclick={() => onStartScan({ rederive_metadata: redoMetadata, redo_attributes: redoAttributes, rehash, path_filter: pathFilter })}
-        >
-            Scan Libraries
-        </button>
+        <div class="btn-row">
+            <button
+                class="btn-primary"
+                title="Won't remove deleted videos"
+                {disabled}
+                onclick={() => startScan(true)}
+            >
+                Quick Scan
+            </button>
+            <button
+                class="btn-primary"
+                title="Fetch all files"
+                {disabled}
+                onclick={() => startScan(false)}
+            >
+                Full Scan
+            </button>
+        </div>
+
+        <label class="opt">
+            <input type="checkbox" bind:checked={readJson} {disabled} />
+            Read JSON sidecars
+        </label>
     </div>
 
     <!-- TF-IDF subpanel -->
@@ -158,6 +184,11 @@
 
     .subpanel-desc { font-size: 0.82rem; color: #666; margin: 0; line-height: 1.5; }
 
+    .btn-row {
+        display: flex;
+        gap: 0.6rem;
+    }
+
     .btn-primary {
         background: #01b8b8;
         color: #000;
@@ -167,7 +198,6 @@
         border-radius: 5px;
         padding: 0.5rem 1.2rem;
         cursor: pointer;
-        align-self: flex-start;
         transition: background 0.15s;
     }
     .btn-primary:hover:not(:disabled) { background: #00d0d0; }

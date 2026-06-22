@@ -19,6 +19,8 @@ type ScanOptions struct {
     RedoAttributes   bool   `json:"redo_attributes"`
     Rehash           bool   `json:"rehash"`
     PathFilter       string `json:"path_filter"`
+    QuickScan        bool   `json:"quick_scan"`
+    ReadJSON         bool   `json:"read_json"`
 }
 
 // ScanLibraries walks all configured collections, processes each video file
@@ -41,6 +43,20 @@ func ScanLibraries(cfg config.Config, opts ScanOptions, emit func(string)) error
         pathToHash[vd.Path] = hash
     }
     emit(fmt.Sprintf("[SCAN] Loaded %d existing records", len(existing)))
+
+    if opts.QuickScan {
+        skipped := 0
+        newFiles := files[:0]
+        for _, vf := range files {
+            if _, known := pathToHash[vf.Path]; known {
+                skipped++
+            } else {
+                newFiles = append(newFiles, vf)
+            }
+        }
+        files = newFiles
+        emit(fmt.Sprintf("[SCAN] Quick scan: %d new files to process, %d known skipped", len(files), skipped))
+    }
 
     loaded := map[string]*schemas.VideoData{}
     errCount := 0
@@ -79,13 +95,15 @@ func ScanLibraries(cfg config.Config, opts ScanOptions, emit func(string)) error
             PopulateFromParseResult(vd, parsed)
 
             // Sidecar loading runs after filename parse so SourceID is available
-            sidecarFiles := FindSidecarFiles(vf.Path, vd.SourceID)
-            if len(sidecarFiles) > 0 {
-                vd.TagsFromJSON = nil
-                vd.Views = 0
-                vd.Likes = 0
-                vd.Metadata = nil
-                ApplySidecarToVideoData(vd, MergeSidecarFiles(sidecarFiles))
+            if opts.ReadJSON {
+                sidecarFiles := FindSidecarFiles(vf.Path, vd.SourceID)
+                if len(sidecarFiles) > 0 {
+                    vd.TagsFromJSON = nil
+                    vd.Views = 0
+                    vd.Likes = 0
+                    vd.Metadata = nil
+                    ApplySidecarToVideoData(vd, MergeSidecarFiles(sidecarFiles))
+                }
             }
         }
 
@@ -103,12 +121,16 @@ func ScanLibraries(cfg config.Config, opts ScanOptions, emit func(string)) error
     SortTagsByFrequency(loaded)
 
     emit("[SCAN] Saving to database…")
-    if err := MergeAndSave(cfg.DBPath, loaded, opts.PathFilter != ""); err != nil {
+    if err := MergeAndSave(cfg.DBPath, loaded, opts.PathFilter != "" || opts.QuickScan); err != nil {
         return fmt.Errorf("saving to DB: %w", err)
     }
 
     emit(fmt.Sprintf("[SCAN] Done. %d videos processed, %d errors.", len(loaded), errCount))
-    rebuildTFIDF(cfg, emit)
+    if len(loaded) > 0 {
+        rebuildTFIDF(cfg, emit)
+    } else {
+        emit("[TFIDF] No new files — skipping TF-IDF rebuild")
+    }
     return nil
 }
 

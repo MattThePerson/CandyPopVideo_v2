@@ -4,6 +4,8 @@
         redo_attributes:   boolean;
         rehash:            boolean;
         path_filter:       string;
+        quick_scan:        boolean;
+        read_json:         boolean;
     }
 
     /* Props */
@@ -16,6 +18,18 @@
     let redoAttributes   = $state(false);
     let rehash           = $state(false);
     let pathFilter       = $state('');
+    let readJson         = $state(true);
+
+    function startScan(quick: boolean) {
+        onStart({
+            rederive_metadata: rederiveMetadata,
+            redo_attributes:   redoAttributes,
+            rehash,
+            path_filter:       pathFilter,
+            quick_scan:        quick,
+            read_json:         readJson,
+        });
+    }
 </script>
 
 <!--
@@ -50,13 +64,29 @@
         {disabled}
     />
 
-    <button
-        class="btn-primary"
-        {disabled}
-        onclick={() => onStart({ rederive_metadata: rederiveMetadata, redo_attributes: redoAttributes, rehash, path_filter: pathFilter })}
-    >
-        Scan Libraries
-    </button>
+    <div class="btn-row">
+        <button
+            class="btn-primary"
+            title="Won't remove deleted videos"
+            {disabled}
+            onclick={() => startScan(true)}
+        >
+            Quick Scan
+        </button>
+        <button
+            class="btn-primary"
+            title="Fetch all files"
+            {disabled}
+            onclick={() => startScan(false)}
+        >
+            Full Scan
+        </button>
+    </div>
+
+    <label class="opt">
+        <input type="checkbox" bind:checked={readJson} {disabled} />
+        Read JSON sidecars
+    </label>
 </section>
 
 <!--
@@ -113,6 +143,11 @@
     .path-input:focus { border-color: rgba(1, 184, 184, 0.5); }
     .path-input::placeholder { color: #333; }
 
+    .btn-row {
+        display: flex;
+        gap: 0.6rem;
+    }
+
     .btn-primary {
         background: #01b8b8;
         color: #000;
@@ -122,7 +157,6 @@
         border-radius: 5px;
         padding: 0.5rem 1.2rem;
         cursor: pointer;
-        align-self: flex-start;
         transition: background 0.15s;
     }
     .btn-primary:hover:not(:disabled) { background: #00d0d0; }
