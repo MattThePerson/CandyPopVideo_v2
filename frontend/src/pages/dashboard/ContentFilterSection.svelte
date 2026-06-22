@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount } from 'svelte';
     import { globalFilter, type GlobalFilter } from '../../lib/stores/globalFilter.svelte';
-    import FuzzyCombobox from '../../lib/components/FuzzyCombobox.svelte';
+    import MultiCombobox from '../../lib/components/MultiCombobox.svelte';
     import type { Catalogue } from '../catalogue/types';
 
     /* Props */
@@ -11,20 +11,27 @@
     let loading   = $state(true);
 
     // Draft state — uncommitted until Apply is clicked
-    let draftCollection = $state(globalFilter.current.collection);
-    let draftStudio     = $state(globalFilter.current.studio);
-    let draftActors     = $state<string[]>([...globalFilter.current.actors]);
+    let collInclude   = $state<string[]>([]);
+    let collExclude   = $state<string[]>([]);
+    let collMode      = $state<'include' | 'exclude'>('include');
+    let studioInclude = $state<string[]>([]);
+    let studioExclude = $state<string[]>([]);
+    let studioMode    = $state<'include' | 'exclude'>('include');
+    let actorsInclude = $state<string[]>([]);
+    let actorsExclude = $state<string[]>([]);
 
-    // Actor combobox
-    let actorSearch    = $state('');
-    let highlightedIdx = $state(0);
-    let dropdownOpen   = $state(false);
+    // Dirty-checking via snapshots
+    type Snap = { ci: string[]; ce: string[]; cm: string; si: string[]; se: string[]; sm: string; ai: string[]; ae: string[] };
+    function snap(): Snap { return { ci: [...collInclude], ce: [...collExclude], cm: collMode, si: [...studioInclude], se: [...studioExclude], sm: studioMode, ai: [...actorsInclude], ae: [...actorsExclude] }; }
+    const eqArr  = (a: string[], b: string[]) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
+    const snapEq = (a: Snap, b: Snap) => eqArr(a.ci, b.ci) && eqArr(a.ce, b.ce) && a.cm === b.cm && eqArr(a.si, b.si) && eqArr(a.se, b.se) && a.sm === b.sm && eqArr(a.ai, b.ai) && eqArr(a.ae, b.ae);
 
-    let isDirty = $derived(
-        draftCollection !== globalFilter.current.collection ||
-        draftStudio     !== globalFilter.current.studio     ||
-        JSON.stringify([...draftActors].sort()) !== JSON.stringify([...globalFilter.current.actors].sort())
-    );
+    let applied = $state<Snap>({ ci: [], ce: [], cm: 'include', si: [], se: [], sm: 'include', ai: [], ae: [] });
+    let isDirty = $derived.by(() => !snapEq(snap(), applied));
+
+    let sortedCollections = $derived((catalogue?.collection_info ?? []).map(i => i.name).sort((a, b) => a.localeCompare(b)));
+    let sortedStudios     = $derived((catalogue?.studio_info     ?? []).map(i => i.name).sort((a, b) => a.localeCompare(b)));
+    let sortedActors      = $derived((catalogue?.actor_info      ?? []).map(i => i.name).sort((a, b) => a.localeCompare(b)));
 
     onMount(async () => {
         try {
@@ -43,79 +50,51 @@
             if (filterRes.ok) {
                 const f: GlobalFilter = await filterRes.json();
                 globalFilter.set(f);
-                draftCollection = f.collection ?? '';
-                draftStudio     = f.studio     ?? '';
-                draftActors     = [...(f.actors ?? [])];
+                collInclude   = [...(f.collections_include ?? [])];
+                collExclude   = [...(f.collections_exclude ?? [])];
+                collMode      = (f.collections_mode as 'include' | 'exclude') || 'include';
+                studioInclude = [...(f.studios_include ?? [])];
+                studioExclude = [...(f.studios_exclude ?? [])];
+                studioMode    = (f.studios_mode as 'include' | 'exclude') || 'include';
+                actorsInclude = [...(f.actors_include ?? [])];
+                actorsExclude = [...(f.actors_exclude ?? [])];
+                applied = snap();
             }
         } finally {
             loading = false;
         }
     });
 
-    // Score a fuzzy match. Returns -1 if no match.
-    function fuzzyScore(query: string, target: string): number {
-        const q = query.toLowerCase();
-        const t = target.toLowerCase();
-        if (t.startsWith(q)) return 1000 - t.length;
-        let score = 0, qi = 0, lastHit = -1;
-        for (let ti = 0; ti < t.length && qi < q.length; ti++) {
-            if (t[ti] === q[qi]) { score += (ti === lastHit + 1) ? 3 : 1; lastHit = ti; qi++; }
-        }
-        return qi === q.length ? score : -1;
-    }
-
-    let sortedCollections = $derived((catalogue?.collection_info ?? []).map(i => i.name).sort((a, b) => a.localeCompare(b)));
-    let sortedStudios     = $derived((catalogue?.studio_info     ?? []).map(i => i.name).sort((a, b) => a.localeCompare(b)));
-    let sortedActors      = $derived((catalogue?.actor_info      ?? []).map(i => i.name).sort((a, b) => a.localeCompare(b)));
-
-    let filteredActors = $derived((() => {
-        const q    = actorSearch.trim();
-        const pool = sortedActors.filter(a => !draftActors.includes(a));
-        if (!q) return pool.slice(0, 8);
-        return pool
-            .map(a => ({ name: a, score: fuzzyScore(q, a) }))
-            .filter(x => x.score >= 0)
-            .sort((a, b) => b.score - a.score)
-            .map(x => x.name)
-            .slice(0, 10);
-    })());
-
-    $effect(() => { filteredActors; highlightedIdx = 0; });
-
-    function commitActor(name: string) {
-        if (name && !draftActors.includes(name)) draftActors = [...draftActors, name];
-        actorSearch  = '';
-        dropdownOpen = false;
-    }
-
-    function removeActor(name: string) { draftActors = draftActors.filter(a => a !== name); }
-
-    function handleActorKeydown(e: KeyboardEvent) {
-        if (!dropdownOpen || filteredActors.length === 0) return;
-        if      (e.key === 'ArrowDown') { highlightedIdx = Math.min(highlightedIdx + 1, filteredActors.length - 1); e.preventDefault(); }
-        else if (e.key === 'ArrowUp')   { highlightedIdx = Math.max(highlightedIdx - 1, 0);                         e.preventDefault(); }
-        else if (e.key === 'Enter')     { commitActor(filteredActors[highlightedIdx]); e.preventDefault(); }
-        else if (e.key === 'Escape')    { dropdownOpen = false; }
-    }
-
     async function apply() {
-        const f: GlobalFilter = { collection: draftCollection, studio: draftStudio, actors: draftActors };
+        const f: GlobalFilter = {
+            collections_include: collInclude, collections_exclude: collExclude, collections_mode: collMode,
+            studios_include:     studioInclude, studios_exclude: studioExclude, studios_mode: studioMode,
+            actors_include:      actorsInclude, actors_exclude: actorsExclude,
+        };
         const res = await fetch('/api/global-filter', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
             body:    JSON.stringify(f),
         });
-        if (res.ok) globalFilter.set(f);
+        if (res.ok) { globalFilter.set(f); applied = snap(); }
     }
 
     async function clear() {
-        draftCollection = ''; draftStudio = ''; draftActors = [];
+        collInclude = []; collExclude = []; collMode = 'include';
+        studioInclude = []; studioExclude = []; studioMode = 'include';
+        actorsInclude = []; actorsExclude = [];
+        const empty: GlobalFilter = {
+            collections_include: [], collections_exclude: [], collections_mode: 'include',
+            studios_include:     [], studios_exclude:     [], studios_mode:     'include',
+            actors_include:      [], actors_exclude:      [],
+        };
         await fetch('/api/global-filter', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ collection: '', studio: '', actors: [] }),
+            body:    JSON.stringify(empty),
         });
         globalFilter.clear();
+        applied = snap();
     }
 </script>
 
@@ -131,63 +110,58 @@
         {#if globalFilter.isActive}<span class="active-badge">ACTIVE</span>{/if}
     </div>
 
-    <p class="card-desc">
-        Limits results site-wide — search, recommendations, random video.
-        {#if globalFilter.isActive}<span class="active-hint"> Filter is active.</span>{/if}
-    </p>
+    <p class="card-desc">Limits results site-wide — search, recommendations, random video.</p>
 
     {#if loading}
         <p class="card-desc">Loading catalogue…</p>
     {:else if catalogue}
-        <div class="fields">
-            <label class="field-label" for="cf-collection">Collection</label>
-            <FuzzyCombobox id="cf-collection" items={sortedCollections} bind:value={draftCollection} placeholder="All collections" {disabled} />
+        <div class="filters">
 
-            <label class="field-label" for="cf-studio">Studio / Line</label>
-            <FuzzyCombobox id="cf-studio" items={sortedStudios} bind:value={draftStudio} placeholder="All studios" {disabled} />
-
-            <!-- Performers: fuzzy combobox (multi) -->
-            <label class="field-label" for="cf-actors">Performers</label>
-            <div class="combobox">
-                <input
-                    id="cf-actors"
-                    class="ctrl"
-                    type="text"
-                    placeholder="Type to search performers…"
-                    autocomplete="off"
-                    bind:value={actorSearch}
-                    onfocus={() => dropdownOpen = true}
-                    onblur={() => setTimeout(() => { dropdownOpen = false; }, 150)}
-                    oninput={() => { dropdownOpen = true; }}
-                    onkeydown={handleActorKeydown}
-                    {disabled}
-                />
-                {#if dropdownOpen && filteredActors.length > 0}
-                    <ul class="dropdown" role="listbox">
-                        {#each filteredActors as actor, i}
-                            <!-- svelte-ignore a11y_no_static_element_interactions -->
-                            <li
-                                class="dropdown-item"
-                                class:hl={i === highlightedIdx}
-                                role="option"
-                                aria-selected={i === highlightedIdx}
-                                onmousedown={() => commitActor(actor)}
-                                onmouseover={() => highlightedIdx = i}
-                            >{actor}</li>
-                        {/each}
-                    </ul>
-                {/if}
+            <!-- Collections -->
+            <div class="row-label">Collections</div>
+            <div class="filter-row">
+                <MultiCombobox items={sortedCollections} bind:value={collInclude}
+                    placeholder="Include…" dimmed={collMode === 'exclude'} exclude={collExclude} {disabled} />
+                <button class="mode-pill" onclick={() => collMode = collMode === 'include' ? 'exclude' : 'include'}
+                    disabled={disabled}>
+                    <span class:active={collMode === 'include'}>INCL</span>
+                    <span class:active={collMode === 'exclude'}>EXCL</span>
+                </button>
+                <MultiCombobox items={sortedCollections} bind:value={collExclude}
+                    placeholder="Exclude…" dimmed={collMode === 'include'} exclude={collInclude} {disabled} />
             </div>
-            {#if draftActors.length > 0}
-                <div class="chips">
-                    {#each draftActors as a}
-                        <span class="chip">
-                            {a}
-                            <button class="chip-x" onclick={() => removeActor(a)} aria-label="Remove {a}">×</button>
-                        </span>
-                    {/each}
+
+            <!-- Studios -->
+            <div class="row-label">Studios</div>
+            <div class="filter-row">
+                <MultiCombobox items={sortedStudios} bind:value={studioInclude}
+                    placeholder="Include…" dimmed={studioMode === 'exclude'} exclude={studioExclude} {disabled} />
+                <button class="mode-pill" onclick={() => studioMode = studioMode === 'include' ? 'exclude' : 'include'}
+                    disabled={disabled}>
+                    <span class:active={studioMode === 'include'}>INCL</span>
+                    <span class:active={studioMode === 'exclude'}>EXCL</span>
+                </button>
+                <MultiCombobox items={sortedStudios} bind:value={studioExclude}
+                    placeholder="Exclude…" dimmed={studioMode === 'include'} exclude={studioInclude} {disabled} />
+            </div>
+
+            <!-- Actors -->
+            <div class="row-label">Actors</div>
+            <div class="performers-row">
+                <div>
+                    <div class="col-label">INCLUDE</div>
+                    <MultiCombobox items={sortedActors} bind:value={actorsInclude}
+                        placeholder="Include actors…" exclude={actorsExclude} {disabled} />
                 </div>
-            {/if}
+                <!-- invisible spacer — same dimensions as .mode-pill to align columns with rows above -->
+                <div class="pill-spacer" aria-hidden="true"><span>INCL</span><span>EXCL</span></div>
+                <div>
+                    <div class="col-label">EXCLUDE</div>
+                    <MultiCombobox items={sortedActors} bind:value={actorsExclude}
+                        placeholder="Exclude actors…" exclude={actorsInclude} {disabled} />
+                </div>
+            </div>
+
         </div>
 
         <div class="actions">
@@ -229,54 +203,59 @@
         border-radius: 3px; padding: 0.1rem 0.4rem; font-weight: 600;
     }
 
-    .card-desc   { font-size: 0.82rem; color: #666; margin: 0; line-height: 1.5; }
-    .active-hint { color: #01b8b8; }
-    .warn-text   { color: #9a6020; }
+    .card-desc { font-size: 0.82rem; color: #666; margin: 0; line-height: 1.5; }
+    .warn-text { color: #9a6020; }
 
-    .fields { display: flex; flex-direction: column; gap: 0.4rem; }
-    .field-label {
+    .filters { display: flex; flex-direction: column; gap: 0.4rem; }
+
+    .row-label {
         font-size: 0.72rem; color: #555; letter-spacing: 0.05em;
-        text-transform: uppercase; margin-top: 0.3rem;
+        text-transform: uppercase; margin-top: 0.4rem;
+    }
+    .col-label {
+        font-size: 0.62rem; color: #444; letter-spacing: 0.08em;
+        text-transform: uppercase; margin-bottom: 0.3rem;
     }
 
-    /* Actor combobox (multi-select variant, inline) */
-    .combobox { position: relative; }
+    .filter-row {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 0.75rem;
+        align-items: start;
+    }
+    .performers-row {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 0.75rem;
+        align-items: start;
+    }
 
-    .ctrl {
-        background: #060a0a;
+    /* Toggle pill — sits between include/exclude columns */
+    .mode-pill {
+        margin-top: 0.38rem;
+        display: flex;
+        background: #070c0c;
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 5px; color: #ccc; font-size: 0.82rem;
-        padding: 0.42rem 0.7rem; outline: none; width: 100%;
-        box-sizing: border-box;
+        border-radius: 4px;
+        padding: 0;
+        cursor: pointer;
+        transition: border-color 0.15s;
     }
-    .ctrl:focus    { border-color: rgba(1, 184, 184, 0.5); }
-    .ctrl:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    .dropdown {
-        position: absolute; top: calc(100% + 3px); left: 0; right: 0; z-index: 50;
-        background: #0a1010; border: 1px solid rgba(1, 184, 184, 0.25);
-        border-radius: 5px; margin: 0; padding: 0.2rem 0;
-        list-style: none; max-height: 200px; overflow-y: auto;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+    .mode-pill:hover:not(:disabled) { border-color: rgba(1, 184, 184, 0.3); }
+    .mode-pill:disabled { opacity: 0.35; cursor: not-allowed; }
+    .mode-pill span {
+        font-size: 0.62rem; letter-spacing: 0.08em; font-weight: 600;
+        padding: 0.28rem 0.45rem; color: #3a3a3a;
+        border-radius: 3px; transition: color 0.15s, background 0.15s;
+        user-select: none;
     }
-    .dropdown-item {
-        padding: 0.38rem 0.75rem; font-size: 0.82rem; color: #bbb; cursor: pointer;
+    .mode-pill span:first-child.active { color: #01b8b8; background: rgba(1, 184, 184, 0.15); }
+    .mode-pill span:last-child.active  { color: #c04848; background: rgba(192, 72, 72, 0.12); }
+    .pill-spacer {
+        margin-top: 0.38rem; display: flex; visibility: hidden; pointer-events: none;
+        border: 1px solid transparent; border-radius: 4px; padding: 0;
     }
-    .dropdown-item.hl,
-    .dropdown-item:hover { background: rgba(1, 184, 184, 0.12); color: #e0e0e0; }
-
-    .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.35rem; }
-    .chip {
-        display: inline-flex; align-items: center; gap: 0.3rem;
-        font-size: 0.78rem; color: #bbb;
-        background: rgba(1, 184, 184, 0.08); border: 1px solid rgba(1, 184, 184, 0.2);
-        border-radius: 4px; padding: 0.15rem 0.5rem 0.15rem 0.6rem;
-    }
-    .chip-x {
-        background: none; border: none; color: #555; cursor: pointer;
-        font-size: 0.9rem; line-height: 1; padding: 0; transition: color 0.1s;
-    }
-    .chip-x:hover { color: #ccc; }
+    .pill-spacer span { font-size: 0.62rem; letter-spacing: 0.08em; font-weight: 600; padding: 0.28rem 0.45rem; }
 
     .actions { display: flex; gap: 0.6rem; align-items: center; margin-top: 0.15rem; }
 

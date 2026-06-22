@@ -8,9 +8,14 @@ import (
 )
 
 type GlobalFilter struct {
-    Collection string   `json:"collection"`
-    Studio     string   `json:"studio"`
-    Actors     []string `json:"actors"`
+    CollectionsInclude []string `json:"collections_include"`
+    CollectionsExclude []string `json:"collections_exclude"`
+    CollectionsMode    string   `json:"collections_mode"` // "include" | "exclude"
+    StudiosInclude     []string `json:"studios_include"`
+    StudiosExclude     []string `json:"studios_exclude"`
+    StudiosMode        string   `json:"studios_mode"` // "include" | "exclude"
+    ActorsInclude      []string `json:"actors_include"`
+    ActorsExclude      []string `json:"actors_exclude"`
 }
 
 type appState struct {
@@ -30,9 +35,7 @@ func NewAppStateStore(appDataDir string) *AppStateStore {
     if data, err := os.ReadFile(s.path); err == nil {
         json.Unmarshal(data, &s.state) //nolint — default zero state on bad JSON is intentional
     }
-    if s.state.GlobalFilter.Actors == nil {
-        s.state.GlobalFilter.Actors = []string{}
-    }
+    initFilterSlices(&s.state.GlobalFilter)
     return s
 }
 
@@ -40,16 +43,12 @@ func (s *AppStateStore) GetFilter() GlobalFilter {
     s.mu.RLock()
     defer s.mu.RUnlock()
     f := s.state.GlobalFilter
-    if f.Actors == nil {
-        f.Actors = []string{}
-    }
+    initFilterSlices(&f)
     return f
 }
 
 func (s *AppStateStore) SetFilter(f GlobalFilter) error {
-    if f.Actors == nil {
-        f.Actors = []string{}
-    }
+    initFilterSlices(&f)
     s.mu.Lock()
     s.state.GlobalFilter = f
     data, err := json.MarshalIndent(s.state, "", "    ")
@@ -58,4 +57,14 @@ func (s *AppStateStore) SetFilter(f GlobalFilter) error {
         return err
     }
     return os.WriteFile(s.path, data, 0644)
+}
+
+// initFilterSlices ensures no nil slices are serialised as JSON null.
+func initFilterSlices(f *GlobalFilter) {
+    if f.CollectionsInclude == nil { f.CollectionsInclude = []string{} }
+    if f.CollectionsExclude == nil { f.CollectionsExclude = []string{} }
+    if f.StudiosInclude     == nil { f.StudiosInclude     = []string{} }
+    if f.StudiosExclude     == nil { f.StudiosExclude     = []string{} }
+    if f.ActorsInclude      == nil { f.ActorsInclude      = []string{} }
+    if f.ActorsExclude      == nil { f.ActorsExclude      = []string{} }
 }
