@@ -7,6 +7,7 @@
         disabled    = false,
         dimmed      = false,
         exclude     = [] as string[],
+        variant     = 'default' as 'default' | 'exclude',
     }: {
         items?:       string[];
         value?:       string[];
@@ -14,6 +15,7 @@
         disabled?:    boolean;
         dimmed?:      boolean;
         exclude?:     string[];
+        variant?:     'default' | 'exclude';
     } = $props();
 
     let searchText     = $state('');
@@ -101,7 +103,7 @@
     {#if value.length > 0}
         <div class="chips">
             {#each value as v}
-                <span class="chip">
+                <span class="chip" class:exclude={variant === 'exclude'}>
                     {v}
                     <button class="chip-x" onclick={() => remove(v)} aria-label="Remove {v}">×</button>
                 </span>
@@ -152,9 +154,15 @@
         background: rgba(1, 184, 184, 0.08); border: 1px solid rgba(1, 184, 184, 0.2);
         border-radius: 4px; padding: 0.15rem 0.5rem 0.15rem 0.6rem;
     }
+    .chip.exclude {
+        background: rgba(192, 72, 72, 0.1);
+        border-color: rgba(192, 72, 72, 0.28);
+        color: #c08888;
+    }
     .chip-x {
         background: none; border: none; color: #555; cursor: pointer;
         font-size: 0.9rem; line-height: 1; padding: 0; transition: color 0.1s;
     }
     .chip-x:hover { color: #ccc; }
+    .chip.exclude .chip-x:hover { color: #e0a0a0; }
 </style>

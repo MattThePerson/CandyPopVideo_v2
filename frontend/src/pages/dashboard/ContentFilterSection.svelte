@@ -128,7 +128,7 @@
                     <span class:active={collMode === 'exclude'}>EXCL</span>
                 </button>
                 <MultiCombobox items={sortedCollections} bind:value={collExclude}
-                    placeholder="Exclude…" dimmed={collMode === 'include'} exclude={collInclude} {disabled} />
+                    placeholder="Exclude…" dimmed={collMode === 'include'} exclude={collInclude} {disabled} variant="exclude" />
             </div>
 
             <!-- Studios -->
@@ -142,7 +142,7 @@
                     <span class:active={studioMode === 'exclude'}>EXCL</span>
                 </button>
                 <MultiCombobox items={sortedStudios} bind:value={studioExclude}
-                    placeholder="Exclude…" dimmed={studioMode === 'include'} exclude={studioInclude} {disabled} />
+                    placeholder="Exclude…" dimmed={studioMode === 'include'} exclude={studioInclude} {disabled} variant="exclude" />
             </div>
 
             <!-- Actors -->
@@ -158,7 +158,7 @@
                 <div>
                     <div class="col-label">EXCLUDE</div>
                     <MultiCombobox items={sortedActors} bind:value={actorsExclude}
-                        placeholder="Exclude actors…" exclude={actorsInclude} {disabled} />
+                        placeholder="Exclude actors…" exclude={actorsInclude} {disabled} variant="exclude" />
                 </div>
             </div>
 

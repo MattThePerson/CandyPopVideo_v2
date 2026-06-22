@@ -1,8 +1,12 @@
 package mediagen
 
 import (
+    "bytes"
     "encoding/json"
     "fmt"
+    "image"
+    "image/draw"
+    "image/jpeg"
     "math"
     "os"
     "os/exec"
@@ -10,7 +14,14 @@ import (
     "strconv"
     "strings"
     "sync"
+    "syscall"
 )
+
+type frameResult struct {
+    index int
+    data  []byte
+    err   error
+}
 
 // GenerateSpritesheet generates {stem}.jpg (tiled spritesheet) and {stem}.vtt in outDir.
 // nFrames=16 for teaser thumbs, 400 for seek thumbs. height=300 for both.
@@ -29,22 +40,19 @@ func GenerateSpritesheet(videoPath, outDir, stem string, nFrames, height, worker
     if err := os.MkdirAll(outDir, 0755); err != nil {
         return err
     }
-    tmpDir := filepath.Join(outDir, "tmp_"+stem)
-    if err := os.MkdirAll(tmpDir, 0755); err != nil {
-        return err
-    }
-    defer os.RemoveAll(tmpDir)
 
-    // Step 1: extract N frames with fast input-level seek.
-    // -ss before -i jumps to the nearest keyframe without decoding the whole video.
-    // Worker pool: exactly workers goroutines pull frame indices from a channel.
+    canvas := image.NewRGBA(image.Rect(0, 0, thumbW*cols, height*rows))
+
+    // Step 1: extract N frames via ffmpeg stdout pipe.
+    // -ss before -i is fast-seek (nearest keyframe, no full decode).
+    // -f mjpeg pipe:1 streams each frame as JPEG bytes to stdout — no disk I/O per frame.
     work := make(chan int, nFrames)
     for i := range nFrames {
         work <- i
     }
     close(work)
 
-    errs := make(chan error, nFrames)
+    results := make(chan frameResult, nFrames)
     var wg sync.WaitGroup
     for range workers {
         wg.Add(1)
@@ -52,48 +60,58 @@ func GenerateSpritesheet(videoPath, outDir, stem string, nFrames, height, worker
             defer wg.Done()
             for i := range work {
                 pos := (float64(i) + 0.5) * interval
-                framePath := filepath.Join(tmpDir, fmt.Sprintf("frame_%03d.jpg", i+1))
-                out, err := exec.Command("ffmpeg", "-y",
+                cmd := exec.Command("ffmpeg",
                     "-ss", fmt.Sprintf("%.3f", pos),
                     "-i", videoPath,
                     "-frames:v", "1",
                     "-vf", fmt.Sprintf("scale=%d:%d", thumbW, height),
                     "-q:v", "3",
                     "-v", "error",
-                    framePath,
-                ).CombinedOutput()
+                    "-f", "mjpeg", "pipe:1",
+                )
+                cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+                var stderr bytes.Buffer
+                cmd.Stderr = &stderr
+                data, err := cmd.Output()
                 if err != nil {
-                    errs <- fmt.Errorf("frame %d at %.1fs: %w\n%s", i+1, pos, err, out)
+                    results <- frameResult{index: i, err: fmt.Errorf("frame %d at %.1fs: %w\n%s", i+1, pos, err, stderr.String())}
+                } else {
+                    results <- frameResult{index: i, data: data}
                 }
             }
         }()
     }
 
     wg.Wait()
-    close(errs)
+    close(results)
 
-    for err := range errs {
-        if err != nil {
-            return err
+    // Step 2: decode each frame and draw onto the canvas.
+    for r := range results {
+        if r.err != nil {
+            return r.err
         }
+        img, err := jpeg.Decode(bytes.NewReader(r.data))
+        if err != nil {
+            return fmt.Errorf("decode frame %d: %w", r.index+1, err)
+        }
+        col := r.index % cols
+        row := r.index / cols
+        dstRect := image.Rect(col*thumbW, row*height, (col+1)*thumbW, (row+1)*height)
+        draw.Draw(canvas, dstRect, img, image.Point{}, draw.Src)
     }
 
-    // Step 2: tile frames into spritesheet
+    // Step 3: encode and write the spritesheet.
     spritePath := filepath.Join(outDir, stem+".jpg")
-    tileFilter := fmt.Sprintf("tile=%dx%d", cols, rows)
-    framePattern := filepath.Join(tmpDir, "frame_%03d.jpg")
-    out, err := exec.Command(
-        "ffmpeg", "-y",
-        "-i", framePattern,
-        "-filter_complex", tileFilter,
-        "-v", "error",
-        spritePath,
-    ).CombinedOutput()
+    f, err := os.Create(spritePath)
     if err != nil {
-        return fmt.Errorf("ffmpeg tile: %w\n%s", err, out)
+        return fmt.Errorf("create spritesheet: %w", err)
+    }
+    defer f.Close()
+    if err := jpeg.Encode(f, canvas, &jpeg.Options{Quality: 88}); err != nil {
+        return fmt.Errorf("encode spritesheet: %w", err)
     }
 
-    // Step 3: generate VTT
+    // Step 4: generate VTT
     return writeSpritesheetVTT(filepath.Join(outDir, stem+".vtt"), stem, nFrames, cols, thumbW, height, interval)
 }
 
@@ -123,12 +141,14 @@ func formatVTTTime(secs float64) string {
 
 // probeVideoInfo returns (width, height, duration) for the first video stream.
 func probeVideoInfo(videoPath string) (width, height int, duration float64, err error) {
-    out, err := exec.Command(
+    cmd := exec.Command(
         "ffprobe", "-v", "quiet",
         "-print_format", "json",
         "-show_streams", "-show_format",
         videoPath,
-    ).Output()
+    )
+    cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+    out, err := cmd.Output()
     if err != nil {
         return 0, 0, 0, fmt.Errorf("ffprobe: %w", err)
     }

@@ -2,9 +2,12 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
     import { EditorView, basicSetup } from 'codemirror';
+    import { keymap } from '@codemirror/view';
+    import { Prec } from '@codemirror/state';
+    import { indentWithTab } from '@codemirror/commands';
     import { yaml } from '@codemirror/lang-yaml';
     import { oneDark } from '@codemirror/theme-one-dark';
-    import { vim } from '@replit/codemirror-vim';
+    import { vim, Vim } from '@replit/codemirror-vim';
     import { navigate } from '../../lib/router/router.svelte';
     import { configBuffer } from '../../lib/stores/configBuffer.svelte';
     import ConfirmDialog from '../../lib/components/ConfirmDialog.svelte';
@@ -45,10 +48,49 @@
         status = 'idle';
     }
 
+    // Redirect printable keystrokes and Tab to the editor when it isn't focused.
+    function handleWindowKeydown(e: KeyboardEvent) {
+        if (!view) return;
+        const target = e.target as Element;
+        if (editorEl?.contains(target)) return;
+        if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
+        const isPrintable = e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey;
+        const isTab = e.key === 'Tab' && !e.ctrlKey && !e.altKey && !e.metaKey;
+        if (!isPrintable && !isTab) return;
+        view.focus();
+        view.contentDOM.dispatchEvent(new KeyboardEvent(e.type, {
+            key: e.key, code: e.code,
+            shiftKey: e.shiftKey, ctrlKey: e.ctrlKey, altKey: e.altKey, metaKey: e.metaKey,
+            bubbles: true, cancelable: true,
+        }));
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+        if (configBuffer.isDirty) { e.preventDefault(); e.returnValue = ''; }
+    }
+
     onMount(async () => {
         document.title = 'Config | CandyPop';
+        document.querySelector('footer')?.style.setProperty('display', 'none');
+        window.addEventListener('keydown', handleWindowKeydown, true);
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
         const serverContent = await loadFromServer();
         const initialContent = configBuffer.isDirty ? configBuffer.content : serverContent;
+
+        // :w and :write trigger the same save as the Save button.
+        Vim.defineEx('write', 'w', () => { handleSave(); });
+
+        // High-priority keymap: scroll commands + Tab/Shift-Tab so they never leak to browser focus cycling.
+        const vimScrollKeys = Prec.highest(keymap.of([
+            { key: 'Ctrl-d', run: v => { v.scrollDOM.scrollTop += v.scrollDOM.clientHeight / 2; return true; } },
+            { key: 'Ctrl-u', run: v => { v.scrollDOM.scrollTop -= v.scrollDOM.clientHeight / 2; return true; } },
+            { key: 'Ctrl-e', run: v => { v.scrollDOM.scrollTop += 20; return true; } },
+            { key: 'Ctrl-y', run: v => { v.scrollDOM.scrollTop -= 20; return true; } },
+            indentWithTab,
+        ]));
 
         view = new EditorView({
             doc: initialContent,
@@ -57,6 +99,7 @@
                 vim(),
                 yaml(),
                 oneDark,
+                vimScrollKeys,
                 EditorView.updateListener.of(update => {
                     if (update.docChanged && !suppressUpdate) {
                         configBuffer.content = update.state.doc.toString();
@@ -68,7 +111,12 @@
         });
     });
 
-    onDestroy(() => view?.destroy());
+    onDestroy(() => {
+        view?.destroy();
+        document.querySelector('footer')?.style.removeProperty('display');
+        window.removeEventListener('keydown', handleWindowKeydown, true);
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+    });
 
     async function handleSave() {
         if (!view) return;
@@ -118,23 +166,23 @@
                 <span class="dirty-notice">Unsaved changes from {new Date(configBuffer.savedAt).toLocaleString()}</span>
                 <button class="btn-secondary" onclick={handleDiscard}>Discard</button>
             {/if}
+            {#if result}
+                {#if !result.ok && result.errors.length > 0}
+                    <span class="save-status error">✕ {result.errors[0]}</span>
+                {:else if result.requires_restart}
+                    <span class="save-status restart">⟳ Restart required</span>
+                {:else if result.warnings.length > 0}
+                    <span class="save-status warn">⚠ {result.warnings[0]}</span>
+                {:else if result.saved}
+                    <span class="save-status ok">✓ Saved</span>
+                {/if}
+            {/if}
             <button class="btn-secondary" onclick={handleRestore}>Restore Defaults</button>
             <button class="btn-primary" disabled={status === 'saving'} onclick={handleSave}>
                 {status === 'saving' ? 'Saving…' : 'Save'}
             </button>
         </div>
     </div>
-
-    {#if result}
-        <div class="result-bar" class:is-error={!result.ok} class:is-ok={result.ok}>
-            {#each result.errors as e}<p class="msg-error">✕ {e}</p>{/each}
-            {#each result.warnings as w}<p class="msg-warn">⚠ {w}</p>{/each}
-            {#if result.saved && !result.requires_restart}<p class="msg-ok">✓ Config saved.</p>{/if}
-            {#if result.requires_restart}
-                <p class="msg-restart">⟳ preview_media_dir changed — restart the server to apply.</p>
-            {/if}
-        </div>
-    {/if}
 
     <div class="editor-wrap" bind:this={editorEl}></div>
 </div>
@@ -167,12 +215,14 @@
     .config-page {
         width: 100%;
         max-width: 1200px;
-        padding: 1.5rem 2rem 2rem;
+        padding: 1.5rem 2rem 1.5rem;
         display: flex;
         flex-direction: column;
         gap: 0.75rem;
-        flex: 1;
-        min-height: 0;
+        /* Pin to remaining viewport below the header so the page never scrolls. */
+        height: calc(100dvh - 3.1rem);
+        overflow: hidden;
+        box-sizing: border-box;
     }
 
     .toolbar {
@@ -238,26 +288,15 @@
     .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-primary:not(:disabled):hover { background: #ea6c0b; }
 
-    .result-bar {
-        background: #0d1212;
-        border: 1px solid rgba(255,255,255,0.06);
-        border-radius: 6px;
-        padding: 0.7rem 1rem;
-        display: flex;
-        flex-direction: column;
-        gap: 0.3rem;
-    }
-    .result-bar.is-error { border-color: rgba(220, 60, 60, 0.35); }
-    .result-bar.is-ok    { border-color: rgba(40, 180, 100, 0.3); }
-
-    .msg-error   { color: #dc3c3c; font-size: 0.82rem; margin: 0; }
-    .msg-warn    { color: #c8882a; font-size: 0.82rem; margin: 0; }
-    .msg-ok      { color: #3dba6e; font-size: 0.82rem; margin: 0; }
-    .msg-restart { color: #f97316; font-size: 0.82rem; margin: 0; }
+    .save-status         { font-size: 0.82rem; }
+    .save-status.ok      { color: #3dba6e; }
+    .save-status.error   { color: #dc3c3c; }
+    .save-status.warn    { color: #c8882a; }
+    .save-status.restart { color: #f97316; }
 
     .editor-wrap {
         flex: 1;
-        min-height: 400px;
+        min-height: 0;
         border: 1px solid rgba(255,255,255,0.08);
         border-radius: 6px;
         overflow: hidden;
