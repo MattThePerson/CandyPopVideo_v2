@@ -27,6 +27,7 @@
 
     // Sends a completed section to the backend (start position + duration).
     // Sections shorter than 1.5s are dropped — the backend enforces the same floor.
+    // On success, refreshes the viewed-segments overlay so new sections appear immediately.
     function submitSection(start: number | null, end: number) {
         if (start === null) return;
         const duration = Math.round((end - start) * 1000) / 1000;
@@ -38,7 +39,18 @@
                 time_start:   Math.round(start * 1000) / 1000,
                 duration_sec: duration,
             }),
+        }).then((res) => {
+            if (res.ok && player) loadViewedSegments(player);
         }).catch(() => {});
+    }
+
+    async function loadViewedSegments(p: PassionPlayer) {
+        try {
+            const res = await fetch(`/api/interact/viewings/${hash}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            p.setViewedSegments(data);
+        } catch { /* non-critical */ }
     }
 
     // Ensures the seek spritesheet is generated server-side, then fetches both
@@ -85,6 +97,7 @@
         });
 
         loadSeekThumbs(player);
+        setTimeout(() => { if (player) loadViewedSegments(player); }, 500);
 
         // PassionPlayer's _init() is async: it awaits a style injection before calling
         // _addHTML (which inserts <video>). Query immediately after construction returns

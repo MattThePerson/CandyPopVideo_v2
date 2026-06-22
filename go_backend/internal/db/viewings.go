@@ -1,8 +1,71 @@
 package db
 
 import (
+    "database/sql"
     "fmt"
 )
+
+// ViewingRow is one row from the viewings table.
+type ViewingRow struct {
+    ID          int64   `json:"id"`
+    VideoHash   string  `json:"video_hash"`
+    Datetime    string  `json:"datetime"`
+    TimeStart   float64 `json:"time_start"`
+    DurationSec float64 `json:"duration_sec"`
+}
+
+func scanViewingRows(rows *sql.Rows) ([]ViewingRow, error) {
+    var out []ViewingRow
+    for rows.Next() {
+        var r ViewingRow
+        if err := rows.Scan(&r.ID, &r.VideoHash, &r.Datetime, &r.TimeStart, &r.DurationSec); err != nil {
+            return nil, err
+        }
+        out = append(out, r)
+    }
+    if out == nil {
+        out = []ViewingRow{}
+    }
+    return out, rows.Err()
+}
+
+// ReadViewingsForVideo returns all viewings for a single video, newest first.
+func ReadViewingsForVideo(db_path, hash string) ([]ViewingRow, error) {
+    db, err := openDbConnection(db_path)
+    if err != nil {
+        return nil, err
+    }
+    defer db.Close()
+
+    rows, err := db.Query(
+        `SELECT id, video_hash, datetime, time_start, duration_sec FROM viewings WHERE video_hash = ? ORDER BY datetime DESC`,
+        hash,
+    )
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+    return scanViewingRows(rows)
+}
+
+// ReadRecentViewings returns the most recent N viewings across all videos, newest first.
+func ReadRecentViewings(db_path string, limit int) ([]ViewingRow, error) {
+    db, err := openDbConnection(db_path)
+    if err != nil {
+        return nil, err
+    }
+    defer db.Close()
+
+    rows, err := db.Query(
+        `SELECT id, video_hash, datetime, time_start, duration_sec FROM viewings ORDER BY datetime DESC LIMIT ?`,
+        limit,
+    )
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+    return scanViewingRows(rows)
+}
 
 type viewingColDef struct{ name, typ, def string }
 

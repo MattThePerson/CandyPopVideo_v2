@@ -57,6 +57,7 @@ export declare class PassionPlayer {
     setKeybindsEnabled(enabled: boolean): void;
     setSeekThumbsLoading(loading: boolean): void;
     setSeekThumbs(vttContent: string, spritesheetDataURL: string): void;
+    setViewedSegments(segments: Array<{ time_start: number; duration_sec: number }>): void;
     setSubtitleState(text: string | null, tracks: TrackInfo[], activeSid: number): void;
     showOSD(text: string): void;
     addKeybinds(): void;

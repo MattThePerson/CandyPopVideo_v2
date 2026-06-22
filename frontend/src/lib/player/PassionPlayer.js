@@ -350,6 +350,9 @@ export class PassionPlayer {
         this._seekDragUpHandler = null;
 
         this._progressBarColor = JSON.parse(localStorage.getItem('pp_settings') ?? '{}').progressBarColor ?? '#e8d5b0';
+        this._showViewedSegments = JSON.parse(localStorage.getItem('pp_settings') ?? '{}').showViewedSegments ?? true;
+
+        this._viewedSegments = [];
 
         this._init();
     }
@@ -452,8 +455,10 @@ export class PassionPlayer {
         this.updatePlayBtn();
         const fn = this.$('.pp-filename');
         if (fn && this._filenameText) fn.textContent = this._filenameText;
-        const settingsVal = this.$('.pp-settings-value');
-        if (settingsVal) settingsVal.textContent = this._fsBarBottom ? 'Bottom' : 'Top';
+        const fsBarVal = this.$('[data-setting="fsBarBottom"] .pp-settings-value');
+        if (fsBarVal) fsBarVal.textContent = this._fsBarBottom ? 'Bottom' : 'Top';
+        const viewedSegVal = this.$('[data-setting="showViewedSegments"] .pp-settings-value');
+        if (viewedSegVal) viewedSegVal.textContent = this._showViewedSegments ? 'On' : 'Off';
         this._applyProgressBarColor();
     }
 
@@ -714,6 +719,10 @@ export class PassionPlayer {
                         <span>Progress color</span>
                         <input type="color" class="pp-color-input" value="#e8d5b0">
                     </div>
+                    <div class="pp-settings-item" data-setting="showViewedSegments">
+                        <span>Viewed sections</span>
+                        <span class="pp-settings-value">On</span>
+                    </div>
                 </div>
             </div>
 
@@ -724,6 +733,7 @@ export class PassionPlayer {
                         <div class="progress-bar-wrapper">
                             <div class="progress-bar"></div>
                         </div>
+                        <div class="pp-viewed-segments-layer"></div>
                     </div>
                 </div>
                 <div class="controls-bar">
@@ -1230,6 +1240,30 @@ export class PassionPlayer {
         if (overlay) overlay.style.display = 'none';
     }
 
+    setViewedSegments(segments) {
+        this._viewedSegments = segments ?? [];
+        this._renderViewedSegments();
+    }
+
+    _renderViewedSegments() {
+        const layer = this.$('.pp-viewed-segments-layer');
+        if (!layer) return;
+        layer.innerHTML = '';
+        if (!this._showViewedSegments) return;
+        const dur = this.video ? this.video.duration : this._duration;
+        if (!dur) return;
+        for (const seg of this._viewedSegments) {
+            const left = (seg.time_start / dur) * 100;
+            const width = (seg.duration_sec / dur) * 100;
+            if (width <= 0) continue;
+            const el = document.createElement('div');
+            el.className = 'pp-viewed-segment';
+            el.style.left = `${Math.max(0, left)}%`;
+            el.style.width = `${Math.min(width, 100 - Math.max(0, left))}%`;
+            layer.appendChild(el);
+        }
+    }
+
     setSeekThumbsLoading(loading) {
         this._seekThumbsLoading = loading;
         if (!loading) {
@@ -1563,6 +1597,19 @@ export class PassionPlayer {
             colorInput.addEventListener('mousedown', (e) => e.stopPropagation());
         }
 
+        const viewedSegItem = this.$('[data-setting="showViewedSegments"]');
+        if (viewedSegItem) {
+            viewedSegItem.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this._showViewedSegments = !this._showViewedSegments;
+                viewedSegItem.querySelector('.pp-settings-value').textContent = this._showViewedSegments ? 'On' : 'Off';
+                this._saveSettings();
+                this._renderViewedSegments();
+                this._closeSettingsMenu();
+                e.currentTarget.blur();
+            });
+        }
+
         const player = this.$('.PassionPlayer');
         if (player) {
             player.addEventListener('click', (e) => {
@@ -1601,6 +1648,7 @@ export class PassionPlayer {
         current.fsBarBottom = this._fsBarBottom;
         current.thumbnailSize = this._thumbSizeMultiplier;
         current.progressBarColor = this._progressBarColor;
+        current.showViewedSegments = this._showViewedSegments;
         localStorage.setItem('pp_settings', JSON.stringify(current));
     }
 
@@ -1754,6 +1802,7 @@ video {
     left: 0;
     width: 100%;
     height: 5px;
+    background: rgba(0, 0, 0, 0.4);
 }
 
 .progress-bar {
@@ -2257,6 +2306,24 @@ video {
     height: 100%;
     pointer-events: none;
     z-index: 3;
+}
+
+.pp-viewed-segments-layer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    pointer-events: none;
+    z-index: 2;
+    transform: translateY(-5px);
+}
+.pp-viewed-segment {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    background: #fff5;
+    outline: 1px solid #0005;
 }
 .pp-marker {
     position: absolute;

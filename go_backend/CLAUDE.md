@@ -143,12 +143,12 @@ ActorInfoDir    — AppDataDir/actors/
 SQLite, WAL mode. Three tables, created by `db.InitDB()`:
 
 ```sql
-CREATE TABLE videos       (id TEXT PRIMARY KEY, date_added TEXT, path TEXT NOT NULL DEFAULT '', is_linked INTEGER NOT NULL DEFAULT 1, data TEXT)
+CREATE TABLE videos    (id TEXT PRIMARY KEY, date_added TEXT, path TEXT NOT NULL DEFAULT '', is_linked INTEGER NOT NULL DEFAULT 1, data TEXT)
 CREATE TABLE interactions (id TEXT PRIMARY KEY, data TEXT)
-CREATE TABLE views        (timestamp TEXT, video_hash TEXT, duration_sec REAL)
+CREATE TABLE viewings  (id INTEGER PRIMARY KEY AUTOINCREMENT, video_hash TEXT, datetime TEXT, time_start REAL, duration_sec REAL)
 ```
 
-`videos` has three shadow columns (`date_added`, `path`, `is_linked`) that are dual-written alongside the JSON blob for SQL-level queries. The blob remains authoritative for API responses. `interactions` stores one JSON blob per row. `views` is an append-only log.
+`videos` has three shadow columns (`date_added`, `path`, `is_linked`) that are dual-written alongside the JSON blob for SQL-level queries. The blob remains authoritative for API responses. `interactions` stores one JSON blob per row. `viewings` is an append-only log of playback sections (one row per continuous watch segment). Migration from the old `views` table is handled by `db.MigrateViewingsTable` (`db/viewings.go`).
 
 ### Generic row helpers (`db/db.go`)
 
@@ -162,8 +162,8 @@ mp, err := db.ReadSerializedMapFromTable[schemas.VideoData](db_path, "videos")
 // Write one row for non-videos tables (INSERT OR REPLACE, no shadow columns)
 err = db.WriteSerializedRowToTable(db_path, "interactions", hash, inter)
 
-// Append a row with arbitrary columns (used for views table)
-err = db.InsertDataIntoTable(db_path, "views", map[string]any{...})
+// Append a row with arbitrary columns (used for viewings table)
+err = db.InsertDataIntoTable(db_path, "viewings", map[string]any{...})
 ```
 
 ### Videos-specific helpers (`db/db.go`)

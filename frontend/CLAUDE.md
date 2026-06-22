@@ -153,7 +153,7 @@ Per-page type files (`pages/*/types.ts`) define API request/response shapes — 
 
 Bundled custom player — not on npm. Instantiate with `new PassionPlayer({ hostEl, src, poster, title, subtitles_srt_src, autoplay, quiet, resumeKey })`. Key methods: `setSeekThumbs(vttText, dataUrl)`, `setSeekThumbsLoading(bool)`, `destroy()`. `resumeKey` is the video hash; the player uses it to restore playback position from `localStorage`.
 
-`VideoPlayer.svelte` wraps it: checks for subtitles via `?check=true`, fetches the seek-thumb VTT + JPEG blob (converts blob to data URL via `FileReader` — `setSeekThumbs` requires a data URL, not a path), then instantiates the player. Fires `POST /api/interact/last-viewed/add/:hash` on mount.
+`VideoPlayer.svelte` wraps it: checks for subtitles via `?check=true`, fetches the seek-thumb VTT + JPEG blob (converts blob to data URL via `FileReader` — `setSeekThumbs` requires a data URL, not a path), then instantiates the player. After the player's async `_init` inserts `<video>` into its Shadow DOM (detected via `MutationObserver`), attaches native video events for section tracking: `timeupdate` / `play` / `pause` / `seeking` / `seeked` / `ended` → calls `submitSection(start, end)` which POSTs `{ time_start, duration_sec }` to `POST /api/interact/viewing/add/:hash`. `isSeeking` flag prevents `timeupdate` from corrupting `lastKnownTime` during the `seeking→timeupdate→seeked` browser event sequence. Tab-close uses `sendBeacon`. Client-side navigation flush happens in `onDestroy`.
 
 ---
 
