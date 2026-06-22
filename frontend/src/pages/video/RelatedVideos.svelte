@@ -202,6 +202,13 @@
         if (!activeKey) return;
         carouselRefs[activeKey]?.scrollBy({ left: delta, behavior: 'smooth' });
     }
+
+    let visible = $state(localStorage.getItem('related-videos-visible') !== 'false');
+
+    function toggleVisible() {
+        visible = !visible;
+        localStorage.setItem('related-videos-visible', String(visible));
+    }
 </script>
 
 <!--
@@ -214,13 +221,31 @@
 <section class="related-section">
 
     <div class="section-header">
-        <h2 class="section-title">RELATED VIDEOS</h2>
+        <div class="header-left">
+            <button class="toggle-btn" onclick={toggleVisible} aria-label="Toggle related videos">
+                {#if visible}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+                {:else}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+                {/if}
+            </button>
+            <h2 class="section-title" class:dimmed={!visible}>RELATED VIDEOS</h2>
+        </div>
+        {#if visible}
         <div class="scroll-btns">
             <button class="scroll-btn" onclick={() => scrollCarousel(-800)}>‹</button>
             <button class="scroll-btn" onclick={() => scrollCarousel(800)}>›</button>
         </div>
+        {/if}
     </div>
 
+    {#if visible}
     <div class="cat-nav">
         {#each ORDER as key}
             {@const cat = categories[key]}
@@ -258,6 +283,7 @@
             </div>
         {/each}
     </div>
+    {/if}
 
 </section>
 {/if}
@@ -270,8 +296,10 @@
 
 <style>
     .related-section {
-        padding: 1.5rem 2rem 2rem;
+        padding: 1rem 2rem 1.5rem;
         border-top: 1px solid #1a1a1a;
+        max-width: 89.375rem;
+        margin: 0 auto;
     }
 
     .section-header {
@@ -281,12 +309,38 @@
         margin-bottom: 0.75rem;
     }
 
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .toggle-btn {
+        background: none;
+        border: none;
+        color: #555;
+        cursor: pointer;
+        padding: 0.1rem 0.2rem;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: color 0.15s;
+    }
+    .toggle-btn:hover {
+        color: #aaa;
+    }
+
     .section-title {
         color: #aaa;
         font-size: 0.75rem;
         font-weight: 600;
         letter-spacing: 0.1em;
         text-transform: uppercase;
+        transition: color 0.18s;
+    }
+    .section-title.dimmed {
+        color: #444;
     }
 
     .scroll-btns {
@@ -318,7 +372,7 @@
         display: flex;
         gap: 0.5rem;
         flex-wrap: wrap;
-        margin-bottom: 1rem;
+        margin-bottom: 0.65rem;
     }
 
     .cat-btn {
@@ -378,10 +432,10 @@
         background: #181818;
     }
     .ph-title {
-        padding: 0.5rem 0.6rem;
+        padding: 0.4rem 0.6rem;
         font-size: 0.72rem;
         color: #444;
-        height: 5.5rem;
+        height: 3.5rem;
         overflow: hidden;
     }
 </style>
