@@ -3,7 +3,7 @@ module cpv_backend
 go 1.24.4
 
 require (
-	github.com/MattThePerson/string_parser v0.1.4
+	github.com/MattThePerson/string_parser v0.1.5
 	github.com/labstack/echo/v4 v4.13.4
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.38.1

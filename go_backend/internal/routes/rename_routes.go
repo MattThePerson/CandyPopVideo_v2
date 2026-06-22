@@ -126,6 +126,9 @@ func ECHO_rename_video(c echo.Context, cfg config.Config) error {
     }
     parsed := scanner.ParseFilename(parseInput, cfg.SceneFilenameFormats)
     scanner.PopulateFromParseResult(&vd, parsed)
+    if vd.Title == "" && vd.SceneTitle == "" {
+        vd.Title = cleanStem
+    }
     vd.TagsFromPath = scanner.ExtractPathTags(&vd)
 
     // Rebuild merged Tags as deduplicated union: filename → path → json.

@@ -76,6 +76,7 @@ func ScanLibraries(cfg config.Config, opts ScanOptions, emit func(string)) error
             vd.TagsFromFilename = tags
             parseInput := filepath.Dir(vf.Path) + "/" + cleanStem
             parsed := ParseFilename(parseInput, cfg.SceneFilenameFormats)
+            clearFilenameFields(vd)
             PopulateFromParseResult(vd, parsed)
         }
 

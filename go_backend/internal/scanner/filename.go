@@ -54,6 +54,24 @@ func ParseFilename(relPathStem string, formats []string) map[string]any {
     return result
 }
 
+// clearFilenameFields zeros all VideoData fields that PopulateFromParseResult
+// can set. Call this before reparsing an existing record so stale values from a
+// previous (possibly incorrect) parse don't survive when the new parse omits them.
+func clearFilenameFields(vd *schemas.VideoData) {
+    vd.Title = ""
+    vd.SceneTitle = ""
+    vd.SceneNumber = 0
+    vd.MovieTitle = ""
+    vd.MovieSeries = ""
+    vd.Studio = ""
+    vd.Line = ""
+    vd.DateReleased = ""
+    vd.SourceID = ""
+    vd.DVDCode = ""
+    vd.Actors = nil
+    vd.PrimaryActors = nil
+}
+
 // PopulateFromParseResult maps string_parser field names onto VideoData fields.
 func PopulateFromParseResult(vd *schemas.VideoData, parsed map[string]any) {
     str := func(key string) string {
