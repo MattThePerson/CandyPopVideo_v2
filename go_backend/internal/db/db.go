@@ -23,7 +23,7 @@ func InitDB(db_path string) error {
 
     stmts := []string{
         `CREATE TABLE IF NOT EXISTS videos (id TEXT PRIMARY KEY, date_added TEXT, path TEXT NOT NULL DEFAULT '', is_linked INTEGER NOT NULL DEFAULT 1, data TEXT)`,
-        `CREATE TABLE IF NOT EXISTS interactions (id TEXT PRIMARY KEY, data TEXT)`,
+        interactionsSchema,
         `CREATE TABLE IF NOT EXISTS views (timestamp TEXT, video_hash TEXT, duration_sec REAL)`,
     }
     for _, stmt := range stmts {

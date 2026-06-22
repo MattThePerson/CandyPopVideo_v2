@@ -70,7 +70,7 @@
 - [x] Path-based tag extraction + sort by frequency across collection (all three tag sources: filename, path, JSON)
 - [x] DB merge logic — preserve interactions on re-scan, mark missing as `is_linked: false`
 - [x] SSE progress streaming during scan (wired to dashboard job log)
-- [ ] JSON sidecar loader — deferred to later stage
+- [x] JSON sidecar loader — `scanner/sidecar.go`; `FindSidecarFiles`, `MergeSidecarFiles`, `ApplySidecarToVideoData`; gated by `opts.ReadJSON`
 
 ---
 

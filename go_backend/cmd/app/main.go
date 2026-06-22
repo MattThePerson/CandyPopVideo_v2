@@ -49,6 +49,9 @@ func main() {
     if err := db.InitDB(cfg.DBPath); err != nil {
         log.Fatalf("Failed to initialize database: %v", err)
     }
+    if err := db.MigrateInteractionsTable(cfg.DBPath); err != nil {
+        log.Fatalf("Failed to migrate interactions table: %v", err)
+    }
 
     stateStore := config.NewAppStateStore(cfg.AppDataDir)
 

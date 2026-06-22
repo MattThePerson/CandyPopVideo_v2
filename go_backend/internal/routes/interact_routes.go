@@ -37,7 +37,7 @@ func IncludeInteractRoutes(e *echo.Group, db_path string) {
 // ECHO_get_interactions
 func ECHO_get_interactions(c echo.Context, db_path string) error {
 	video_hash := c.Param("video_hash")
-	inter, err := db.ReadSerializedRowFromTable[schemas.VideoInteractions](db_path, "interactions", video_hash)
+	inter, err := db.ReadInteractionsRow(db_path, video_hash)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return handleServerError(c, 500, "Unable to read interactions row", err)
 	}
@@ -50,7 +50,7 @@ func ECHO_get_interactions(c echo.Context, db_path string) error {
 // ECHO_favs_check
 func ECHO_favs_check(c echo.Context, db_path string) error {
 	video_hash := c.Param("video_hash")
-	inter, err := db.ReadSerializedRowFromTable[schemas.VideoInteractions](db_path, "interactions", video_hash)
+	inter, err := db.ReadInteractionsRow(db_path, video_hash)
 	if errors.Is(err, sql.ErrNoRows) {
 		c.JSON(200, false)
 	} else if err != nil {
@@ -164,7 +164,7 @@ func updateInteractionsTable(c echo.Context, db_path string, callback_func func(
 	video_hash := c.Param("video_hash")
 	
 	// read row from db
-	inter, err := db.ReadSerializedRowFromTable[schemas.VideoInteractions](db_path, "interactions", video_hash)
+	inter, err := db.ReadInteractionsRow(db_path, video_hash)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) { // if no rows, use zero struct
 		return handleServerError(c, 500, "Unable to read interactions row", err)
 	}
@@ -176,7 +176,7 @@ func updateInteractionsTable(c echo.Context, db_path string, callback_func func(
 	}
 
 	// update db
-	err = db.WriteSerializedRowToTable(db_path, "interactions", video_hash, inter)
+	err = db.WriteInteractionsRow(db_path, video_hash, inter)
 	if err != nil {
 		return handleServerError(c, 500, "Unable to write to interactions table", err)
 	}

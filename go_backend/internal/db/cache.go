@@ -74,7 +74,7 @@ func GetCachedInteractions(db_path string, cache_base_timeout int, cache_access_
         return cachedInteractions, nil
     }
 
-    mp, err := ReadSerializedMapFromTable[schemas.VideoInteractions](db_path, "interactions")
+    mp, err := ReadInteractionsMap(db_path)
     if err != nil {
         return mp, err
     }
