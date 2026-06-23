@@ -18,7 +18,6 @@ const interactionsSchema = `CREATE TABLE IF NOT EXISTS interactions (
     favourited_date TEXT    DEFAULT '',
     likes           INTEGER DEFAULT 0,
     rating          TEXT    DEFAULT '',
-    rating_score    INTEGER DEFAULT 0,
     markers         TEXT    DEFAULT '[]',
     dated_markers   TEXT    DEFAULT '[]',
     comments        TEXT    DEFAULT '[]'
@@ -33,7 +32,6 @@ var interExpectedCols = []interColDef{
     {"favourited_date", "TEXT", "''"},
     {"likes", "INTEGER", "0"},
     {"rating", "TEXT", "''"},
-    {"rating_score", "INTEGER", "0"},
     {"markers", "TEXT", "'[]'"},
     {"dated_markers", "TEXT", "'[]'"},
     {"comments", "TEXT", "'[]'"},
@@ -52,11 +50,11 @@ func ReadInteractionsRow(db_path, hash string) (schemas.VideoInteractions, error
     var isFavInt int
     var markersJSON, datedMarkersJSON, commentsJSON string
     err = db.QueryRow(
-        `SELECT last_viewed, viewtime, is_favourite, favourited_date, likes, rating, rating_score,
+        `SELECT last_viewed, viewtime, is_favourite, favourited_date, likes, rating,
                 markers, dated_markers, comments FROM interactions WHERE id = ?`, hash,
     ).Scan(
         &inter.LastViewed, &inter.Viewtime, &isFavInt, &inter.FavouritedDate,
-        &inter.Likes, &inter.Rating, &inter.RatingScore,
+        &inter.Likes, &inter.Rating,
         &markersJSON, &datedMarkersJSON, &commentsJSON,
     )
     if err != nil {
@@ -80,7 +78,7 @@ func ReadInteractionsMap(db_path string) (map[string]schemas.VideoInteractions, 
     defer db.Close()
 
     rows, err := db.Query(
-        `SELECT id, last_viewed, viewtime, is_favourite, favourited_date, likes, rating, rating_score,
+        `SELECT id, last_viewed, viewtime, is_favourite, favourited_date, likes, rating,
                 markers, dated_markers, comments FROM interactions`,
     )
     if err != nil {
@@ -94,7 +92,7 @@ func ReadInteractionsMap(db_path string) (map[string]schemas.VideoInteractions, 
         var markersJSON, datedMarkersJSON, commentsJSON string
         if err := rows.Scan(
             &inter.Hash, &inter.LastViewed, &inter.Viewtime, &isFavInt, &inter.FavouritedDate,
-            &inter.Likes, &inter.Rating, &inter.RatingScore,
+            &inter.Likes, &inter.Rating,
             &markersJSON, &datedMarkersJSON, &commentsJSON,
         ); err != nil {
             return items, err
@@ -121,11 +119,11 @@ func WriteInteractionsRow(db_path, hash string, inter schemas.VideoInteractions)
     }
     _, err = db.Exec(
         `INSERT OR REPLACE INTO interactions
-         (id, last_viewed, viewtime, is_favourite, favourited_date, likes, rating, rating_score,
+         (id, last_viewed, viewtime, is_favourite, favourited_date, likes, rating,
           markers, dated_markers, comments)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         hash, inter.LastViewed, inter.Viewtime, isFavInt, inter.FavouritedDate,
-        inter.Likes, inter.Rating, inter.RatingScore,
+        inter.Likes, inter.Rating,
         marshalOrEmpty(inter.Markers), marshalOrEmpty(inter.DatedMarkers), marshalOrEmpty(inter.Comments),
     )
     return err
@@ -227,7 +225,7 @@ func migrateInteractionsFromBlob(db *sql.DB) error {
     if _, err := tx.Exec(`CREATE TABLE interactions_new (
         id TEXT PRIMARY KEY, last_viewed TEXT DEFAULT '', viewtime REAL DEFAULT 0,
         is_favourite INTEGER DEFAULT 0, favourited_date TEXT DEFAULT '', likes INTEGER DEFAULT 0,
-        rating TEXT DEFAULT '', rating_score INTEGER DEFAULT 0,
+        rating TEXT DEFAULT '',
         markers TEXT DEFAULT '[]', dated_markers TEXT DEFAULT '[]', comments TEXT DEFAULT '[]'
     )`); err != nil {
         return err
@@ -235,9 +233,9 @@ func migrateInteractionsFromBlob(db *sql.DB) error {
 
     stmt, err := tx.Prepare(
         `INSERT INTO interactions_new
-         (id, last_viewed, viewtime, is_favourite, favourited_date, likes, rating, rating_score,
+         (id, last_viewed, viewtime, is_favourite, favourited_date, likes, rating,
           markers, dated_markers, comments)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     if err != nil {
         return err
@@ -251,7 +249,7 @@ func migrateInteractionsFromBlob(db *sql.DB) error {
         }
         if _, err := stmt.Exec(
             r.id, r.inter.LastViewed, r.inter.Viewtime, isFavInt, r.inter.FavouritedDate,
-            r.inter.Likes, r.inter.Rating, r.inter.RatingScore,
+            r.inter.Likes, r.inter.Rating,
             marshalOrEmpty(r.inter.Markers), marshalOrEmpty(r.inter.DatedMarkers),
             marshalOrEmpty(r.inter.Comments),
         ); err != nil {

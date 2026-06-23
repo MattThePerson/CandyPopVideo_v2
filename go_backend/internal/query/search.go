@@ -353,7 +353,6 @@ func getInteractionPopularity(i schemas.VideoInteractions) float64 {
 	points += float64( len(i.Comments) * 3 ) // 3 mins
 	points += float64( len(i.Markers) * 1 ) // 1 mins
 	points += float64( len(i.DatedMarkers) * 5 ) // 5 mins
-	points += float64( i.RatingScore * 2 ) // max -> 14 mins
 	return points
 }
 

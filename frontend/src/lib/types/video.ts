@@ -54,8 +54,7 @@ export interface VideoInteractions {
     favourited_date: string;
     likes:           number;
 
-    rating:       string;   // "S+", "S", "A+", "A", "B+", "B", "C+", "C"
-    rating_score: number;   // 0–7, see go schema comment
+    rating: string;   // "S+", "S", "A+", "A", "B+", "B", "C+", "C"
 
     markers:       [number, string, string][];  // [video_time, color, tag]
     dated_markers: [number, string][];          // [video_time, datetime]

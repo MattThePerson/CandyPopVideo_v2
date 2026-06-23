@@ -9,8 +9,7 @@ type VideoInteractions struct {
 	// Views          []string `json:"views"`
 	Likes int `json:"likes"`
 
-	Rating      string `json:"rating"`       // S+, A, ...
-	RatingScore int    `json:"rating_score"` // numerical
+	Rating string `json:"rating"` // S+, A, ...
 
 	Markers      [][3]any    `json:"markers"`       // (video_time, color, tag)
 	DatedMarkers [][2]any    `json:"dated_markers"` // (video_time, datetime)
@@ -18,15 +17,3 @@ type VideoInteractions struct {
 
 }
 
-/*
-RATING_SCORE:
-S+ -> 7   #  core memory
-S  -> 6   #  outstanding
-A+ -> 5   #
-A  -> 4   #  good
-B+ -> 3   #
-B  -> 2   #
-C+ -> 1   #  *some* reason to be in my collection
-C  -> 0   #  no reason to be in my collection
-
-*/
