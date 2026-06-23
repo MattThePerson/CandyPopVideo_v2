@@ -1,0 +1,42 @@
+# CandyPopVideo config.yaml
+
+# folder to save preview media
+preview_media_dir: ~/.CandyPopVideo/media
+
+# folder to save generated gifs
+gifs_dir: ~/.CandyPopVideo/gifs
+
+# uses video id or title to match subs
+subtitle_folders:
+  - ~/.CandyPopVideo/subtitles
+
+video_extensions: [ .mp3, .webm, .mkv, .mov, .avi, .flv, .wmv, .vid, .flv, .m4v ]
+
+# formats used to extract embedded data from filename (ordered from most to least complex)
+scene_filename_formats: [
+  '{rel_parent}/{primary_actors} - {studio:S} - [{year:d}];opt [{date_released_short:%Y-%m}];opt [{date_released:%Y-%m-%d}];opt [{date_released_alt:%Y.%m.%d}];opt [{line:S}];opt {title} [{secondary_actors}];opt {{{source_id:S}}};opt',
+  '{rel_parent}/[{studio:S}] [{year:d}];opt [{date_released:%Y-%m-%d}];opt [{date_released_alt:%Y.%m.%d}];opt [{line:S}];opt {title} [{primary_actors}];opt {{{source_id:S}}};opt',
+  '{rel_parent}/[{date_released:%Y-%m-%d}] {title} {{{source_id:S}}}',
+  '{rel_parent}/[{date_released:%Y-%m-%d} {time_released}] {title} [{source_id_sec}];opt [{source_id}]',
+  '{rel_parent}/{primary_actors} [{dvd_code:S}] [{date_released:%Y-%m-%d}];opt [{date_released_alt:%Y.%m.%d}];opt [{studio:S}];opt {title}',
+  '{rel_parent}/[{dvd_code:S}]',
+  '{rel_parent}/{primary_actors} - [{year:d}];opt [{date_released:%Y-%m-%d}];opt {title} ({year:d});opt',
+  '{rel_parent}/{title} ({year:d}) [{primary_actors}];opt',
+  '{rel_parent}/{title}',
+]
+
+# COLLECTIONS
+# Put ! before path to ignore folder contents altogether
+collections:
+  Main:
+    - /path/to/videos/here # !!! EDIT THIS !!!
+
+# CURATED COLLECTIONS
+# Named saved searches editable via the config editor in the dashboard.
+# Each entry has a name, optional description, and a query object whose fields
+# match the search filters (actor, studio, collection, tags, sortby, etc.).
+curated_collections:
+  - name: "Example Collection"
+    description: "An example curated collection — edit or replace in config.yaml"
+    query:
+      sortby: date_added_desc

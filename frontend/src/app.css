@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+body {
+    background-color: #060A0A;
+    color: #ecede3;
+}
+
+@theme {
+    --color-nav-dark: #060A0A;
+    --color-off-white: #ecede3;
+    --color-icon-rose: #ff4ba2;
+    --color-actor-rose: #FF2C91;
+    --color-active-rose: #b72a6e;
+    --color-play-orange: #D79C29;
+    --color-search-cyan: #3EA7A7;
+    --color-apply-purple: #752868;
+}
+
+@font-face {
+    font-family: 'Jaro';
+    src: url('./assets/fonts/Jaro-Regular.ttf') format('truetype');
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Inter';
+    src: url('./assets/fonts/Inter-VariableFont_opsz,wght.ttf') format('truetype');
+    font-weight: 100 900;
+    font-display: swap;
+}

@@ -1,3 +1,5 @@
+github.com/MattThePerson/string_parser v0.1.5 h1:pnian13AF97SbdiTNlO8rHjJFlq5eeIFFeF9RWD/XPI=
+github.com/MattThePerson/string_parser v0.1.5/go.mod h1:/aoRs/PzV+h2jtwaq2xsop7ptu6OQ3y1HNNXt5kEqQE=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkpeCY=

@@ -10,10 +10,10 @@ import (
 )
 
 type ItemInfo struct {
-	Name 			string
-	VideoCount 		int
-	NewestVideo 	string
-	NewVideoCount 	int
+	Name 			string `json:"name"`
+	VideoCount 		int    `json:"video_count"`
+	NewestVideo 	string `json:"newest_video"`
+	NewVideoCount 	int    `json:"new_video_count"`
 }
 
 type Catalogue struct {
@@ -63,30 +63,30 @@ func GetCatalogue(vids []schemas.VideoData, q schemas.CatalogueQuery) (Catalogue
 			return slices.Contains(getVideoTags(vd), lw)
 		})
 	}
-	
-	
+
+
 	/* GET ITEM INFOS */
 	cat.ActorInfo = 	 getItemInfo(vids, getVideoActors)
 	cat.StudioInfo = 	 getItemInfo(vids, getVideoStudios)
 	cat.CollectionInfo = getItemInfo(vids, getVideoCollection)
 	cat.TagInfo = 		 getItemInfo(vids, getVideoTags)
 
-	
+
 	/* TF-IDF */
 	if q.QueryString != "" {
 		// ...
 	}
-	
+
 	cat.TimeTakenMS = float64(time.Since(start).Microseconds())/1000
 	return cat, nil
-	
+
 }
 
 
 // #region - PRIV ------------------------------------------------------------------------------------------------------
 
 
-// 
+//
 func getItemInfo(vids []schemas.VideoData, item_extractor_func func(schemas.VideoData)[]string) []ItemInfo {
 
 	item_counts := map[string]int{}
@@ -170,12 +170,11 @@ func getVideoTags(vd schemas.VideoData) []string {
 
 
 func secondsFromNow(date string) float64 {
-    const layout = "2006-01-02 15:04"
-    t, err := time.Parse(layout, date)
-    if err != nil {
-        log.Println("error parsing date: "+err.Error())
-        return 0
+    for _, layout := range []string{"2006-01-02 15:04:05.000", "2006-01-02 15:04:05", "2006-01-02 15:04"} {
+        if t, err := time.Parse(layout, date); err == nil {
+            return time.Since(t).Seconds()
+        }
     }
-    duration := time.Since(t)
-    return duration.Seconds()
+    log.Println("error parsing date: unrecognised format: " + date)
+    return 0
 }

@@ -29,3 +29,5 @@ frontend/holdPages/
 
 # temp
 _ref/
+.trash
+migration

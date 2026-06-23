@@ -2,6 +2,7 @@ package routes
 
 import (
 	"cpv_backend/internal/db"
+	"cpv_backend/internal/mediagen"
 	"cpv_backend/internal/schemas"
 	"fmt"
 	"net/http"
@@ -13,6 +14,10 @@ import (
 
 	"github.com/labstack/echo/v4"
 )
+
+// onDemandSem limits concurrent on-demand media generation triggered by hover events.
+// Without this, hovering 24 cards simultaneously would spawn 24*n concurrent ffmpeg processes.
+var onDemandSem = make(chan struct{}, 3)
 
 func IncludeMediaRoutes(e *echo.Group, db_path string, preview_media_dir string, subtitle_folders []string) {
 
@@ -130,20 +135,13 @@ func ECHO_ensure_teaser_small(c echo.Context, db_path string, preview_media_dir 
 		return handleServerError(c, 500, "Unable to read from database", err)
 	}
 
-	// [subprocess] create media with subprocess
-	fmt.Printf("[EXEC] Generating 'Video Teaser (small)' for: `%s` ...\n", video_hash)
-	tt, err := execPythonSubprocess(
-		"python_src/worker_scripts/generateVideoTeaser.py",
-		"-path", vd.Path,
-		"-mediadir", vid_media_dir,
-		"-duration_sec", fmt.Sprintf("%.1f", vd.DurationSeconds),
-		"-filestem", media_stem,
-		"-type", "small",
-	)
+	fmt.Printf("[MEDIA] Generating 'Video Teaser (small)' for: %s ...\n", video_hash)
+	onDemandSem <- struct{}{}
+	err = mediagen.GenerateTeaser(vd.Path, vid_media_dir, "teaser_small", vd.DurationSeconds, true)
+	<-onDemandSem
 	if err != nil {
-		return handleServerError(c, 500, "Unable to ", err)
+		return handleServerError(c, 500, "Unable to generate teaser small", err)
 	}
-	fmt.Printf("[EXEC] Done. 'Video Teaser (small)' generated in %.1f seconds\n", tt)
 
 	// check media exists
 	if _, err := os.Stat(media_path); err == nil {
@@ -167,20 +165,13 @@ func ECHO_ensure_teaser_thumbs_small(c echo.Context, db_path string, preview_med
 		return handleServerError(c, 500, "Unable to read from database", err)
 	}
 
-	// [subprocess] create media with subprocess
-	fmt.Printf("[EXEC] Generating 'Teaser Thumbs (small)' for: `%s` ...\n", video_hash)
-	tt, err := execPythonSubprocess(
-		"python_src/worker_scripts/generateVideoSpritesheet.py",
-		"-path", vd.Path,
-		"-mediadir", vid_media_dir,
-		"-num", "16",
-		"-height", "300",
-		"-filestem", "teaser_thumbs_small",
-	)
+	fmt.Printf("[MEDIA] Generating 'Teaser Thumbs (small)' for: %s ...\n", video_hash)
+	onDemandSem <- struct{}{}
+	err = mediagen.GenerateSpritesheet(vd.Path, vid_media_dir, "teaser_thumbs_small", 16, 300, 6)
+	<-onDemandSem
 	if err != nil {
-		return handleServerError(c, 500, "Unable to ", err)
+		return handleServerError(c, 500, "Unable to generate teaser thumbs", err)
 	}
-	fmt.Printf("[EXEC] Done. 'Teaser Thumbs (small)' generated in %.1f seconds\n", tt)
 
 	// check media exists
 	if _, err := os.Stat(media_path); err == nil {
@@ -204,20 +195,13 @@ func ECHO_ensure_seek_thumbs(c echo.Context, db_path string, preview_media_dir s
 		return handleServerError(c, 500, "Unable to read from database", err)
 	}
 
-	// [subprocess] create media with subprocess
-	fmt.Printf("[EXEC] Generating 'Seek Thumbs' for: `%s` ...\n", video_hash)
-	tt, err := execPythonSubprocess(
-		"python_src/worker_scripts/generateVideoSpritesheet.py",
-		"-path", vd.Path,
-		"-mediadir", vid_media_dir,
-		"-num", "400",
-		"-height", "300",
-		"-filestem", "seekthumbs",
-	)
+	fmt.Printf("[MEDIA] Generating 'Seek Thumbs' for: %s ...\n", video_hash)
+	onDemandSem <- struct{}{}
+	err = mediagen.GenerateSpritesheet(vd.Path, vid_media_dir, "seekthumbs", 400, 300, 12)
+	<-onDemandSem
 	if err != nil {
-		return handleServerError(c, 500, "Unable to generate seek thumbs with subprocess", err)
+		return handleServerError(c, 500, "Unable to generate seek thumbs", err)
 	}
-	fmt.Printf("[EXEC] Done. 'Seek Thumbs' generated in %.1f seconds\n", tt)
 
 	// check media exists
 	if _, err := os.Stat(media_path); err == nil {
