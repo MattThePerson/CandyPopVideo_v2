@@ -8,6 +8,7 @@
         { href: '/search', label: 'search' },
         { href: '/catalogue', label: 'catalogue' },
         { href: '/curated', label: 'curated' },
+        { href: '/history', label: 'history' },
     ];
 
     function isActive(href: string) {
