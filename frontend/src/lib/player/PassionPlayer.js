@@ -227,8 +227,8 @@ export class PassionPlayer {
         autoplay = true,
         mute = false,
         preload = 'auto',
-        markers_get = null,
-        markers_post = null,
+        onMarkersUpdate = null,
+        onDatedMarkersUpdate = null,
         keybind_override_elements = null,
         styles = null,
         quiet = true,
@@ -259,8 +259,8 @@ export class PassionPlayer {
         this.autoplay = autoplay;
         this.mute = mute;
         this.preload = preload;
-        this.markers_get = markers_get;
-        this.markers_post = markers_post;
+        this.onMarkersUpdate = onMarkersUpdate;
+        this.onDatedMarkersUpdate = onDatedMarkersUpdate;
         this.keybind_override_elements = keybind_override_elements;
         this.dev_styles_path = styles;
         this.quiet = quiet;
@@ -330,6 +330,9 @@ export class PassionPlayer {
         // markers & playheads
         this._markers = [];
         this._markerCounter = 0;
+        this._datedMarkers = [];
+        this._dmCounter = 0;
+        this._dmMenuOpen = false;
         this._playheads = [{ id: 1, time: 0 }];
         this._playheadCounter = 1;
         this._activePlayheadIndex = 0;
@@ -377,6 +380,11 @@ export class PassionPlayer {
             });
             this.video = this.shadow.querySelector('video');
             this.log('video loaded');
+            // Render markers/dated-markers now that duration is known — setMarkers/setDatedMarkers
+            // may have been called before loadeddata (from VideoPlayer's MutationObserver), so
+            // _renderMarkers returned early due to missing duration. Re-render unconditionally here.
+            this._renderMarkers();
+            this._renderDatedMarkers();
             if (this._resumeKey) {
                 const saved = parseFloat(localStorage.getItem(`pp_resume_${this._resumeKey}`) ?? '');
                 if (saved > 3) {
@@ -468,6 +476,7 @@ export class PassionPlayer {
         this._addPlayBtnEventListeners();
         this._addVolumeEventListeners();
         this._addFullscreenBtnEventListeners();
+        this._addDmEventListeners();
         this._addSubtitleEventListeners();
         this._addSettingsEventListeners();
         this._addScrollEventListeners();
@@ -750,6 +759,10 @@ export class PassionPlayer {
                         </div>
                     </div>
                     <div class="controls-right">
+                        <div class="pp-dm-control">
+                            <button class="pp-dm-btn" title="Dated Markers">DM</button>
+                            <div class="pp-dm-menu" style="display:none"></div>
+                        </div>
                         <div class="pp-subtitle-control">
                             <button class="pp-subtitle-btn" title="Subtitles">CC</button>
                             <div class="pp-subtitle-menu" style="display:none"></div>
@@ -1029,10 +1042,11 @@ export class PassionPlayer {
     _addMarker() {
         const time = this.video ? this.video.currentTime : this._currentTime;
         const n = ++this._markerCounter;
-        this._markers.push({ id: n, time, name: `Marker ${n}` });
+        this._markers.push({ id: n, time, color: '', name: `Marker ${n}` });
         this._markers.sort((a, b) => a.time - b.time);
         this._renderMarkers();
         this.showOSD(`Marker ${n} added`);
+        this.onMarkersUpdate?.(this._markers.map(m => [m.time, m.color ?? '', m.name ?? '']));
     }
 
     _removeNearestMarker() {
@@ -1047,6 +1061,7 @@ export class PassionPlayer {
             this._markers = this._markers.filter(m => m.id !== nearest.id);
             this._renderMarkers();
             this.showOSD(`${nearest.name} removed`);
+            this.onMarkersUpdate?.(this._markers.map(m => [m.time, m.color ?? '', m.name ?? '']));
         }
     }
 
@@ -1516,6 +1531,153 @@ export class PassionPlayer {
         const container = this.video ? this.video.parentElement : this.root_element;
         if (!document.fullscreenElement) container.requestFullscreen().catch(console.error);
         else document.exitFullscreen();
+    }
+
+    // ====================================================================================================
+    // Markers — public API
+    // ====================================================================================================
+
+    // Accepts [video_time, color, tag][] from VideoInteractions.markers.
+    setMarkers(markers) {
+        this._markers = (markers ?? []).map((m, i) => ({
+            id: ++this._markerCounter,
+            time: m[0],
+            color: m[1] ?? '',
+            name: m[2] || `Marker ${i + 1}`,
+        }));
+        this._markers.sort((a, b) => a.time - b.time);
+        this._renderMarkers();
+    }
+
+    // Accepts [video_time, datetime][] from VideoInteractions.dated_markers.
+    setDatedMarkers(datedMarkers) {
+        this._datedMarkers = (datedMarkers ?? []).map(m => ({
+            id: ++this._dmCounter,
+            time: m[0],
+            datetime: m[1],
+        }));
+        this._renderDatedMarkers();
+        if (this._dmMenuOpen) this._updateDmMenu();
+    }
+
+    // ====================================================================================================
+    // Dated Markers — private
+    // ====================================================================================================
+
+    _addDatedMarker() {
+        const time = this.video ? this.video.currentTime : this._currentTime;
+        const datetime = new Date().toISOString().slice(0, 19).replace('T', ' ');
+        this._datedMarkers.push({ id: ++this._dmCounter, time, datetime });
+        this._datedMarkers.sort((a, b) => a.time - b.time);
+        this._renderDatedMarkers();
+        if (this._dmMenuOpen) this._updateDmMenu();
+        this.showOSD('Dated marker added');
+        this.onDatedMarkersUpdate?.(this._datedMarkers.map(m => [m.time, m.datetime]));
+    }
+
+    _removeDatedMarker(id) {
+        this._datedMarkers = this._datedMarkers.filter(m => m.id !== id);
+        this._renderDatedMarkers();
+        this._updateDmMenu();
+        this.onDatedMarkersUpdate?.(this._datedMarkers.map(m => [m.time, m.datetime]));
+    }
+
+    _editDatedMarkerDatetime(id, newDatetime) {
+        const m = this._datedMarkers.find(m => m.id === id);
+        if (!m) return;
+        m.datetime = newDatetime;
+        this.onDatedMarkersUpdate?.(this._datedMarkers.map(m => [m.time, m.datetime]));
+    }
+
+    _renderDatedMarkers() {
+        const layer = this.$('.pp-markers-layer');
+        if (!layer) return;
+        layer.querySelectorAll('.pp-dated-marker').forEach(el => el.remove());
+        const dur = this.video ? this.video.duration : this._duration;
+        if (!dur) return;
+        for (const m of this._datedMarkers) {
+            const el = document.createElement('div');
+            el.className = 'pp-dated-marker';
+            el.style.left = (m.time / dur * 100) + '%';
+            el.title = m.datetime;
+            layer.appendChild(el);
+        }
+    }
+
+    _toggleDmMenu() { this._dmMenuOpen ? this._closeDmMenu() : this._openDmMenu(); }
+
+    _openDmMenu() {
+        const menu = this.$('.pp-dm-menu');
+        if (!menu) return;
+        this._dmMenuOpen = true;
+        this._updateDmMenu();
+        menu.style.display = '';
+        this.$('.pp-dm-btn')?.classList.add('active');
+    }
+
+    _closeDmMenu() {
+        const menu = this.$('.pp-dm-menu');
+        if (!menu) return;
+        this._dmMenuOpen = false;
+        menu.style.display = 'none';
+        this.$('.pp-dm-btn')?.classList.remove('active');
+    }
+
+    _updateDmMenu() {
+        const menu = this.$('.pp-dm-menu');
+        if (!menu) return;
+
+        const addBtn = `<button class="pp-dm-add">+ Add at current position</button>`;
+        const sep = this._datedMarkers.length ? `<div class="pp-dm-separator"></div>` : '';
+
+        const rows = this._datedMarkers.map(m => `
+            <div class="pp-dm-item" data-id="${m.id}">
+                <input class="pp-dm-dt-input" type="text" value="${m.datetime}" title="Edit datetime (YYYY-MM-DD HH:MM:SS)">
+                <span class="pp-dm-time">${this._formatTime(m.time)}</span>
+                <button class="pp-dm-del" data-id="${m.id}" title="Remove">×</button>
+            </div>
+        `).join('');
+
+        const empty = this._datedMarkers.length === 0
+            ? `<div class="pp-dm-empty">No dated markers</div>` : '';
+
+        menu.innerHTML = addBtn + sep + rows + empty;
+
+        menu.querySelector('.pp-dm-add')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this._addDatedMarker();
+        });
+
+        menu.querySelectorAll('.pp-dm-del').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this._removeDatedMarker(Number(btn.dataset.id));
+            });
+        });
+
+        menu.querySelectorAll('.pp-dm-dt-input').forEach(input => {
+            input.addEventListener('click', (e) => e.stopPropagation());
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') { input.blur(); }
+                e.stopPropagation();
+            });
+            input.addEventListener('blur', () => {
+                const id = Number(input.closest('.pp-dm-item').dataset.id);
+                this._editDatedMarkerDatetime(id, input.value.trim());
+            });
+        });
+    }
+
+    _addDmEventListeners() {
+        const btn = this.$('.pp-dm-btn');
+        if (!btn) return;
+        btn.addEventListener('click', (e) => { e.stopPropagation(); this._toggleDmMenu(); });
+        const player = this.$('.PassionPlayer');
+        if (player) {
+            player.addEventListener('click', (e) => {
+                if (!e.target.closest('.pp-dm-control')) this._closeDmMenu();
+            });
+        }
     }
 
     // ====================================================================================================
@@ -2358,6 +2520,115 @@ video {
     transform: translateX(-50%);
     pointer-events: none;
     border-radius: 2px 2px 0 0;
+}
+
+/* DATED MARKERS */
+
+.pp-dated-marker {
+    position: absolute;
+    bottom: 0;
+    width: 3px;
+    height: 10px;
+    background: rgba(215, 156, 41, 0.9);
+    transform: translateX(-50%);
+    pointer-events: none;
+    border-radius: 2px 2px 0 0;
+}
+
+/* DATED MARKERS BUTTON */
+
+.pp-dm-control { position: relative; }
+.pp-dm-btn {
+    width: 36px;
+    height: 36px;
+    background: #000b;
+    border: 1px solid #fff5;
+    border-radius: 6px;
+    color: #fffc;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: -0.5px;
+    font-family: inherit;
+}
+.pp-dm-btn:hover { background: #000d; color: #fff; }
+.pp-dm-btn.active { color: #D79C29; border-color: #D79C2966; }
+
+.pp-dm-menu {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    right: 0;
+    min-width: 270px;
+    background: rgba(20, 20, 20, 0.95);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    padding: 4px 0;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+}
+.pp-dm-add {
+    display: block;
+    width: 100%;
+    background: none;
+    border: none;
+    color: #D79C29;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: inherit;
+    text-align: left;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+.pp-dm-add:hover { background: rgba(255,255,255,0.08); }
+.pp-dm-separator { height: 1px; background: rgba(255,255,255,0.12); margin: 3px 0; }
+.pp-dm-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+.pp-dm-dt-input {
+    flex: 1;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: #ddd;
+    font-size: 11px;
+    font-family: monospace;
+    padding: 2px 5px;
+    min-width: 0;
+    cursor: pointer;
+}
+.pp-dm-dt-input:hover { border-color: rgba(255,255,255,0.2); }
+.pp-dm-dt-input:focus { outline: none; border-color: #D79C29; background: rgba(255,255,255,0.1); color: #fff; cursor: text; }
+.pp-dm-time {
+    color: #888;
+    font-size: 11px;
+    font-family: monospace;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.pp-dm-del {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 0 2px;
+    line-height: 1;
+    flex-shrink: 0;
+    font-family: inherit;
+}
+.pp-dm-del:hover { color: #f87171; }
+.pp-dm-empty {
+    padding: 6px 10px;
+    color: #555;
+    font-size: 11px;
+    font-style: italic;
 }
 
 /* KEYBINDS OVERLAY */

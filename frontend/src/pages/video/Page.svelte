@@ -150,7 +150,12 @@
                 <Spinner size={52} />
             </div>
         {:else if playerActive}
-            <VideoPlayer {hash} title={video.filename} />
+            <VideoPlayer
+                {hash}
+                title={video.filename}
+                markers={interact?.markers ?? []}
+                datedMarkers={interact?.dated_markers ?? []}
+            />
         {/if}
     </div>
 

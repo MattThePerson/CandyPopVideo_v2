@@ -28,8 +28,8 @@ func IncludeInteractRoutes(e *echo.Group, db_path string) {
     e.POST("/viewing/add/:video_hash",      func(c echo.Context) error { return ECHO_viewing_add(c, db_path) })
 	
 	// markers
-	e.POST("/markers/update/:video_hash", 	func(c echo.Context) error { return c.String(501, "Not implemented") })
-	e.GET("/markers/get/:video_hash", 		func(c echo.Context) error { return c.String(501, "Not implemented") })
+	e.POST("/markers/update/:video_hash",       func(c echo.Context) error { return ECHO_markers_update(c, db_path) })
+	e.POST("/dated-markers/update/:video_hash", func(c echo.Context) error { return ECHO_dated_markers_update(c, db_path) })
 
 }
 
@@ -192,6 +192,30 @@ func ECHO_viewing_add(c echo.Context, db_path string) error {
     return c.String(200, "viewing recorded")
 }
 
+
+// #region MARKERS
+
+func ECHO_markers_update(c echo.Context, db_path string) error {
+	var markers [][3]any
+	if err := c.Bind(&markers); err != nil {
+		return c.JSON(400, map[string]string{"error": "invalid body"})
+	}
+	return updateInteractionsTable(c, db_path, func(inter *schemas.VideoInteractions) error {
+		inter.Markers = markers
+		return c.String(200, "markers updated")
+	})
+}
+
+func ECHO_dated_markers_update(c echo.Context, db_path string) error {
+	var datedMarkers [][2]any
+	if err := c.Bind(&datedMarkers); err != nil {
+		return c.JSON(400, map[string]string{"error": "invalid body"})
+	}
+	return updateInteractionsTable(c, db_path, func(inter *schemas.VideoInteractions) error {
+		inter.DatedMarkers = datedMarkers
+		return c.String(200, "dated markers updated")
+	})
+}
 
 // #region HELPERS
 

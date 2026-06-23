@@ -8,8 +8,8 @@ export interface PassionPlayerOptions {
     autoplay?: boolean;
     mute?: boolean;
     preload?: string;
-    markers_get?: string | null;
-    markers_post?: string | null;
+    onMarkersUpdate?: ((markers: [number, string, string][]) => void) | null;
+    onDatedMarkersUpdate?: ((datedMarkers: [number, string][]) => void) | null;
     keybind_override_elements?: Element[] | null;
     styles?: string | null;
     quiet?: boolean;
@@ -58,6 +58,8 @@ export declare class PassionPlayer {
     setSeekThumbsLoading(loading: boolean): void;
     setSeekThumbs(vttContent: string, spritesheetDataURL: string): void;
     setViewedSegments(segments: Array<{ time_start: number; duration_sec: number }>): void;
+    setMarkers(markers: [number, string, string][]): void;
+    setDatedMarkers(datedMarkers: [number, string][]): void;
     setSubtitleState(text: string | null, tracks: TrackInfo[], activeSid: number): void;
     showOSD(text: string): void;
     addKeybinds(): void;

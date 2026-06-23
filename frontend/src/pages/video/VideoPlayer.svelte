@@ -3,7 +3,12 @@
     import { PassionPlayer } from '$lib/player/PassionPlayer.js';
 
     /* Props */
-    let { hash, title }: { hash: string; title: string } = $props();
+    let { hash, title, markers = [], datedMarkers = [] }: {
+        hash: string;
+        title: string;
+        markers?: [number, string, string][];
+        datedMarkers?: [number, string][];
+    } = $props();
 
     let hostEl: HTMLDivElement;
     let player: PassionPlayer | null = null;
@@ -94,10 +99,26 @@
             autoplay: false,
             quiet: false,
             resumeKey: hash,
+            onMarkersUpdate: (updated) => {
+                fetch(`/api/interact/markers/update/${hash}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updated),
+                }).catch(() => {});
+            },
+            onDatedMarkersUpdate: (updated) => {
+                fetch(`/api/interact/dated-markers/update/${hash}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updated),
+                }).catch(() => {});
+            },
         });
 
         loadSeekThumbs(player);
         setTimeout(() => { if (player) loadViewedSegments(player); }, 500);
+        if (markers.length)      player.setMarkers(markers);
+        if (datedMarkers.length) player.setDatedMarkers(datedMarkers);
 
         // PassionPlayer's _init() is async: it awaits a style injection before calling
         // _addHTML (which inserts <video>). Query immediately after construction returns
