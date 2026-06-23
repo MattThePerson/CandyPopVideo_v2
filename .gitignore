@@ -3,32 +3,22 @@
 venv
 .venv
 __pycache__
-.logs/
-*.exe
-
-# build
 build
 bin
 
-# custom
-config.yaml
+# custom (general)
+_*/
 **.bak
 **.pkl
 **.ipynb
+**.exe
+
+# custom
+.logs/
+.trash/
 BUFFER.md
-
-# data dir
-data/*
-!data/config.yaml
-!data/templates/
-!data/stopwords_eng.txt
-
-# frontend
 frontend/curated/
-frontend/data/
-frontend/holdPages/
 
 # temp
-_ref/
-.trash
 migration
+history_page.md
