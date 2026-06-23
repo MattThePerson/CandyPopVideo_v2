@@ -22,6 +22,7 @@ import (
 var (
     devMode    = flag.Bool("dev", false, "use dev mode")
     serverPort = flag.Int("port", 8010, "server port")
+    dataDir    = flag.String("data-dir", "", "override app data directory (default: OS user config dir)")
 )
 
 func NoCacheMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
@@ -41,7 +42,7 @@ func main() {
 
     flag.Parse()
 
-    store, err := config.NewConfigStore()
+    store, err := config.NewConfigStore(*dataDir)
     if err != nil {
         log.Fatalf("Failed to initialize config: %v", err)
     }

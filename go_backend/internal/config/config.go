@@ -77,8 +77,9 @@ func parseConfig(data []byte, appDataDir string) (Config, error) {
 // ─── ConfigStore ─────────────────────────────────────────────────────────────
 
 type ConfigStore struct {
-    mu  sync.RWMutex
-    cfg Config
+    mu         sync.RWMutex
+    cfg        Config
+    appDataDir string
 }
 
 // Current returns a point-in-time snapshot of the config.
@@ -90,11 +91,7 @@ func (s *ConfigStore) Current() Config {
 
 // RawYAML reads the config file from disk and returns its contents.
 func (s *ConfigStore) RawYAML() (string, error) {
-    dir, err := GetAppDataDir()
-    if err != nil {
-        return "", err
-    }
-    data, err := os.ReadFile(filepath.Join(dir, "config.yaml"))
+    data, err := os.ReadFile(filepath.Join(s.appDataDir, "config.yaml"))
     if err != nil {
         return "", err
     }
@@ -104,14 +101,10 @@ func (s *ConfigStore) RawYAML() (string, error) {
 // WriteAndReload writes new YAML content to config.yaml, parses it, and
 // hot-reloads the store. Returns requiresRestart=true if preview_media_dir changed.
 func (s *ConfigStore) WriteAndReload(content []byte) (requiresRestart bool, err error) {
-    dir, err := GetAppDataDir()
-    if err != nil {
-        return false, err
-    }
-    if err := os.WriteFile(filepath.Join(dir, "config.yaml"), content, 0644); err != nil {
+    if err := os.WriteFile(filepath.Join(s.appDataDir, "config.yaml"), content, 0644); err != nil {
         return false, fmt.Errorf("writing config: %w", err)
     }
-    newCfg, err := parseConfig(content, dir)
+    newCfg, err := parseConfig(content, s.appDataDir)
     if err != nil {
         return false, fmt.Errorf("parsing new config: %w", err)
     }
@@ -128,10 +121,18 @@ func (s *ConfigStore) WriteAndReload(content []byte) (requiresRestart bool, err 
 
 // NewConfigStore initialises the app data directory (first-run or existing),
 // reads config.yaml, and returns the live config store.
-func NewConfigStore() (*ConfigStore, error) {
-    dir, err := GetAppDataDir()
-    if err != nil {
-        return nil, err
+// If appDataDirOverride is non-empty it is used as-is; otherwise the directory
+// is derived from os.UserConfigDir().
+func NewConfigStore(appDataDirOverride string) (*ConfigStore, error) {
+    var dir string
+    if appDataDirOverride != "" {
+        dir = appDataDirOverride
+    } else {
+        var err error
+        dir, err = GetAppDataDir()
+        if err != nil {
+            return nil, err
+        }
     }
 
     configPath := filepath.Join(dir, "config.yaml")
@@ -156,5 +157,5 @@ func NewConfigStore() (*ConfigStore, error) {
         return nil, fmt.Errorf("parsing config: %w", err)
     }
 
-    return &ConfigStore{cfg: cfg}, nil
+    return &ConfigStore{cfg: cfg, appDataDir: dir}, nil
 }
