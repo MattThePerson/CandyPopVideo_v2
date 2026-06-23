@@ -5,6 +5,7 @@ import (
     "cpv_backend/internal/schemas"
     "database/sql"
     "errors"
+    "net/url"
     "strconv"
     "strings"
 
@@ -122,9 +123,9 @@ func ECHO_fav_remove(c echo.Context, db_path string) error {
 // ECHO_fav_remove
 func ECHO_fav_update_time(c echo.Context, db_path string) error {
 	return updateInteractionsTable(c, db_path, func(inter *schemas.VideoInteractions) error {
-		
-		new_date := c.Param("new_date")
-		
+
+		new_date, _ := url.PathUnescape(c.Param("new_date"))
+
 		if !inter.IsFavourite {
 			return c.String(400, "Video is not favourited")
 		}

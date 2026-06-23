@@ -91,9 +91,18 @@ func getCurrentTime() string {
 }
 
 func isValidDateTime(str string) bool {
-    layout := "2006-01-02T15:04:05"
-    _, err := time.Parse(layout, str)
-    return err == nil
+    for _, layout := range []string{
+        "2006-01-02T15:04:05",
+        "2006-01-02 15:04:05",
+        "2006-01-02T15:04",
+        "2006-01-02 15:04",
+        "2006-01-02",
+    } {
+        if _, err := time.Parse(layout, str); err == nil {
+            return true
+        }
+    }
+    return false
 }
 
 

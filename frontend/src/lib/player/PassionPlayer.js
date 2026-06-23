@@ -250,6 +250,7 @@ export class PassionPlayer {
         onThumbnailSizeChange = null,
         thumbnailSize = 1.0,
         resumeKey = null,
+        fps = null,
     }) {
         this.player_id = player_id;
         this.src = src;
@@ -275,6 +276,7 @@ export class PassionPlayer {
         this.onSubtitleChange = onSubtitleChange;
         this.onAddSubtitleFile = onAddSubtitleFile;
         this.onFrameStep = onFrameStep;
+        this._fps = fps;
         this.onSpeedChange = onSpeedChange;
         this.onMpvFilterChange = onMpvFilterChange;
         this.onCssFilterChange = onCssFilterChange;
@@ -1000,7 +1002,10 @@ export class PassionPlayer {
         if (this.onFrameStep) {
             this.onFrameStep(dir);
         }
-        // HTML5: no native single-frame step without knowing FPS
+        if (this.video && this._fps) {
+            if (!this.video.paused) this.video.pause();
+            this.video.currentTime += dir / this._fps;
+        }
         this.showOSD(dir > 0 ? 'Frame forward' : 'Frame back');
     }
 

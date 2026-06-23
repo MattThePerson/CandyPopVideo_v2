@@ -96,6 +96,10 @@ func PopulateFromParseResult(vd *schemas.VideoData, parsed map[string]any) {
         vd.PrimaryActors = splitActors(v)
         vd.Actors = append(vd.Actors, vd.PrimaryActors...)
     }
+    if v := str("secondary_actors"); v != "" {
+        vd.SecondaryActors = splitActors(v)
+        vd.Actors = append(vd.Actors, vd.SecondaryActors...)
+    }
     if v := str("actors"); v != "" {
         extra := splitActors(v)
         vd.Actors = append(vd.Actors, extra...)

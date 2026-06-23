@@ -3,9 +3,10 @@
     import { PassionPlayer } from '$lib/player/PassionPlayer.js';
 
     /* Props */
-    let { hash, title, markers = [], datedMarkers = [] }: {
+    let { hash, title, fps = null, markers = [], datedMarkers = [] }: {
         hash: string;
         title: string;
+        fps?: number | null;
         markers?: [number, string, string][];
         datedMarkers?: [number, string][];
     } = $props();
@@ -99,6 +100,7 @@
             autoplay: false,
             quiet: false,
             resumeKey: hash,
+            fps,
             onMarkersUpdate: (updated) => {
                 fetch(`/api/interact/markers/update/${hash}`, {
                     method: 'POST',

@@ -17,6 +17,7 @@ export interface PassionPlayerOptions {
     controlsOverlayKey?: string;
     thumbnailSize?: number;
     resumeKey?: string | null;
+    fps?: number | null;
     onPlay?: (() => void) | null;
     onPause?: (() => void) | null;
     onSeek?: ((pos: number) => void) | null;

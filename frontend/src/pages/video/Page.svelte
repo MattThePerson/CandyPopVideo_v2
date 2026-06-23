@@ -153,6 +153,7 @@
             <VideoPlayer
                 {hash}
                 title={video.filename}
+                fps={video.fps}
                 markers={interact?.markers ?? []}
                 datedMarkers={interact?.dated_markers ?? []}
             />
