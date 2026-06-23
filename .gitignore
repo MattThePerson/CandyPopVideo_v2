@@ -4,6 +4,7 @@ venv
 .venv
 __pycache__
 .logs/
+*.exe
 
 # build
 build
