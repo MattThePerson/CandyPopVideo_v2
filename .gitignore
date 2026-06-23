@@ -23,7 +23,7 @@ data/*
 !data/stopwords_eng.txt
 
 # frontend
-frontend/curatedCollections/
+frontend/curated/
 frontend/data/
 frontend/holdPages/
 

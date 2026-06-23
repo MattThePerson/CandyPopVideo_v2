@@ -8,6 +8,7 @@ import (
     "flag"
     "fmt"
     "log"
+    "os"
     "strings"
 
     "github.com/labstack/echo/v4"
@@ -88,12 +89,15 @@ func main() {
     })
 
     e.Static("/assets", "frontend/dist/assets")
-    e.File("/favicon.svg", "frontend/dist/favicon.svg")
 
     e.Static("/static/preview-media", cfg.PreviewMediaDir+"/preview")
     e.Static("/static/actor-store", cfg.ActorInfoDir)
 
     e.GET("/*", func(c echo.Context) error {
+        filePath := "frontend/dist" + c.Request().URL.Path
+        if _, err := os.Stat(filePath); err == nil {
+            return c.File(filePath)
+        }
         return c.File("frontend/dist/index.html")
     })
 
