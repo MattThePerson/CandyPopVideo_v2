@@ -1,24 +1,28 @@
 package scanner
 
 import (
-    "fmt"
-    "path/filepath"
-    "regexp"
-    "strings"
+	"fmt"
+	"path/filepath"
+	"regexp"
+	"strings"
 
-    string_parser "github.com/MattThePerson/string_parser"
+	string_parser "github.com/MattThePerson/string_parser"
 
-    "cpv_backend/internal/schemas"
+	"cpv_backend/internal/schemas"
 )
 
 var purelyNumeric = regexp.MustCompile(`^[0-9]+$`)
 
-// ExtractTags scans the filename stem from right to left, consuming trailing
-// space-delimited tokens that look like "#Word" where Word is not purely numeric.
-// Returns the tags in their original left-to-right order, and the stem with
-// those tokens stripped from the right.
-func ExtractTags(stem string) (tags []string, cleanedStem string) {
-    tokens := strings.Fields(stem)
+// ExtractTags scans a filename stem or path from right to left, consuming
+// trailing space-delimited tokens from the last path component that look like
+// "#Word" where Word is not purely numeric. Returns the tags in left-to-right
+// order and the input with those tokens stripped from the final component.
+func ExtractTags(stemOrPath string) (tags []string, cleaned string) {
+    dir, base := "", stemOrPath
+    if idx := strings.LastIndex(stemOrPath, "/"); idx >= 0 {
+        dir, base = stemOrPath[:idx+1], stemOrPath[idx+1:]
+    }
+    tokens := strings.Fields(base)
     cutAt := len(tokens)
     for i := len(tokens) - 1; i >= 0; i-- {
         tok := tokens[i]
@@ -33,10 +37,9 @@ func ExtractTags(stem string) (tags []string, cleanedStem string) {
     }
     tags = make([]string, 0, len(tokens)-cutAt)
     for _, tok := range tokens[cutAt:] {
-        tags = append(tags, tok[1:]) // strip leading '#'
+        tags = append(tags, tok[1:])
     }
-    cleanedStem = strings.Join(tokens[:cutAt], " ")
-    return tags, cleanedStem
+    return tags, dir + strings.Join(tokens[:cutAt], " ")
 }
 
 // ParseFilename tries to extract structured metadata from the path string
@@ -84,7 +87,7 @@ func PopulateFromParseResult(vd *schemas.VideoData, parsed map[string]any) {
     }
     splitActors := func(s string) []string {
         var out []string
-        for _, part := range regexp.MustCompile(`[,/]`).Split(s, -1) {
+        for part := range strings.SplitSeq(s, ",") {
             if t := strings.TrimSpace(part); t != "" {
                 out = append(out, t)
             }
@@ -161,6 +164,44 @@ func PopulateFromParseResult(vd *schemas.VideoData, parsed map[string]any) {
         }
     }
     vd.Actors = unique
+}
+
+// GetFileMetadata parses filename metadata and optionally loads the sidecar
+// JSON for a video file. It sets vd.Path, vd.Filename, vd.TagsFromFilename,
+// and all fields that ParseFilename/ApplySidecarToVideoData can populate.
+// The caller is responsible for setting vd.PathRelative and calling
+// ExtractPathTags + RebuildTags afterwards.
+func GetFileMetadata(fullPath string, vd *schemas.VideoData, formats []string, readJSON bool) {
+    vd.Path = fullPath
+    vd.Filename = filepath.Base(fullPath)
+    ext := filepath.Ext(fullPath)
+    pathNoExt := strings.TrimSuffix(filepath.ToSlash(fullPath), ext)
+    tags, cleanPath := ExtractTags(pathNoExt)
+    vd.TagsFromFilename = tags
+    clearFilenameFields(vd)
+    PopulateFromParseResult(vd, ParseFilename(cleanPath, formats))
+    if readJSON {
+        if files := FindSidecarFiles(fullPath, vd.SourceID); len(files) > 0 {
+            vd.TagsFromJSON, vd.Views, vd.Likes, vd.Metadata = nil, 0, 0, nil
+            ApplySidecarToVideoData(vd, MergeSidecarFiles(files))
+        }
+    }
+}
+
+// RebuildTags sets vd.Tags to the deduplicated union of TagsFromFilename,
+// TagsFromPath, and TagsFromJSON (in that priority order).
+func RebuildTags(vd *schemas.VideoData) {
+    seen := map[string]bool{}
+    var merged []string
+    for _, src := range [][]string{vd.TagsFromFilename, vd.TagsFromPath, vd.TagsFromJSON} {
+        for _, t := range src {
+            if !seen[t] {
+                seen[t] = true
+                merged = append(merged, t)
+            }
+        }
+    }
+    vd.Tags = merged
 }
 
 // ExtractPathTags derives tags from intermediate directory names in the

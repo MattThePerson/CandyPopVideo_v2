@@ -4,7 +4,6 @@ import (
     "fmt"
     "os"
     "path/filepath"
-    "strings"
     "time"
 
     "cpv_backend/internal/config"
@@ -27,96 +26,18 @@ type ScanOptions struct {
 // through the pipeline, and merges results into the database.
 func ScanLibraries(cfg config.Config, opts ScanOptions, emit func(string)) error {
     emit("[SCAN] Walking collection folders…")
+    files := collectVideoFiles(cfg.Collections, extensionSet(cfg.VideoExtensions), opts.PathFilter)
 
-    exts := extensionSet(cfg.VideoExtensions)
-    files := collectVideoFiles(cfg.Collections, exts, opts.PathFilter)
-
-    // Load all existing DB records and build a path→hash reverse lookup
     emit("[SCAN] Loading existing database records…")
     existing, err := db.ReadSerializedMapFromTable[schemas.VideoData](cfg.DBPath, "videos")
     if err != nil {
         return fmt.Errorf("reading DB: %w", err)
     }
-    pathToHash := map[string]string{}
-    for hash, vd := range existing {
-        pathToHash[vd.Path] = hash
-    }
+    pathToHash := buildPathToHash(existing)
     emit(fmt.Sprintf("[SCAN] Loaded %d existing records", len(existing)))
 
-    if opts.QuickScan {
-        skipped := 0
-        newFiles := files[:0]
-        for _, vf := range files {
-            if _, known := pathToHash[vf.Path]; known {
-                skipped++
-            } else {
-                newFiles = append(newFiles, vf)
-            }
-        }
-        files = newFiles
-        emit(fmt.Sprintf("[SCAN] Found %d new/unrecognised files (%d already known, skipped)", len(files), skipped))
-    } else {
-        emit(fmt.Sprintf("[SCAN] Found %d video files", len(files)))
-    }
-
-    loaded := map[string]*schemas.VideoData{}
-    errCount := 0
-
-    for i, vf := range files {
-        hash, vd, isNew, err := resolveVideo(vf, existing, pathToHash, opts)
-        if err != nil {
-            emit(fmt.Sprintf("[WARN] %s: %v", filepath.Base(vf.Path), err))
-            errCount++
-            continue
-        }
-
-        // Video attributes
-        if isNew || opts.RedoAttributes {
-            attrs, err := ProbeAttributes(vf.Path)
-            if err != nil {
-                emit(fmt.Sprintf("[WARN] ffprobe failed for %s: %v", filepath.Base(vf.Path), err))
-            } else {
-                vd.DurationSeconds = attrs.DurationSeconds
-                vd.Duration = attrs.Duration
-                vd.FPS = attrs.FPS
-                vd.Resolution = attrs.Resolution
-                vd.Bitrate = attrs.Bitrate
-                vd.FilesizeMB = attrs.FilesizeMB
-            }
-        }
-
-        // Filename parsing + sidecar JSON loading (always done together)
-        if isNew || opts.RederiveMetadata {
-            stem := strings.TrimSuffix(filepath.Base(vf.Path), filepath.Ext(vf.Path))
-            tags, cleanStem := ExtractTags(stem)
-            vd.TagsFromFilename = tags
-            parseInput := filepath.Dir(vf.Path) + "/" + cleanStem
-            parsed := ParseFilename(parseInput, cfg.SceneFilenameFormats)
-            clearFilenameFields(vd)
-            PopulateFromParseResult(vd, parsed)
-
-            // Sidecar loading runs after filename parse so SourceID is available
-            if opts.ReadJSON {
-                sidecarFiles := FindSidecarFiles(vf.Path, vd.SourceID)
-                if len(sidecarFiles) > 0 {
-                    vd.TagsFromJSON = nil
-                    vd.Views = 0
-                    vd.Likes = 0
-                    vd.Metadata = nil
-                    ApplySidecarToVideoData(vd, MergeSidecarFiles(sidecarFiles))
-                }
-            }
-        }
-
-        // Path tags (always — cheap, and depends on Actors/Studio set above)
-        vd.TagsFromPath = ExtractPathTags(vd)
-
-        loaded[hash] = vd
-
-        if (i+1)%100 == 0 || i+1 == len(files) {
-            emit(fmt.Sprintf("[SCAN] Processed %d / %d files", i+1, len(files)))
-        }
-    }
+    files = applyQuickScan(files, pathToHash, opts.QuickScan, emit)
+    loaded, errCount := processFiles(files, existing, pathToHash, cfg, opts, emit)
 
     emit("[SCAN] Sorting tags by collection frequency…")
     SortTagsByFrequency(loaded)
@@ -125,7 +46,6 @@ func ScanLibraries(cfg config.Config, opts ScanOptions, emit func(string)) error
     if err := MergeAndSave(cfg.DBPath, loaded, opts.PathFilter != "" || opts.QuickScan); err != nil {
         return fmt.Errorf("saving to DB: %w", err)
     }
-
     emit(fmt.Sprintf("[SCAN] Done. %d videos processed, %d errors.", len(loaded), errCount))
     if len(loaded) > 0 {
         rebuildTFIDF(cfg, emit)
@@ -135,49 +55,95 @@ func ScanLibraries(cfg config.Config, opts ScanOptions, emit func(string)) error
     return nil
 }
 
-// resolveVideo determines the hash and VideoData for a given file, either by
-// reusing an existing DB record or creating a fresh one.
+func buildPathToHash(existing map[string]schemas.VideoData) map[string]string {
+    m := make(map[string]string, len(existing))
+    for hash, vd := range existing {
+        m[vd.Path] = hash
+    }
+    return m
+}
+
+func applyQuickScan(files []VideoFile, pathToHash map[string]string, quickScan bool, emit func(string)) []VideoFile {
+    if !quickScan {
+        emit(fmt.Sprintf("[SCAN] Found %d video files", len(files)))
+        return files
+    }
+    var newFiles []VideoFile
+    for _, vf := range files {
+        if _, known := pathToHash[vf.Path]; !known {
+            newFiles = append(newFiles, vf)
+        }
+    }
+    emit(fmt.Sprintf("[SCAN] Found %d new/unrecognised files (%d already known, skipped)",
+        len(newFiles), len(files)-len(newFiles)))
+    return newFiles
+}
+
+func processFiles(
+    files []VideoFile,
+    existing map[string]schemas.VideoData,
+    pathToHash map[string]string,
+    cfg config.Config,
+    opts ScanOptions,
+    emit func(string),
+) (map[string]*schemas.VideoData, int) {
+    loaded := map[string]*schemas.VideoData{}
+    errCount := 0
+    for i, vf := range files {
+        hash, vd, isNew, err := resolveVideo(vf, existing, pathToHash, opts)
+        if err != nil {
+            emit(fmt.Sprintf("[WARN] %s: %v", filepath.Base(vf.Path), err))
+            errCount++
+            continue
+        }
+        if isNew || opts.RedoAttributes {
+            if attrs, err := ProbeAttributes(vf.Path); err != nil {
+                emit(fmt.Sprintf("[WARN] ffprobe failed for %s: %v", filepath.Base(vf.Path), err))
+            } else {
+                applyAttributes(vd, attrs)
+            }
+        }
+        if isNew || opts.RederiveMetadata {
+            GetFileMetadata(vf.Path, vd, cfg.SceneFilenameFormats, opts.ReadJSON)
+        }
+        vd.TagsFromPath = ExtractPathTags(vd)
+        loaded[hash] = vd
+        if (i+1)%100 == 0 || i+1 == len(files) {
+            emit(fmt.Sprintf("[SCAN] Processed %d / %d files", i+1, len(files)))
+        }
+    }
+    return loaded, errCount
+}
+
+func applyAttributes(vd *schemas.VideoData, attrs VideoAttributes) {
+    vd.DurationSeconds = attrs.DurationSeconds
+    vd.Duration = attrs.Duration
+    vd.FPS = attrs.FPS
+    vd.Resolution = attrs.Resolution
+    vd.Bitrate = attrs.Bitrate
+    vd.FilesizeMB = attrs.FilesizeMB
+}
+
 func resolveVideo(
     vf VideoFile,
     existing map[string]schemas.VideoData,
     pathToHash map[string]string,
     opts ScanOptions,
 ) (hash string, vd *schemas.VideoData, isNew bool, err error) {
-
-    // Try to reuse hash from existing record by path
     if !opts.Rehash {
         if h, ok := pathToHash[vf.Path]; ok {
             if ex, ok2 := existing[h]; ok2 {
-                // Update path-derivable fields in case the file moved within the collection
-                ex.Path = vf.Path
-                ex.Filename = filepath.Base(vf.Path)
-                ex.Collection = vf.CollectionName
-                ex.ParentDir = vf.CollectionRoot
-                ex.PathRelative = relPathRelative(vf.Path, vf.CollectionRoot)
-                return h, &ex, false, nil
+                return h, updatePathFields(&ex, vf), false, nil
             }
         }
     }
-
-    // Compute hash
     hash, err = HashVideoFile(vf.Path)
     if err != nil {
         return "", nil, false, fmt.Errorf("hashing: %w", err)
     }
-
-    // Check if this hash already exists in DB (file was renamed)
     if ex, ok := existing[hash]; ok && !opts.Rehash {
-        ex.Path = vf.Path
-        ex.Filename = filepath.Base(vf.Path)
-        ex.Collection = vf.CollectionName
-        ex.ParentDir = vf.CollectionRoot
-        ex.PathRelative = relPathRelative(vf.Path, vf.CollectionRoot)
-        return hash, &ex, false, nil
+        return hash, updatePathFields(&ex, vf), false, nil
     }
-
-    // Brand-new video
-    rel := relPathRelative(vf.Path, vf.CollectionRoot)
-
     vd = &schemas.VideoData{
         Hash:           hash,
         Path:           vf.Path,
@@ -186,24 +152,20 @@ func resolveVideo(
         DateDownloaded: fileModTime(vf.Path),
         Collection:     vf.CollectionName,
         ParentDir:      vf.CollectionRoot,
-        PathRelative:   rel,
+        PathRelative:   relPathRelative(vf.Path, vf.CollectionRoot),
     }
     return hash, vd, true, nil
 }
 
-// relativeParent returns the directory portion of path relative to root,
-// using forward slashes, or "" if path is directly in root.
-func relativeParent(path, root string) string {
-    rel := relPathRelative(path, root)
-    rel = filepath.ToSlash(rel)
-    if idx := strings.LastIndex(rel, "/"); idx >= 0 {
-        return rel[:idx]
-    }
-    return ""
+func updatePathFields(ex *schemas.VideoData, vf VideoFile) *schemas.VideoData {
+    ex.Path = vf.Path
+    ex.Filename = filepath.Base(vf.Path)
+    ex.Collection = vf.CollectionName
+    ex.ParentDir = vf.CollectionRoot
+    ex.PathRelative = relPathRelative(vf.Path, vf.CollectionRoot)
+    return ex
 }
 
-// relPathRelative returns the path of a file relative to its collection root,
-// with the OS path separator (used for PathRelative field).
 func relPathRelative(path, root string) string {
     rel, err := filepath.Rel(root, path)
     if err != nil {
@@ -212,7 +174,6 @@ func relPathRelative(path, root string) string {
     return rel
 }
 
-// fileModTime returns the file's modification time as "YYYY-MM-DD HH:MM:SS".
 func fileModTime(path string) string {
     info, err := os.Stat(path)
     if err != nil {
@@ -221,8 +182,6 @@ func fileModTime(path string) string {
     return info.ModTime().Format("2006-01-02 15:04:05")
 }
 
-// rebuildTFIDF shells out to the Python worker to regenerate the TF-IDF model
-// so similar-video lookups stay current after a scan.
 func rebuildTFIDF(cfg config.Config, emit func(string)) {
     emit("[TFIDF] Building TF-IDF model…")
     _, err := pyworker.Exec(

@@ -96,53 +96,13 @@ func ECHO_rename_video(c echo.Context, cfg config.Config) error {
     }
     vd.PathRelative = rel
 
-    // Clear all filename-parsed metadata before reparsing.
-    vd.PrimaryActors = nil
-    vd.Actors = nil
-    vd.Studio = ""
-    vd.Line = ""
-    vd.Title = ""
-    vd.SceneTitle = ""
-    vd.SceneNumber = 0
-    vd.MovieTitle = ""
-    vd.MovieSeries = ""
-    vd.DateReleased = ""
-    vd.SourceID = ""
-    vd.DVDCode = ""
-    vd.TagsFromFilename = nil
-
-    // Reparse filename.
-    tags, cleanStem := scanner.ExtractTags(newStem)
-    vd.TagsFromFilename = tags
-
-    relSlash := filepath.ToSlash(rel)
-    var relParent string
-    if idx := strings.LastIndex(relSlash, "/"); idx >= 0 {
-        relParent = relSlash[:idx]
-    }
-    parseInput := cleanStem
-    if relParent != "" {
-        parseInput = relParent + "/" + cleanStem
-    }
-    parsed := scanner.ParseFilename(parseInput, cfg.SceneFilenameFormats)
-    scanner.PopulateFromParseResult(&vd, parsed)
-    if vd.Title == "" && vd.SceneTitle == "" {
-        vd.Title = cleanStem
-    }
+    scanner.GetFileMetadata(newPath, &vd, cfg.SceneFilenameFormats, true)
+    // _, cleanStem := scanner.ExtractTags(newStem)
+    // if vd.Title == "" && vd.SceneTitle == "" {
+    //     vd.Title = cleanStem
+    // }
     vd.TagsFromPath = scanner.ExtractPathTags(&vd)
-
-    // Rebuild merged Tags as deduplicated union: filename → path → json.
-    seen := map[string]bool{}
-    var mergedTags []string
-    for _, src := range [][]string{vd.TagsFromFilename, vd.TagsFromPath, vd.TagsFromJSON} {
-        for _, t := range src {
-            if !seen[t] {
-                seen[t] = true
-                mergedTags = append(mergedTags, t)
-            }
-        }
-    }
-    vd.Tags = mergedTags
+    scanner.RebuildTags(&vd)
 
     // Persist to DB. On failure, revert the file rename to keep fs and DB in sync.
     if err := db.WriteVideoRow(cfg.DBPath, hash, vd); err != nil {

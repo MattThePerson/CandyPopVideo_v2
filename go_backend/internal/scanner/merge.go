@@ -54,19 +54,7 @@ func SortTagsByFrequency(videos map[string]*schemas.VideoData) {
         vd.TagsFromFilename = sorter(vd.Collection, vd.TagsFromFilename)
         vd.TagsFromPath = sorter(vd.Collection, vd.TagsFromPath)
         vd.TagsFromJSON = sorter(vd.Collection, vd.TagsFromJSON)
-
-        // Rebuild Tags as deduplicated union (filename → path → json order)
-        seen := map[string]bool{}
-        var merged []string
-        for _, src := range [][]string{vd.TagsFromFilename, vd.TagsFromPath, vd.TagsFromJSON} {
-            for _, t := range src {
-                if !seen[t] {
-                    seen[t] = true
-                    merged = append(merged, t)
-                }
-            }
-        }
-        vd.Tags = merged
+        RebuildTags(vd)
     }
 }
 
