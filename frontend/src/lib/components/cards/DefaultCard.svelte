@@ -60,9 +60,19 @@
     let spriteSheetSrc = $state('');
     let spriteSheetNW = $state(0);
     let spriteSheetNH = $state(0);
+    let posterContain = $state(false);
+
+    function handlePosterLoad(e: Event) {
+        const img = e.currentTarget as HTMLImageElement;
+        posterContain = img.naturalWidth < img.naturalHeight;
+    }
+
     let isHovering = $state(false);
     let showSprite = $state(false);
     let spriteStyle = $state('');
+    let spriteStyleLeft = $state('');
+    let spriteStyleRight = $state('');
+    let isVertical = $state(false);
 
     let spriteLoaded = $derived(teaserState === 'loaded');
 
@@ -109,16 +119,35 @@
         ensureSprite();
     }
 
-    // Maps cursor horizontal position to a sprite frame index and builds the
-    // CSS background-position string to show that frame in the overlay.
+    // Maps cursor horizontal position to a sprite frame index and computes
+    // height-fit background styles. For frames narrower than the card (vertical
+    // video) three side-by-side copies are computed so the center one fills the
+    // card vertically without letterboxing. For wider-than-card frames a single
+    // height-fit copy is center-cropped horizontally.
     function handleMouseMove(e: MouseEvent) {
         if (!spriteLoaded || !spriteCues.length) return;
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
         const idx = Math.min(Math.floor(pct * spriteCues.length), spriteCues.length - 1);
         const cue = spriteCues[idx];
-        const scale = rect.width / cue.w;
-        spriteStyle = `background-image:url('${spriteSheetSrc}');background-size:${spriteSheetNW * scale}px ${spriteSheetNH * scale}px;background-position:-${cue.x * scale}px -${cue.y * scale}px;`;
+        const scale = rect.height / cue.h;
+        const fw = cue.w * scale;
+        const bw = spriteSheetNW * scale;
+        const bh = spriteSheetNH * scale;
+        const bpx = cue.x * scale;
+        const bpy = cue.y * scale;
+        isVertical = fw < rect.width;
+        if (isVertical) {
+            const leftStart = (rect.width - 3 * fw) / 2;
+            const bg = `background-image:url('${spriteSheetSrc}');background-size:${bw}px ${bh}px;background-position:-${bpx}px -${bpy}px;width:${fw}px;`;
+            spriteStyleLeft = `${bg}left:${leftStart}px;`;
+            spriteStyle     = `${bg}left:${leftStart + fw}px;`;
+            spriteStyleRight = `${bg}left:${leftStart + 2 * fw}px;`;
+        } else {
+            spriteStyle = `background-image:url('${spriteSheetSrc}');background-size:${bw}px ${bh}px;background-position:${(rect.width - fw) / 2 - bpx}px -${bpy}px;`;
+            spriteStyleLeft = '';
+            spriteStyleRight = '';
+        }
         showSprite = true;
     }
 
@@ -126,6 +155,9 @@
         isHovering = false;
         showSprite = false;
         spriteStyle = '';
+        spriteStyleLeft = '';
+        spriteStyleRight = '';
+        isVertical = false;
     }
 
     // ── Actor / tag expansion ────────────────────────────────────────────────
@@ -254,10 +286,16 @@
         onmousemove={handleMouseMove}
         onmouseleave={handleMouseLeave}
     >
-        <img class="poster" class:hidden={showSprite || (isHovering && teaserState === 'loading')} src="/media/get/poster/{video.hash}" alt="" />
+        <img class="poster" class:hidden={isHovering && teaserState !== 'failed'} class:contain={posterContain} src="/media/get/poster/{video.hash}" alt="" onload={handlePosterLoad} />
 
         {#if showSprite && spriteStyle}
-            <div class="sprite-overlay" style={spriteStyle}></div>
+            {#if isVertical}
+                <div class="sprite-tile" style={spriteStyleLeft}></div>
+                <div class="sprite-tile" style={spriteStyle}></div>
+                <div class="sprite-tile" style={spriteStyleRight}></div>
+            {:else}
+                <div class="sprite-overlay" style={spriteStyle}></div>
+            {/if}
         {/if}
 
         {#if isHovering && teaserState === 'loading'}
@@ -464,12 +502,22 @@
         display: block;
     }
 
+    .poster.contain { object-fit: contain; }
+
     .poster.hidden { display: none; }
 
     .sprite-overlay {
         position: absolute;
         inset: 0;
         pointer-events: none;
+    }
+
+    .sprite-tile {
+        position: absolute;
+        top: 0;
+        height: 100%;
+        pointer-events: none;
+        background-repeat: no-repeat;
     }
 
     .spinner-wrap {
