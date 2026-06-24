@@ -127,15 +127,14 @@
         navigate(`/search?sortby=random-${seed}`);
     }
 
-    let expansionType = $state<'performers' | 'studios' | null>(null);
+    let expansionType = $state<'actors' | 'studios' | null>(null);
 
     const singleActor  = $derived(actor.trim() !== '' && !actor.includes(','));
     const singleStudio = $derived(studio.trim() !== '');
-    const expansionTarget = $derived(actor.trim() || studio.trim());
 
     // Close expansion when its driving field changes (expansion would be stale)
     $effect(() => {
-        if (expansionType === 'performers' && !singleActor) expansionType = null;
+        if (expansionType === 'actors' && !singleActor) expansionType = null;
         if (expansionType === 'studios'    && !singleStudio) expansionType = null;
     });;
 
@@ -300,10 +299,10 @@
             <button
                 class="tool-btn"
                 class:disabled={!singleActor}
-                class:active={expansionType === 'performers'}
+                class:active={expansionType === 'actors'}
                 disabled={!singleActor}
-                onclick={() => toggleExpansion('performers')}
-            >similar performers</button>
+                onclick={() => toggleExpansion('actors')}
+            >similar actors</button>
             <button
                 class="tool-btn"
                 class:disabled={!singleStudio}
@@ -317,12 +316,11 @@
         </div>
     </div>
 
-    {#if expansionType !== null}
-        <SimilarItemsPanel
-            type={expansionType}
-            target={expansionTarget}
-            onClose={() => expansionType = null}
-        />
+    {#if singleActor}
+        <SimilarItemsPanel type="actors" target={actor.trim()} visible={expansionType === 'actors'} />
+    {/if}
+    {#if singleStudio}
+        <SimilarItemsPanel type="studios" target={studio.trim()} visible={expansionType === 'studios'} />
     {/if}
 
 </div>

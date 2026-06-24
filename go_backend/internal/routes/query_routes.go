@@ -3,6 +3,7 @@ package routes
 import (
     "encoding/json"
     "fmt"
+    "strings"
     "time"
 
     "github.com/labstack/echo/v4"
@@ -27,6 +28,7 @@ func StrictBind(c echo.Context, s any) error {
 func IncludeQueryRoutes(e *echo.Group, db_path string, tfidfMatrixPath string, actorProfilesPath string, studioProfilesPath string, stateStore *config.AppStateStore) {
     e.POST("/search-videos",                    func(c echo.Context) error { return ECHO_search_videos(c, db_path, stateStore) })
     e.POST("/get/catalogue",                    func(c echo.Context) error { return ECHO_get_catalogue(c, db_path, stateStore) })
+    e.POST("/get/item-counts",                  func(c echo.Context) error { return ECHO_get_item_counts(c, db_path, stateStore) })
     e.GET("/get/similar-videos/:video_hash",    func(c echo.Context) error { return ECHO_get_similar_videos(c, db_path, tfidfMatrixPath, stateStore) })
     e.GET("/get/similar-actors/:name",          func(c echo.Context) error { return ECHO_get_similar_actors(c, actorProfilesPath) })
     e.GET("/get/similar-studios/:name",         func(c echo.Context) error { return ECHO_get_similar_studios(c, studioProfilesPath) })
@@ -205,4 +207,46 @@ func ECHO_get_similar_studios(c echo.Context, studioProfilesPath string) error {
         simScores[n] = response.SimsList[idx]
     }
     return c.JSON(200, Reply{TimeTaken: tt, NamesList: response.NamesList, SimScores: simScores})
+}
+
+// ECHO_get_item_counts — batch video-count lookup for a list of actor or studio names
+func ECHO_get_item_counts(c echo.Context, db_path string, stateStore *config.AppStateStore) error {
+    var req struct {
+        Type  string   `json:"type"`
+        Names []string `json:"names"`
+    }
+    if err := StrictBind(c, &req); err != nil {
+        return err
+    }
+
+    vids, err := getFilteredVideos(db_path, stateStore)
+    if err != nil {
+        return handleServerError(c, 500, "Unable to read videos table", err)
+    }
+
+    nameSet := make(map[string]struct{}, len(req.Names))
+    counts  := make(map[string]int,     len(req.Names))
+    for _, n := range req.Names {
+        key := strings.ToLower(n)
+        nameSet[key] = struct{}{}
+        counts[key]  = 0
+    }
+
+    for _, vd := range vids {
+        if req.Type == "actor" {
+            for _, act := range vd.Actors {
+                key := strings.ToLower(act)
+                if _, ok := nameSet[key]; ok {
+                    counts[key]++
+                }
+            }
+        } else {
+            key := strings.ToLower(vd.Studio)
+            if _, ok := nameSet[key]; ok {
+                counts[key]++
+            }
+        }
+    }
+
+    return c.JSON(200, map[string]any{"counts": counts})
 }
