@@ -10,19 +10,41 @@
         interact: VideoInteractions;
     } = $props();
 
-    let isFav   = $state(interact.is_favourite);
-    let likes   = $state(interact.likes);
-    let favBusy = $state(false);
+    let isFav       = $state(interact.is_favourite);
+    let likes       = $state(interact.likes);
+    let rating      = $state(interact.rating ?? '');
+    let favBusy     = $state(false);
+    let ratingOpen  = $state(false);
+    let ratingBusy  = $state(false);
 
     // Fav-date popup
-    let favDate        = $state(interact.favourited_date ?? '');
-    let popupOpen      = $state(false);
-    let popupVal       = $state('');
-    let popupBusy      = $state(false);
-    let popupStatus    = $state<'idle' | 'success' | 'error' | 'same'>('idle');
-    let popupInputEl   = $state<HTMLInputElement | null>(null);
+    let favDate      = $state(interact.favourited_date ?? '');
+    let popupOpen    = $state(false);
+    let popupVal     = $state('');
+    let popupBusy    = $state(false);
+    let popupStatus  = $state<'idle' | 'success' | 'error' | 'same'>('idle');
+    let popupInputEl = $state<HTMLInputElement | null>(null);
 
     const displayTitle = (video.title || video.scene_title || video.filename).replaceAll(';', ':');
+
+    const GRADES = ['C', 'C+', 'B', 'B+', 'A', 'A+', 'S', 'S+'] as const;
+
+    const GRADE_COLORS: Record<string, string> = {
+        'C':  '#888',
+        'C+': '#aaa',
+        'B':  '#5b8def',
+        'B+': '#89b4f8',
+        'A':  '#56b56e',
+        'A+': '#76d275',
+        'S':  '#D79C29',
+        'S+': '#D79C29',
+    };
+
+    function gradeColor(g: string): string {
+        return GRADE_COLORS[g] ?? '#888';
+    }
+
+    // ── Fav ────────────────────────────────────────────────────
 
     async function toggleFav() {
         if (favBusy) return;
@@ -58,7 +80,6 @@
             popupInputEl?.focus();
             return;
         }
-
         if (!val) {
             popupStatus = 'error';
             popupInputEl?.focus();
@@ -99,7 +120,7 @@
         }
     });
 
-    // Close on click outside
+    // Close fav popup on click outside
     $effect(() => {
         if (!popupOpen) return;
         const onClick = (e: MouseEvent) => {
@@ -109,7 +130,7 @@
         return () => document.removeEventListener('click', onClick);
     });
 
-    // Close on Escape
+    // Close fav popup on Escape
     $effect(() => {
         if (!popupOpen) return;
         const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeFavPopup(); };
@@ -117,16 +138,74 @@
         return () => document.removeEventListener('keydown', onKey);
     });
 
+    // ── Rating ─────────────────────────────────────────────────
+
+    // Optimistic — reverts on error. Clicking current grade clears the rating.
+    async function setRating(grade: string) {
+        if (ratingBusy) return;
+        const prev = rating;
+        const next = grade === rating ? '' : grade;
+        rating = next;
+        ratingOpen = false;
+        ratingBusy = true;
+        try {
+            const res = await fetch(`/api/interact/rating/update/${hash}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rating: next }),
+            });
+            if (!res.ok) rating = prev;
+        } catch {
+            rating = prev;
+        } finally {
+            ratingBusy = false;
+        }
+    }
+
+    // Close rating picker on click outside
+    $effect(() => {
+        if (!ratingOpen) return;
+        const onClick = (e: MouseEvent) => {
+            if (!(e.target as Element).closest('.rating-area')) ratingOpen = false;
+        };
+        document.addEventListener('click', onClick);
+        return () => document.removeEventListener('click', onClick);
+    });
+
+    // ── Likes ──────────────────────────────────────────────────
+
     // Optimistic — increments immediately; backend returns plain text not JSON.
     async function addLike() {
         likes += 1;
         try {
             const res = await fetch(`/api/interact/likes/add/${hash}`, { method: 'POST' });
             if (!res.ok) likes -= 1;
-        } catch {
-            likes -= 1;
-        }
+        } catch { likes -= 1; }
     }
+
+    // Optimistic — decrements down to 0. Called on right-click.
+    async function removeLike(e: MouseEvent) {
+        e.preventDefault();
+        if (likes <= 0) return;
+        likes -= 1;
+        try {
+            const res = await fetch(`/api/interact/likes/remove/${hash}`, { method: 'POST' });
+            if (!res.ok) likes += 1;
+        } catch { likes += 1; }
+    }
+
+    // ── Info / path ────────────────────────────────────────────
+
+    function parentDir(p: string): string {
+        const i = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'));
+        return i > 0 ? p.slice(0, i) : p;
+    }
+
+    function copyParentPath() {
+        navigator.clipboard.writeText(parentDir(video.path)).catch(() => {});
+    }
+
+    // ── Formatters ─────────────────────────────────────────────
 
     function formatDuration(d: string): string {
         const parts = d.split(':').map(Number);
@@ -142,9 +221,22 @@
         const h = Math.floor(seconds / 3600);
         const m = Math.floor((seconds % 3600) / 60);
         const s = Math.floor(seconds % 60);
-        if (h > 0) return `${h}h ${m}m ${s}s`;
+        if (h > 0) return `${h}h ${m}m`;
         if (m > 0) return `${m}m ${s}s`;
         return `${s}s`;
+    }
+
+    function formatDate(s: string): string {
+        if (!s) return '';
+        const d = new Date(s.replace(' ', 'T'));
+        if (isNaN(d.getTime())) return s.slice(0, 10);
+        return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function fmtCount(n: number): string {
+        if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+        if (n >= 1_000)     return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+        return String(n);
     }
 
     function formatBitrate(kbps: number): string {
@@ -287,29 +379,68 @@
             </div>
         {/if}
 
-        <!-- Description -->
-        {#if video.description}
-            <div class="description-box">
-                <h5>description:</h5>
-                <p>{video.description}</p>
-            </div>
-        {/if}
+    </div>
 
-        <!-- Interaction quick-bar (likes, rating, viewtime) — will move to right panel -->
-        <div class="quick-interact">
-            <button class="like-btn" class:liked={likes > 0} onclick={addLike} title="Like this video">♥ {likes}</button>
-            {#if interact.rating}
-                <span class="rating-badge">{interact.rating}</span>
+    <!-- RIGHT: interactions panel -->
+    <div class="interactions-container">
+
+        <!-- Horizontal buttons bar -->
+        <div class="buttons-bar">
+            <button class="ib-btn like" class:active={likes > 0} onclick={addLike} oncontextmenu={removeLike} title="Like (right-click to remove)">
+                ♥ {likes}
+            </button>
+            <div class="rating-area">
+                <button
+                    class="ib-btn rate"
+                    class:rated={!!rating}
+                    style={rating ? `color: ${gradeColor(rating)}; border-color: ${gradeColor(rating)}66` : ''}
+                    onclick={() => ratingOpen = !ratingOpen}
+                    title="Rate"
+                ><span class="rate-label">{rating || '★'}</span></button>
+                {#if ratingOpen}
+                    <div class="rating-picker">
+                        {#each GRADES as grade}
+                            <button
+                                class="grade-btn"
+                                class:current={rating === grade}
+                                style="color: {gradeColor(grade)}; border-color: {gradeColor(grade)}55"
+                                onclick={() => setRating(grade)}
+                                disabled={ratingBusy}
+                            >{grade}</button>
+                        {/each}
+                    </div>
+                {/if}
+            </div>
+            <button class="ib-btn stub" title="Custom tags — coming soon">🏷</button>
+            <button class="ib-btn stub" title="Comments — coming soon">💬</button>
+        </div>
+
+        <!-- info block -->
+        <div class="info-block">
+            <div class="info-row">
+                <span class="info-label">watched</span>
+                <span class="info-val">{interact.viewtime > 0 ? formatViewtime(interact.viewtime) : '0s'}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">last seen</span>
+                <span class="info-val">{interact.last_viewed ? formatDate(interact.last_viewed) : 'never'}</span>
+            </div>
+            {#if video.path}
+                <div class="info-row">
+                    <span class="info-label">dir</span>
+                    <button class="copy-path" onclick={copyParentPath} title="Click to copy path">
+                        {parentDir(video.path)}
+                    </button>
+                </div>
             {/if}
-            {#if interact.viewtime > 0}
-                <span class="viewtime">{formatViewtime(interact.viewtime)} watched</span>
+            {#if video.views || video.likes}
+                <div class="info-row platform-stats">
+                    {#if video.views}<span title="platform views">▶ {fmtCount(video.views)} views</span>{/if}
+                    {#if video.likes}<span title="platform likes">♥ {fmtCount(video.likes)} likes</span>{/if}
+                </div>
             {/if}
         </div>
 
-    </div>
-
-    <!-- RIGHT: interactions panel (coming next) -->
-    <div class="interactions-container">
     </div>
 
 </section>
@@ -418,7 +549,6 @@
         font-size: 0.7rem;
         color: #666;
         letter-spacing: 0.04em;
-        text-transform: lowercase;
     }
 
     .fav-popup-input {
@@ -439,10 +569,7 @@
     .fav-popup-input.err  { border-color: #7a2a2a; }
     .fav-popup-input.same { border-color: #7a5a1a; }
 
-    .fav-popup-feedback {
-        font-size: 0.7rem;
-        letter-spacing: 0.02em;
-    }
+    .fav-popup-feedback { font-size: 0.7rem; letter-spacing: 0.02em; }
     .fav-popup-feedback.ok   { color: #4caf50; }
     .fav-popup-feedback.err  { color: #ef5350; }
     .fav-popup-feedback.same { color: #D79C29; }
@@ -529,66 +656,143 @@
     }
     .tag-chip:hover { background: #222; color: #aaa; }
 
-    /* description */
-    .description-box {
-        max-width: 40rem;
-        background: rgba(220, 220, 220, 0.06);
-        border-radius: 0.8rem;
-        padding: 0.3rem 0.7rem;
-        margin-top: 0.3rem;
-    }
-    .description-box h5 {
-        padding-bottom: 3px;
-        padding-left: 0.8rem;
-        color: #777;
-        font-size: 0.75rem;
-        font-weight: 600;
-    }
-    .description-box p {
-        color: #bbb;
-        font-size: 0.88rem;
-        line-height: 1.6;
+    .info-block {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        border: 1px solid #1e1e1e;
+        border-radius: 6px;
+        padding: 0.5rem 0.8rem;
+        min-width: 24rem;
     }
 
-    /* quick interact (temporary, moves to right panel) */
-    .quick-interact {
+    .info-row {
         display: flex;
         align-items: center;
         gap: 0.6rem;
-        margin-top: 0.5rem;
-        margin-left: 1rem;
     }
-    .like-btn {
+
+    .info-label {
+        font-size: 0.7rem;
+        color: #555;
+        text-transform: lowercase;
+        letter-spacing: 0.04em;
+        min-width: 5rem;
+        flex-shrink: 0;
+    }
+
+    .info-val {
+        font-size: 0.78rem;
+        color: #888;
+    }
+
+    .copy-path {
         all: unset;
         cursor: pointer;
-        font-size: 0.8rem;
-        color: #888;
-        padding: 0.2rem 0.6rem;
-        border: 1px solid #333;
-        border-radius: 4px;
-        background: #111;
-        transition: color 0.12s, border-color 0.12s;
+        font-size: 0.75rem;
+        color: #666;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 32rem;
+        transition: color 0.1s;
     }
-    .like-btn:hover { color: #e06; border-color: #e06; }
-    .like-btn.liked { color: #e05575; border-color: #a0334d; background: #1a0008; }
+    .copy-path:hover { color: #aaa; }
+    .copy-path:hover::after { content: ' ⎘'; }
 
-    .rating-badge {
-        padding: 0.2rem 0.55rem;
-        border-radius: 4px;
-        font-size: 0.8rem;
-        font-weight: 800;
-        background: #1a1a1a;
-        border: 1px solid #444;
-        color: #D79C29;
-        letter-spacing: 0.05em;
+    .platform-stats {
+        gap: 1rem;
     }
-    .viewtime { font-size: 0.75rem; color: #555; }
+    .platform-stats span {
+        font-size: 0.75rem;
+        color: #555;
+    }
 
     /* ── RIGHT COLUMN ────────────────────────────────────────── */
 
     .interactions-container {
         flex-shrink: 0;
-        width: 260px;
+        min-width: 260px;
+        width: fit-content;
         padding-left: 1.5rem;
+        padding-top: 0.6rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
     }
+
+    /* buttons bar */
+    .buttons-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .ib-btn {
+        all: unset;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        font-family: inherit;
+        padding: 0.5rem 0.9rem;
+        border-radius: 6px;
+        border: 1px solid #2a2a2a;
+        background: #111;
+        color: #777;
+        transition: color 0.12s, border-color 0.12s, background 0.12s;
+        white-space: nowrap;
+    }
+    .ib-btn:hover { color: #bbb; border-color: #444; }
+
+    .ib-btn.like.active { color: #e05575; border-color: #7a2a40; background: #180008; }
+    .ib-btn.like.active:hover { color: #f07; border-color: #a03; }
+
+    .ib-btn.rate.rated { font-weight: 700; }
+
+    .rate-label {
+        display: inline-block;
+        text-align: center;
+        width: 1.6em;
+    }
+
+    .ib-btn.stub { cursor: default; opacity: 0.35; font-size: 1rem; }
+    .ib-btn.stub:hover { color: #777; border-color: #2a2a2a; }
+
+    /* rating picker */
+    .rating-area {
+        position: relative;
+    }
+
+    .rating-picker {
+        position: absolute;
+        top: calc(100% + 5px);
+        left: 0;
+        z-index: 100;
+        display: flex;
+        gap: 3px;
+        background: #141414;
+        border: 1px solid #333;
+        border-radius: 6px;
+        padding: 5px 6px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    }
+
+    .grade-btn {
+        all: unset;
+        cursor: pointer;
+        font-size: 0.72rem;
+        font-weight: 700;
+        font-family: inherit;
+        padding: 0.2rem 0.35rem;
+        border-radius: 4px;
+        border: 1px solid #2a2a2a;
+        color: #888;
+        transition: color 0.1s, border-color 0.1s, background 0.1s;
+    }
+    .grade-btn:hover { background: #1e1e1e; }
+    .grade-btn.current { background: #1a1a1a; font-weight: 700; }
+    .grade-btn:disabled { cursor: default; opacity: 0.5; }
+
 </style>

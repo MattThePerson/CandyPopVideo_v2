@@ -179,7 +179,6 @@
         return String(n);
     }
     function formatViewtime(sec: number): string {
-        if (!sec) return '';
         const h = Math.floor(sec / 3600);
         const m = Math.floor((sec % 3600) / 60);
         const s = Math.floor(sec % 60);
@@ -201,6 +200,14 @@
         }
         return 'just now';
     }
+    const GRADE_COLORS: Record<string, string> = {
+        'C':  '#888',  'C+': '#aaa',
+        'B':  '#5b8def', 'B+': '#89b4f8',
+        'A':  '#56b56e', 'A+': '#76d275',
+        'S':  '#D79C29', 'S+': '#D79C29',
+    };
+    function gradeColor(g: string): string { return GRADE_COLORS[g] ?? '#888'; }
+
     function formatDateReleased(d: string): string {
         return d.replaceAll('-', '.');
     }
@@ -218,6 +225,16 @@
     let addedAgo    = $derived(video.date_downloaded ? timeAgo(video.date_downloaded) : '');
     let isNewVideo  = $derived(video.date_downloaded ? isNew(video.date_downloaded) : false);
     let viewtimeStr = $derived(interactions ? formatViewtime(interactions.viewtime) : '');
+
+    let markersTitle = $derived.by(() => {
+        if (!interactions?.markers?.length) return '';
+        const tags = interactions.markers.map(m => m[2]).filter(Boolean);
+        return tags.length ? tags.join(', ') : `${interactions.markers.length} marker${interactions.markers.length !== 1 ? 's' : ''}`;
+    });
+    let datedMarkersTitle = $derived.by(() => {
+        if (!interactions?.dated_markers?.length) return '';
+        return interactions.dated_markers.map(m => timeAgo(m[1])).join('\n');
+    });
 </script>
 
 <!--
@@ -289,21 +306,34 @@
         <div class="details-bar">
             <div class="details-left">
                 {#if interactions}
-                    {#if viewtimeStr}
-                        <span title="view time">{viewtimeStr}</span>
-                    {:else}
-                        <span class="muted">not watched</span>
+                    <span title="watch time">{viewtimeStr}</span>
+                    {#if interactions.rating}
+                        <span class="rating" title="rating" style="color:{gradeColor(interactions.rating)}">{interactions.rating}</span>
                     {/if}
                     {#if interactions.likes > 0}
-                        <span class="likes-row">
+                        <span class="likes-row" title="likes">
                             {interactions.likes}
                             <svg width="10" height="10" viewBox="0 0 16 16">
                                 <path d="M8 14s-6-4.35-6-8a4 4 0 0 1 6-3.46A4 4 0 0 1 14 6c0 3.65-6 8-6 8z" fill="rgba(255,0,0,0.77)"/>
                             </svg>
                         </span>
                     {/if}
-                    {#if interactions.rating}
-                        <span class="rating" title="rating">{interactions.rating}</span>
+                    {#if interactions.markers?.length > 0}
+                        <span class="marker-chip" title={markersTitle}>
+                            {interactions.markers.length}
+                            <svg width="10" height="10" viewBox="0 0 16 16" style="flex-shrink:0">
+                                <path d="M3 2v12l5-3 5 3V2z" fill="rgba(80,160,255,0.85)"/>
+                            </svg>
+                        </span>
+                    {/if}
+                    {#if interactions.dated_markers?.length > 0}
+                        <span class="marker-chip" title={datedMarkersTitle}>
+                            {interactions.dated_markers.length}
+                            <svg width="10" height="10" viewBox="0 0 16 16" style="flex-shrink:0">
+                                <circle cx="8" cy="8" r="6" fill="none" stroke="rgba(255,150,50,0.85)" stroke-width="2"/>
+                                <path d="M8 5v3l2 2" stroke="rgba(255,150,50,0.85)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+                            </svg>
+                        </span>
                     {/if}
                 {:else}
                     <span class="muted">vt unknown</span>
@@ -311,7 +341,7 @@
             </div>
             <div>
                 {#if addedAgo}
-                    <span title="date added">{addedAgo} ago</span>
+                    <span title="date added: {video.date_downloaded.slice(0, 10)}">{addedAgo} ago</span>
                 {/if}
             </div>
         </div>
@@ -546,7 +576,8 @@
 
     .muted { color: #555; }
 
-    .likes-row {
+    .likes-row,
+    .marker-chip {
         display: flex;
         align-items: center;
         gap: 1.5px;
@@ -555,7 +586,6 @@
     .rating {
         font-family: 'Jaro', sans-serif;
         font-size: 0.8rem;
-        color: #bb9;
     }
 
     /* Title bar */

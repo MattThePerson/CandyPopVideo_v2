@@ -7,6 +7,7 @@
     import type { VideoData, VideoInteractions } from '$lib/types/video';
     import VideoPlayer from './VideoPlayer.svelte';
     import VideoDetails from './VideoDetails.svelte';
+    import VideoBelow from './VideoBelow.svelte';
     import RelatedVideos from './RelatedVideos.svelte';
     import SimilarVideos from '$lib/components/SimilarVideos.svelte';
 
@@ -165,6 +166,11 @@
         <VideoDetails {hash} {video} {interact} />
     {/if}
 
+    <!-- optional below section: description + comments -->
+    {#if video && interact && (video.description || (interact.comments?.length ?? 0) > 0)}
+        <VideoBelow {video} {interact} />
+    {/if}
+
     <!-- related videos -->
     {#if video}
         <RelatedVideos {video} onRelatedLoaded={(hashes) => { relatedHashes = hashes; }} />
@@ -209,7 +215,7 @@
 
     .player-wrap {
         width: 100%;
-        height: 45rem;
+        height: 41rem;
         background: #000;
         position: relative;
     }

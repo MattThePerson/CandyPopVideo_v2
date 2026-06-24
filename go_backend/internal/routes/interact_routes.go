@@ -26,11 +26,15 @@ func IncludeInteractRoutes(e *echo.Group, db_path string) {
 	e.POST("/favourites/update-time/:video_hash/:new_date", func(c echo.Context) error { return ECHO_fav_update_time(c, db_path) })
 
     e.POST("/likes/add/:video_hash",        func(c echo.Context) error { return ECHO_likes_add(c, db_path) })
+    e.POST("/likes/remove/:video_hash",     func(c echo.Context) error { return ECHO_likes_remove(c, db_path) })
     e.POST("/viewing/add/:video_hash",      func(c echo.Context) error { return ECHO_viewing_add(c, db_path) })
 	
 	// markers
 	e.POST("/markers/update/:video_hash",       func(c echo.Context) error { return ECHO_markers_update(c, db_path) })
 	e.POST("/dated-markers/update/:video_hash", func(c echo.Context) error { return ECHO_dated_markers_update(c, db_path) })
+
+    // rating
+    e.POST("/rating/update/:video_hash", func(c echo.Context) error { return ECHO_rating_update(c, db_path) })
 
 }
 
@@ -152,6 +156,15 @@ func ECHO_likes_add(c echo.Context, db_path string) error {
     })
 }
 
+func ECHO_likes_remove(c echo.Context, db_path string) error {
+    return updateInteractionsTable(c, db_path, func(inter *schemas.VideoInteractions) error {
+        if inter.Likes > 0 {
+            inter.Likes -= 1
+        }
+        return c.String(200, "like removed")
+    })
+}
+
 // ECHO_viewing_add records a completed playback section. The frontend sends
 // the section's start position and duration; this handler updates interactions
 // (last_viewed + cumulative viewtime) and appends a row to the viewings log.
@@ -193,6 +206,27 @@ func ECHO_viewing_add(c echo.Context, db_path string) error {
     return c.String(200, "viewing recorded")
 }
 
+
+// #region RATING
+
+var validRatings = map[string]bool{"C": true, "C+": true, "B": true, "B+": true, "A": true, "A+": true, "S": true, "S+": true}
+
+func ECHO_rating_update(c echo.Context, db_path string) error {
+    var body struct {
+        Rating string `json:"rating"`
+    }
+    if err := c.Bind(&body); err != nil {
+        return c.JSON(400, map[string]string{"error": "invalid body"})
+    }
+    // empty string clears the rating; otherwise must be a valid grade
+    if body.Rating != "" && !validRatings[body.Rating] {
+        return c.JSON(400, map[string]string{"error": "invalid rating"})
+    }
+    return updateInteractionsTable(c, db_path, func(inter *schemas.VideoInteractions) error {
+        inter.Rating = body.Rating
+        return c.String(200, "rating updated")
+    })
+}
 
 // #region MARKERS
 
