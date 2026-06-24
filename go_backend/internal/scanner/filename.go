@@ -231,13 +231,16 @@ func ExtractPathTags(vd *schemas.VideoData) []string {
     }
 
     var tags []string
-    for _, part := range strings.Split(dir, "/") {
+    for part := range strings.SplitSeq(dir, "/") {
         part = strings.TrimSpace(part)
         if part == "" {
             continue
         }
-        if !ignore[strings.ToLower(part)] {
-            tags = append(tags, part)
+        partTags, partClean := ExtractTags(part)
+        tags = append(tags, partTags...)
+        partClean = strings.TrimSpace(partClean)
+        if partClean != "" && !ignore[strings.ToLower(partClean)] {
+            tags = append(tags, partClean)
         }
     }
     return tags
