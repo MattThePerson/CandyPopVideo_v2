@@ -6,6 +6,8 @@ import (
     "path/filepath"
     "time"
 
+    string_parser "github.com/MattThePerson/string_parser"
+
     "cpv_backend/internal/config"
     "cpv_backend/internal/db"
     "cpv_backend/internal/pyworker"
@@ -89,6 +91,9 @@ func processFiles(
 ) (map[string]*schemas.VideoData, int) {
     loaded := map[string]*schemas.VideoData{}
     errCount := 0
+    parser := string_parser.NewStringParserFromList(cfg.SceneFilenameFormats)
+
+    // loop
     for i, vf := range files {
         hash, vd, isNew, err := resolveVideo(vf, existing, pathToHash, opts)
         if err != nil {
@@ -104,9 +109,9 @@ func processFiles(
             }
         }
         if isNew || opts.RederiveMetadata {
-            GetFileMetadata(vf.Path, vd, cfg.SceneFilenameFormats, opts.ReadJSON)
+            GetFileMetadata(vf.Path, vd, parser, opts.ReadJSON)
+            vd.TagsFromPath = ExtractPathTags(vd)
         }
-        vd.TagsFromPath = ExtractPathTags(vd)
         loaded[hash] = vd
         if (i+1)%100 == 0 || i+1 == len(files) {
             emit(fmt.Sprintf("[SCAN] Processed %d / %d files", i+1, len(files)))

@@ -45,11 +45,10 @@ func ExtractTags(stemOrPath string) (tags []string, cleaned string) {
 // ParseFilename tries to extract structured metadata from the path string
 // (relative parent dirs + cleaned filename stem, no extension, no tags).
 // Returns an empty map if no format matched — that is not an error.
-func ParseFilename(relPathStem string, formats []string) map[string]any {
-    if len(formats) == 0 || relPathStem == "" {
+func ParseFilename(relPathStem string, parser *string_parser.StringParser) map[string]any {
+    if relPathStem == "" {
         return map[string]any{}
     }
-    parser := string_parser.NewStringParserFromList(formats)
     result, err := parser.Parse(relPathStem)
     if err != nil {
         return map[string]any{}
@@ -171,7 +170,7 @@ func PopulateFromParseResult(vd *schemas.VideoData, parsed map[string]any) {
 // and all fields that ParseFilename/ApplySidecarToVideoData can populate.
 // The caller is responsible for setting vd.PathRelative and calling
 // ExtractPathTags + RebuildTags afterwards.
-func GetFileMetadata(fullPath string, vd *schemas.VideoData, formats []string, readJSON bool) {
+func GetFileMetadata(fullPath string, vd *schemas.VideoData, parser *string_parser.StringParser, readJSON bool) {
     vd.Path = fullPath
     vd.Filename = filepath.Base(fullPath)
     ext := filepath.Ext(fullPath)
@@ -179,7 +178,7 @@ func GetFileMetadata(fullPath string, vd *schemas.VideoData, formats []string, r
     tags, cleanPath := ExtractTags(pathNoExt)
     vd.TagsFromFilename = tags
     clearFilenameFields(vd)
-    PopulateFromParseResult(vd, ParseFilename(cleanPath, formats))
+    PopulateFromParseResult(vd, ParseFilename(cleanPath, parser))
     if readJSON {
         if files := FindSidecarFiles(fullPath, vd.SourceID); len(files) > 0 {
             vd.TagsFromJSON, vd.Views, vd.Likes, vd.Metadata = nil, 0, 0, nil

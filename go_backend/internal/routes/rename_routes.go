@@ -1,20 +1,21 @@
 package routes
 
 import (
-    "fmt"
-    "log"
-    "net/http"
-    "os"
-    "path/filepath"
-    "strings"
-    "time"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 
-    "github.com/labstack/echo/v4"
+	"github.com/MattThePerson/string_parser"
+	"github.com/labstack/echo/v4"
 
-    "cpv_backend/internal/config"
-    "cpv_backend/internal/db"
-    "cpv_backend/internal/scanner"
-    "cpv_backend/internal/schemas"
+	"cpv_backend/internal/config"
+	"cpv_backend/internal/db"
+	"cpv_backend/internal/scanner"
+	"cpv_backend/internal/schemas"
 )
 
 func IncludeRenameRoutes(e *echo.Group, store *config.ConfigStore) {
@@ -96,7 +97,8 @@ func ECHO_rename_video(c echo.Context, cfg config.Config) error {
     }
     vd.PathRelative = rel
 
-    scanner.GetFileMetadata(newPath, &vd, cfg.SceneFilenameFormats, true)
+    parser := string_parser.NewStringParserFromList(cfg.SceneFilenameFormats)
+    scanner.GetFileMetadata(newPath, &vd, parser, true)
     // _, cleanStem := scanner.ExtractTags(newStem)
     // if vd.Title == "" && vd.SceneTitle == "" {
     //     vd.Title = cleanStem
