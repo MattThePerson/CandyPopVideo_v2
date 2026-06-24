@@ -5,6 +5,7 @@ import (
     "path/filepath"
     "sort"
     "strings"
+    "time"
 )
 
 // VideoFile represents a video file found during a filesystem walk.
@@ -16,12 +17,26 @@ type VideoFile struct {
 
 // collectVideoFiles walks all configured collection directories and returns
 // every video file that passes the extension and path filters.
+//
+// If since is non-zero, only files whose direct parent directory has an mtime
+// after since are collected (quick-scan mode). Subdirectories are always
+// descended into regardless, so a touched dir nested inside an untouched
+// parent is still found.
+//
+// If novelOnly is true (implies since is set), files are additionally filtered
+// to those whose own mtime is after since.
+//
+// Returns the matched files and the count of distinct touched directories.
 func collectVideoFiles(
     collections map[string][]string,
     extensions map[string]bool,
     pathFilter string,
-) []VideoFile {
+    since time.Time,
+    novelOnly bool,
+) ([]VideoFile, int) {
     seen := map[string]bool{}
+    dirMtime := map[string]time.Time{}
+    touchedDirs := map[string]bool{}
     var results []VideoFile
 
     filterLower := strings.ToLower(strings.TrimSpace(pathFilter))
@@ -41,22 +56,23 @@ func collectVideoFiles(
         for _, root := range includeDirs {
             _ = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
                 if err != nil {
-                    return nil // skip unreadable entries
+                    return nil
                 }
 
                 name := d.Name()
 
                 if d.IsDir() {
-                    // Skip hidden dirs
                     if strings.HasPrefix(name, ".") {
                         return filepath.SkipDir
                     }
-                    // Skip excluded dirs
                     clean := filepath.Clean(path)
                     for _, ex := range excludeDirs {
                         if clean == ex || strings.HasPrefix(clean, ex+string(filepath.Separator)) {
                             return filepath.SkipDir
                         }
+                    }
+                    if info, err := d.Info(); err == nil {
+                        dirMtime[path] = info.ModTime()
                     }
                     return nil
                 }
@@ -68,6 +84,24 @@ func collectVideoFiles(
 
                 if filterLower != "" && !strings.Contains(strings.ToLower(path), filterLower) {
                     return nil
+                }
+
+                // Quick-scan directory mtime filter
+                parent := filepath.Dir(path)
+                if !since.IsZero() {
+                    mt, ok := dirMtime[parent]
+                    if !ok || !mt.After(since) {
+                        return nil
+                    }
+                    touchedDirs[parent] = true
+                }
+
+                // Novel-files-only: also filter by file mtime
+                if novelOnly && !since.IsZero() {
+                    info, err := d.Info()
+                    if err != nil || !info.ModTime().After(since) {
+                        return nil
+                    }
                 }
 
                 if seen[path] {
@@ -86,7 +120,7 @@ func collectVideoFiles(
     }
 
     sort.Slice(results, func(i, j int) bool { return results[i].Path < results[j].Path })
-    return results
+    return results, len(touchedDirs)
 }
 
 // extensionSet converts a slice of extensions (e.g. ".mp4") to a lowercase lookup map.

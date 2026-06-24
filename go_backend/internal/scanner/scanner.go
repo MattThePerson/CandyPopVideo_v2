@@ -20,15 +20,36 @@ type ScanOptions struct {
     RedoAttributes   bool   `json:"redo_attributes"`
     Rehash           bool   `json:"rehash"`
     PathFilter       string `json:"path_filter"`
-    QuickScan        bool   `json:"quick_scan"`
+    QuickScan        bool   `json:"quick_scan"`       // filter walk by directory mtime > last scan
+    NovelFilesOnly   bool   `json:"novel_files_only"` // additionally filter by file mtime > last scan
     ReadJSON         bool   `json:"read_json"`
 }
 
 // ScanLibraries walks all configured collections, processes each video file
 // through the pipeline, and merges results into the database.
 func ScanLibraries(cfg config.Config, opts ScanOptions, emit func(string)) error {
+    isQuick := opts.QuickScan || opts.NovelFilesOnly
+
+    var since time.Time
+    if isQuick {
+        since = ReadLastScanned(cfg.AppDataDir)
+        emit(fmt.Sprintf("[SCAN] Quick scan — last scan: %s", since.Format("2006-01-02 15:04:05")))
+    }
+
     emit("[SCAN] Walking collection folders…")
-    files := collectVideoFiles(cfg.Collections, extensionSet(cfg.VideoExtensions), opts.PathFilter)
+    files, touchedDirCount := collectVideoFiles(
+        cfg.Collections,
+        extensionSet(cfg.VideoExtensions),
+        opts.PathFilter,
+        since,
+        opts.NovelFilesOnly,
+    )
+
+    if isQuick {
+        emit(fmt.Sprintf("[SCAN] Found %d video files across %d touched folders", len(files), touchedDirCount))
+    } else {
+        emit(fmt.Sprintf("[SCAN] Found %d video files", len(files)))
+    }
 
     emit("[SCAN] Loading existing database records…")
     existing, err := db.ReadSerializedMapFromTable[schemas.VideoData](cfg.DBPath, "videos")
@@ -38,18 +59,32 @@ func ScanLibraries(cfg config.Config, opts ScanOptions, emit func(string)) error
     pathToHash := buildPathToHash(existing)
     emit(fmt.Sprintf("[SCAN] Loaded %d existing records", len(existing)))
 
-    files = applyQuickScan(files, pathToHash, opts.QuickScan, emit)
-    loaded, errCount := processFiles(files, existing, pathToHash, cfg, opts, emit)
+    loaded, novelPaths, errCount := processFiles(files, existing, pathToHash, cfg, opts, emit)
 
-    emit("[SCAN] Sorting tags by collection frequency…")
-    SortTagsByFrequency(loaded)
+    if err := WriteNovelPathsLog(cfg.AppDataDir, novelPaths); err != nil {
+        emit(fmt.Sprintf("[WARN] Could not write novel paths log: %v", err))
+    }
+
+    if !isQuick {
+        emit("[SCAN] Sorting tags by collection frequency…")
+        SortTagsByFrequency(loaded)
+    }
 
     emit("[SCAN] Saving to database…")
-    if err := MergeAndSave(cfg.DBPath, loaded, opts.PathFilter != "" || opts.QuickScan); err != nil {
+    isFiltered := opts.PathFilter != "" || isQuick
+    if err := MergeAndSave(cfg.DBPath, loaded, isFiltered); err != nil {
         return fmt.Errorf("saving to DB: %w", err)
     }
-    emit(fmt.Sprintf("[SCAN] Done. %d videos processed, %d errors.", len(loaded), errCount))
-    if len(loaded) > 0 {
+
+    if err := WriteLastScanned(cfg.AppDataDir, time.Now()); err != nil {
+        emit(fmt.Sprintf("[WARN] Could not update last scan time: %v", err))
+    }
+
+    emit(fmt.Sprintf("[SCAN] Done. %d videos processed, %d novel, %d errors.", len(loaded), len(novelPaths), errCount))
+
+    if isQuick {
+        emit("[SCAN] Quick scan — skipping TF-IDF rebuild")
+    } else if len(loaded) > 0 {
         rebuildTFIDF(cfg, emit)
     } else {
         emit("[TFIDF] No new files — skipping TF-IDF rebuild")
@@ -65,22 +100,6 @@ func buildPathToHash(existing map[string]schemas.VideoData) map[string]string {
     return m
 }
 
-func applyQuickScan(files []VideoFile, pathToHash map[string]string, quickScan bool, emit func(string)) []VideoFile {
-    if !quickScan {
-        emit(fmt.Sprintf("[SCAN] Found %d video files", len(files)))
-        return files
-    }
-    var newFiles []VideoFile
-    for _, vf := range files {
-        if _, known := pathToHash[vf.Path]; !known {
-            newFiles = append(newFiles, vf)
-        }
-    }
-    emit(fmt.Sprintf("[SCAN] Found %d new/unrecognised files (%d already known, skipped)",
-        len(newFiles), len(files)-len(newFiles)))
-    return newFiles
-}
-
 func processFiles(
     files []VideoFile,
     existing map[string]schemas.VideoData,
@@ -88,12 +107,12 @@ func processFiles(
     cfg config.Config,
     opts ScanOptions,
     emit func(string),
-) (map[string]*schemas.VideoData, int) {
+) (map[string]*schemas.VideoData, []string, int) {
     loaded := map[string]*schemas.VideoData{}
+    var novelPaths []string
     errCount := 0
     parser := string_parser.NewStringParserFromList(cfg.SceneFilenameFormats)
 
-    // loop
     for i, vf := range files {
         hash, vd, isNew, err := resolveVideo(vf, existing, pathToHash, opts)
         if err != nil {
@@ -112,12 +131,15 @@ func processFiles(
             GetFileMetadata(vf.Path, vd, parser, opts.ReadJSON)
             vd.TagsFromPath = ExtractPathTags(vd)
         }
+        if isNew {
+            novelPaths = append(novelPaths, vf.Path)
+        }
         loaded[hash] = vd
         if (i+1)%100 == 0 || i+1 == len(files) {
             emit(fmt.Sprintf("[SCAN] Processed %d / %d files", i+1, len(files)))
         }
     }
-    return loaded, errCount
+    return loaded, novelPaths, errCount
 }
 
 func applyAttributes(vd *schemas.VideoData, attrs VideoAttributes) {

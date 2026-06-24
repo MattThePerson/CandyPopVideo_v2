@@ -5,6 +5,7 @@
         rehash:            boolean;
         path_filter:       string;
         quick_scan:        boolean;
+        novel_files_only:  boolean;
         read_json:         boolean;
     }
 
@@ -20,17 +21,30 @@
     let rehash         = $state(false);
     let pathFilter     = $state('');
     let readJson       = $state(true);
+    let quickDropOpen  = $state(false);
 
-    function startScan(quick: boolean) {
+    function startScan(quick: boolean, novelOnly = false) {
+        quickDropOpen = false;
         onStartScan({
             rederive_metadata: redoMetadata,
             redo_attributes:   redoAttributes,
             rehash,
             path_filter:       pathFilter,
             quick_scan:        quick,
+            novel_files_only:  novelOnly,
             read_json:         readJson,
         });
     }
+
+    // Close the dropdown when clicking outside the split button
+    $effect(() => {
+        if (!quickDropOpen) return;
+        function close(e: MouseEvent) {
+            if (!(e.target as Element).closest('.quick-scan-split')) quickDropOpen = false;
+        }
+        window.addEventListener('mousedown', close);
+        return () => window.removeEventListener('mousedown', close);
+    });
 </script>
 
 <!--
@@ -68,22 +82,31 @@
         />
 
         <div class="btn-row">
+            <div class="quick-scan-split" class:disabled>
+                <button
+                    class="split-main"
+                    title="Scan only folders touched since last scan"
+                    {disabled}
+                    onclick={() => startScan(true)}
+                >Quick Scan</button>
+                <button
+                    class="split-arrow"
+                    {disabled}
+                    onclick={() => quickDropOpen = !quickDropOpen}
+                    aria-label="More quick scan options"
+                >▾</button>
+                {#if quickDropOpen}
+                    <div class="split-dropdown">
+                        <button onclick={() => startScan(true, true)}>Novel Files Only</button>
+                    </div>
+                {/if}
+            </div>
             <button
                 class="btn-primary"
-                title="Won't remove deleted videos"
-                {disabled}
-                onclick={() => startScan(true)}
-            >
-                Quick Scan
-            </button>
-            <button
-                class="btn-primary"
-                title="Fetch all files"
+                title="Scan all files, mark deleted as unlinked"
                 {disabled}
                 onclick={() => startScan(false)}
-            >
-                Full Scan
-            </button>
+            >Full Scan</button>
         </div>
 
         <label class="opt">
@@ -188,6 +211,64 @@
         display: flex;
         gap: 0.6rem;
     }
+
+    /* Split button */
+    .quick-scan-split {
+        position: relative;
+        display: flex;
+    }
+    .split-main {
+        background: #01b8b8;
+        color: #000;
+        font-weight: 700;
+        font-size: 0.85rem;
+        border: none;
+        border-radius: 5px 0 0 5px;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    .split-arrow {
+        background: #01b8b8;
+        color: #000;
+        font-weight: 700;
+        font-size: 0.78rem;
+        border: none;
+        border-left: 1px solid rgba(0, 0, 0, 0.2);
+        border-radius: 0 5px 5px 0;
+        padding: 0.5rem 0.5rem;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    .split-main:hover:not(:disabled),
+    .split-arrow:hover:not(:disabled) { background: #00d0d0; }
+    .quick-scan-split.disabled .split-main,
+    .quick-scan-split.disabled .split-arrow { opacity: 0.35; cursor: not-allowed; }
+
+    .split-dropdown {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        background: #0d1212;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 5px;
+        min-width: 100%;
+        z-index: 50;
+        overflow: hidden;
+    }
+    .split-dropdown button {
+        display: block;
+        width: 100%;
+        padding: 0.45rem 0.9rem;
+        background: none;
+        border: none;
+        color: #ccc;
+        font-size: 0.83rem;
+        text-align: left;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+    .split-dropdown button:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
 
     .btn-primary {
         background: #01b8b8;

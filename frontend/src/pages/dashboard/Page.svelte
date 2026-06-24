@@ -94,7 +94,17 @@
         es?.close();
         es = new EventSource('/api/dashboard/job-stream');
 
-        es.onmessage = (e) => { logLines = [...logLines, e.data]; };
+        es.onmessage = (e) => {
+            const line = e.data;
+            if (line.startsWith('[SCAN] Processed')) {
+                const last = logLines.findLastIndex(l => l.startsWith('[SCAN] Processed'));
+                if (last >= 0) {
+                    logLines = [...logLines.slice(0, last), line, ...logLines.slice(last + 1)];
+                    return;
+                }
+            }
+            logLines = [...logLines, line];
+        };
 
         es.addEventListener('done', () => {
             jobRunning = false;

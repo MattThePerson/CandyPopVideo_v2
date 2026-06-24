@@ -2,6 +2,8 @@
     import { routerState, navigate } from '../router/router.svelte';
 
     let configMenuOpen = $state(false);
+    let scanDropOpen   = $state(false);
+    let scanning       = $state(false);
 
     const pageLinks = [
         { href: '/', label: 'home' },
@@ -19,16 +21,33 @@
         configMenuOpen = !configMenuOpen;
     }
 
-    // Closes the config dropdown when the user clicks outside it.
+    // Closes dropdowns when the user clicks outside them.
     function handleWindowMouseDown(e: MouseEvent) {
-        if (!configMenuOpen) return;
         const target = e.target as Element;
-        if (target.closest('#config-menu-button') || target.closest('.config-menu')) return;
-        configMenuOpen = false;
+        if (configMenuOpen) {
+            if (!target.closest('#config-menu-button') && !target.closest('.config-menu'))
+                configMenuOpen = false;
+        }
+        if (scanDropOpen) {
+            if (!target.closest('.header-scan-split'))
+                scanDropOpen = false;
+        }
     }
 
     function goRandomVideo() {
         navigate('/video/random');
+    }
+
+    async function fireScan(novelOnly: boolean) {
+        scanDropOpen = false;
+        if (scanning) return;
+        scanning = true;
+        await fetch('/api/dashboard/run-scan', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ quick_scan: true, novel_files_only: novelOnly, read_json: true }),
+        }).catch(() => null);
+        setTimeout(() => { scanning = false; }, 2500);
     }
 </script>
 
@@ -73,6 +92,27 @@
                     <path fill-rule="evenodd" d="M12.027 9.92L16 13.95 14 16l-4.075-3.976A6.465 6.465 0 0 1 6.5 13C2.91 13 0 10.083 0 6.5 0 2.91 2.917 0 6.5 0 10.09 0 13 2.917 13 6.5a6.463 6.463 0 0 1-.973 3.42zM1.997 6.452c0 2.48 2.014 4.5 4.5 4.5 2.48 0 4.5-2.015 4.5-4.5 0-2.48-2.015-4.5-4.5-4.5-2.48 0-4.5 2.014-4.5 4.5z"/>
                 </svg>
             </a>
+
+            <!-- Scan split-button -->
+            <div class="header-scan-split" class:scanning>
+                <button
+                    class="scan-main"
+                    disabled={scanning}
+                    onclick={() => fireScan(false)}
+                    title="Quick scan (touched folders only)"
+                >Scan</button>
+                <button
+                    class="scan-arrow"
+                    disabled={scanning}
+                    onclick={() => scanDropOpen = !scanDropOpen}
+                    aria-label="More scan options"
+                >▾</button>
+                {#if scanDropOpen}
+                    <div class="scan-dropdown">
+                        <button onclick={() => fireScan(true)}>Novel Files Only</button>
+                    </div>
+                {/if}
+            </div>
 
             <a href="/dashboard" class="dashboard-link" class:active={isActive('/dashboard')}>dashboard</a>
 
@@ -125,8 +165,6 @@
         font-family: 'Inter';
     }
 
-    /* Literal color matches what the old header actually renders today --
-       not quite the same as the --color-active-rose theme token. */
     .page-link.active {
         color: rgb(204, 105, 179);
     }
@@ -148,6 +186,64 @@
     .icon-button:hover svg {
         fill: white;
     }
+
+    /* Scan split-button */
+    .header-scan-split {
+        position: relative;
+        display: flex;
+        margin: 0 0.3rem;
+    }
+    .scan-main,
+    .scan-arrow {
+        background: #01b8b8;
+        color: #000;
+        font-family: Verdana, Geneva, Tahoma, sans-serif;
+        font-weight: 600;
+        font-size: 0.88rem;
+        border: none;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    .scan-main {
+        border-radius: 5px 0 0 5px;
+        padding: 0.35rem 0.65rem;
+        letter-spacing: -0.4px;
+    }
+    .scan-arrow {
+        border-radius: 0 5px 5px 0;
+        border-left: 1px solid rgba(0, 0, 0, 0.2);
+        padding: 0.35rem 0.4rem;
+        font-size: 0.75rem;
+    }
+    .scan-main:hover:not(:disabled),
+    .scan-arrow:hover:not(:disabled) { background: #00d0d0; }
+    .header-scan-split.scanning .scan-main,
+    .header-scan-split.scanning .scan-arrow { opacity: 0.45; cursor: not-allowed; }
+
+    .scan-dropdown {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        background: #0a0f0f;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 5px;
+        z-index: 9999;
+        overflow: hidden;
+        min-width: 140px;
+    }
+    .scan-dropdown button {
+        display: block;
+        width: 100%;
+        padding: 0.45rem 0.85rem;
+        background: none;
+        border: none;
+        color: #ccc;
+        font-size: 0.83rem;
+        text-align: left;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+    .scan-dropdown button:hover { background: rgba(255, 255, 255, 0.07); color: #fff; }
 
     .dashboard-link {
         background: rgb(1, 184, 184);
