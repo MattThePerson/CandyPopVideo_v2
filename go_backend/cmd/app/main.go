@@ -10,6 +10,7 @@ import (
     "log"
     "os"
     "strings"
+    "time"
 
     "github.com/labstack/echo/v4"
     "github.com/labstack/echo/v4/middleware"
@@ -59,6 +60,21 @@ func main() {
     }
 
     stateStore := config.NewAppStateStore(cfg.AppDataDir)
+
+    go func() {
+        runBackup := func() {
+            c := store.Current()
+            if err := db.CheckAndBackup(c.DBPath, c.DBBackupDir); err != nil {
+                log.Printf("[BACKUP] %v", err)
+            }
+        }
+        runBackup()
+        ticker := time.NewTicker(24 * time.Hour)
+        defer ticker.Stop()
+        for range ticker.C {
+            runBackup()
+        }
+    }()
 
     e := echo.New()
 

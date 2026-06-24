@@ -3,6 +3,10 @@
 # folder to save preview media
 preview_media_dir: ~/.CandyPopVideo/media
 
+# folder to save app.db backups (timestamped copies, created every 14 days)
+# leave blank to disable backups
+# db_backup: /path/to/backups
+
 # folder to save generated gifs
 gifs_dir: ~/.CandyPopVideo/gifs
 

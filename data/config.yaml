@@ -1,7 +1,14 @@
 # CandyPopVideo config.yaml
 
+# COLLECTIONS
+# Put ! before path to ignore folder contents altogether
+collections:
+  Main:
+    - /path/to/videos/here # !!! EDIT THIS !!!
+
 # folder to save preview media
 preview_media_dir: ~/.CandyPopVideo/media
+db_backup: ~/.CandyPopVideo/BAK
 
 # folder to save generated gifs
 gifs_dir: ~/.CandyPopVideo/gifs
@@ -24,9 +31,3 @@ scene_filename_formats: [
   '{rel_parent:P}/{title} ({year:d}) [{primary_actors}];opt',
   '{rel_parent:P}/{title}',
 ]
-
-# COLLECTIONS
-# Put ! before path to ignore folder contents altogether
-collections:
-  Main:
-    - /path/to/videos/here # !!! EDIT THIS !!!

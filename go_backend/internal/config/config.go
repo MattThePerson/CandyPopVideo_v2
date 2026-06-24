@@ -33,6 +33,7 @@ type CuratedCollection struct {
 
 type Config struct {
     PreviewMediaDir      string              `yaml:"preview_media_dir"`
+    DBBackupDir          string              `yaml:"db_backup"`
     DatetimeFormats      string              `yaml:"datetime_format"`
     SubtitleFolders      []string            `yaml:"subtitle_folders"`
     Collections          map[string][]string `yaml:"collections"`
