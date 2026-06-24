@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from 'svelte';
-    import { navigate } from '$lib/router/router.svelte';
+    import { navigate, routerState } from '$lib/router/router.svelte';
     import { settings, type ResultsPerPage } from '$lib/stores/settings.svelte';
     import SimilarItemsPanel from './SimilarItemsPanel.svelte';
 
@@ -129,16 +129,25 @@
 
     let expansionType = $state<'actors' | 'studios' | null>(null);
 
-    const singleActor  = $derived(actor.trim() !== '' && !actor.includes(','));
-    const singleStudio = $derived(studio.trim() !== '');
+    // Committed (URL-applied) values — panels only re-fetch when these change, not on every keystroke
+    const committedActor  = $derived(new URLSearchParams(routerState.search).get('actor')  ?? '');
+    const committedStudio = $derived(new URLSearchParams(routerState.search).get('studio') ?? '');
+    const singleActor     = $derived(committedActor  !== '' && !committedActor.includes(','));
+    const singleStudio    = $derived(committedStudio !== '');
 
-    // Close expansion when its driving field changes (expansion would be stale)
+    // Re-hydrate inputs on any URL change (handles navigate() pushState and browser popstate)
     $effect(() => {
-        if (expansionType === 'actors' && !singleActor) expansionType = null;
-        if (expansionType === 'studios'    && !singleStudio) expansionType = null;
-    });;
+        routerState.search;
+        hydrateFromUrl();
+    });
 
-    function toggleExpansion(type: 'performers' | 'studios') {
+    // Close expansion when its committed field is cleared
+    $effect(() => {
+        if (expansionType === 'actors'  && !singleActor)  expansionType = null;
+        if (expansionType === 'studios' && !singleStudio) expansionType = null;
+    });
+
+    function toggleExpansion(type: 'actors' | 'studios') {
         expansionType = expansionType === type ? null : type;
     }
 
@@ -161,11 +170,8 @@
     }
 
     onMount(() => {
-        hydrateFromUrl();
-        window.addEventListener('popstate', hydrateFromUrl);
         window.addEventListener('keydown', onGlobalKeydown);
         return () => {
-            window.removeEventListener('popstate', hydrateFromUrl);
             window.removeEventListener('keydown', onGlobalKeydown);
         };
     });
@@ -317,10 +323,10 @@
     </div>
 
     {#if singleActor}
-        <SimilarItemsPanel type="actors" target={actor.trim()} visible={expansionType === 'actors'} />
+        <SimilarItemsPanel type="actors" target={committedActor} visible={expansionType === 'actors'} />
     {/if}
     {#if singleStudio}
-        <SimilarItemsPanel type="studios" target={studio.trim()} visible={expansionType === 'studios'} />
+        <SimilarItemsPanel type="studios" target={committedStudio} visible={expansionType === 'studios'} />
     {/if}
 
 </div>
