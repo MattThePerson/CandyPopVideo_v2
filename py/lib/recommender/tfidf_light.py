@@ -12,6 +12,13 @@ def get_similar_videos_for_hash_TFIDF(video_hash: str, tfidf_model: TFIDFModelMa
     return _get_similar_items(target_vector, matrix, hash_index_map)
 
 
+def get_similar_items_for_key(key: str, model: TFIDFModelMatrix) -> list[tuple[str, float]]:
+    index = model.id_index_map.get(key)
+    if index is None:
+        return []
+    return _get_similar_items(model.matrix[index], model.matrix, model.id_index_map)
+
+
 def _get_similar_items(target_vect, matrix, id_index_map: dict[str, int]) -> list[tuple[str, float]]:
     index_id_map = {index: hash for hash, index in id_index_map.items()}
     cosine_sims = _cosine_similarity_sparse(target_vect, matrix)

@@ -223,6 +223,7 @@ func ECHO_dashboard_rebuild_tfidf(c echo.Context, cfg config.Config) error {
             "-m", "cmd.generateTFIDF",
             "--db-path", cfg.DBPath,
             "--model-dir", cfg.AppDataDir,
+            "--build-profiles",
         )
         if err != nil {
             emit(fmt.Sprintf("[TFIDF] Failed: %v", err))

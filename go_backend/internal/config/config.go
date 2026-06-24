@@ -41,11 +41,13 @@ type Config struct {
     CuratedCollections   []CuratedCollection `yaml:"curated_collections"`
 
     // derived from OS — never in config.yaml
-    AppDataDir      string
-    DBPath          string
-    TfidfModelPath  string
-    TfidfMatrixPath string
-    ActorInfoDir    string
+    AppDataDir          string
+    DBPath              string
+    TfidfModelPath      string
+    TfidfMatrixPath     string
+    ActorProfilesPath   string
+    StudioProfilesPath  string
+    ActorInfoDir        string
 }
 
 // GetAppDataDir returns the OS-determined app data directory.
@@ -58,11 +60,13 @@ func GetAppDataDir() (string, error) {
 }
 
 func deriveFields(c *Config, appDataDir string) {
-    c.AppDataDir      = appDataDir
-    c.DBPath          = filepath.Join(appDataDir, "app.db")
-    c.TfidfModelPath  = filepath.Join(appDataDir, "tdidf.pkl")
-    c.TfidfMatrixPath = filepath.Join(appDataDir, "tdidf_matrix.pkl")
-    c.ActorInfoDir    = filepath.Join(appDataDir, "actors")
+    c.AppDataDir         = appDataDir
+    c.DBPath             = filepath.Join(appDataDir, "app.db")
+    c.TfidfModelPath     = filepath.Join(appDataDir, "tdidf.pkl")
+    c.TfidfMatrixPath    = filepath.Join(appDataDir, "tdidf_matrix.pkl")
+    c.ActorProfilesPath  = filepath.Join(appDataDir, "actor_profiles.pkl")
+    c.StudioProfilesPath = filepath.Join(appDataDir, "studio_profiles.pkl")
+    c.ActorInfoDir       = filepath.Join(appDataDir, "actors")
 }
 
 func parseConfig(data []byte, appDataDir string) (Config, error) {

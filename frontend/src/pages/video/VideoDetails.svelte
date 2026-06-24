@@ -1,7 +1,7 @@
 <script lang="ts">
     import { navigate } from '$lib/router/router.svelte';
     import type { VideoData, VideoInteractions } from '$lib/types/video';
-    import ActorCard from './ActorCard.svelte';
+    import ActorCard from '$lib/components/ActorCard.svelte';
 
     /* Props */
     let { hash, video, interact }: {

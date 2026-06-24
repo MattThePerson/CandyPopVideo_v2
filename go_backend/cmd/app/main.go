@@ -74,7 +74,7 @@ func main() {
 
     routes.IncludeMediaRoutes(    e.Group("/media"),         cfg.DBPath, cfg.PreviewMediaDir, cfg.SubtitleFolders)
     routes.IncludeApiRoutes(      e.Group("/api"),           cfg.DBPath, cfg.ActorInfoDir, store, stateStore)
-    routes.IncludeQueryRoutes(    e.Group("/api/query"),     cfg.DBPath, cfg.TfidfMatrixPath, stateStore)
+    routes.IncludeQueryRoutes(    e.Group("/api/query"),     cfg.DBPath, cfg.TfidfMatrixPath, cfg.ActorProfilesPath, cfg.StudioProfilesPath, stateStore)
     routes.IncludeInteractRoutes( e.Group("/api/interact"),  cfg.DBPath)
     routes.IncludeDashboardRoutes(e.Group("/api/dashboard"), store)
     routes.IncludeRenameRoutes(   e.Group("/api"),           store)

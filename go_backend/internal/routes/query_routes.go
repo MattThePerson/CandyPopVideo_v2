@@ -24,12 +24,12 @@ func StrictBind(c echo.Context, s any) error {
     return nil
 }
 
-func IncludeQueryRoutes(e *echo.Group, db_path string, tfidfMatrixPath string, stateStore *config.AppStateStore) {
+func IncludeQueryRoutes(e *echo.Group, db_path string, tfidfMatrixPath string, actorProfilesPath string, studioProfilesPath string, stateStore *config.AppStateStore) {
     e.POST("/search-videos",                    func(c echo.Context) error { return ECHO_search_videos(c, db_path, stateStore) })
     e.POST("/get/catalogue",                    func(c echo.Context) error { return ECHO_get_catalogue(c, db_path, stateStore) })
     e.GET("/get/similar-videos/:video_hash",    func(c echo.Context) error { return ECHO_get_similar_videos(c, db_path, tfidfMatrixPath, stateStore) })
-    e.GET("/get/similar-actors/:name",          func(c echo.Context) error { return ECHO_get_similar_actors(c) })
-    e.GET("/get/similar-studios/:name",         func(c echo.Context) error { return ECHO_get_similar_studios(c) })
+    e.GET("/get/similar-actors/:name",          func(c echo.Context) error { return ECHO_get_similar_actors(c, actorProfilesPath) })
+    e.GET("/get/similar-studios/:name",         func(c echo.Context) error { return ECHO_get_similar_studios(c, studioProfilesPath) })
 }
 
 
@@ -136,11 +136,73 @@ func ECHO_get_similar_videos(c echo.Context, db_path string, tfidfMatrixPath str
 }
 
 // ECHO_get_similar_actors
-func ECHO_get_similar_actors(c echo.Context) error {
-    return c.String(501, "Not implemented")
+func ECHO_get_similar_actors(c echo.Context, actorProfilesPath string) error {
+    name := c.Param("name")
+
+    type SubprocessResponse struct {
+        NamesList []string
+        SimsList  []float64
+        Report    string
+    }
+
+    fmt.Printf("[EXEC] Fetching similar actors for `%s` ...\n", name)
+    start := time.Now()
+    response, err := pyworker.ExecOutput[SubprocessResponse](
+        "-m", "cmd.getSimilarActors",
+        "--target", name,
+        "--model-path", actorProfilesPath,
+    )
+    if err != nil {
+        return handleServerError(c, 500, "Python subprocess failed", err)
+    }
+    tt := time.Since(start).Seconds()
+    fmt.Printf("[EXEC] Done. Took %.2f sec\n", tt)
+    fmt.Printf("[EXEC] REPORT: %s\n", response.Report)
+
+    type Reply struct {
+        TimeTaken float64
+        NamesList []string
+        SimScores map[string]float64
+    }
+    simScores := make(map[string]float64, len(response.NamesList))
+    for idx, n := range response.NamesList {
+        simScores[n] = response.SimsList[idx]
+    }
+    return c.JSON(200, Reply{TimeTaken: tt, NamesList: response.NamesList, SimScores: simScores})
 }
 
 // ECHO_get_similar_studios
-func ECHO_get_similar_studios(c echo.Context) error {
-    return c.String(501, "Not implemented")
+func ECHO_get_similar_studios(c echo.Context, studioProfilesPath string) error {
+    name := c.Param("name")
+
+    type SubprocessResponse struct {
+        NamesList []string
+        SimsList  []float64
+        Report    string
+    }
+
+    fmt.Printf("[EXEC] Fetching similar studios for `%s` ...\n", name)
+    start := time.Now()
+    response, err := pyworker.ExecOutput[SubprocessResponse](
+        "-m", "cmd.getSimilarStudios",
+        "--target", name,
+        "--model-path", studioProfilesPath,
+    )
+    if err != nil {
+        return handleServerError(c, 500, "Python subprocess failed", err)
+    }
+    tt := time.Since(start).Seconds()
+    fmt.Printf("[EXEC] Done. Took %.2f sec\n", tt)
+    fmt.Printf("[EXEC] REPORT: %s\n", response.Report)
+
+    type Reply struct {
+        TimeTaken float64
+        NamesList []string
+        SimScores map[string]float64
+    }
+    simScores := make(map[string]float64, len(response.NamesList))
+    for idx, n := range response.NamesList {
+        simScores[n] = response.SimsList[idx]
+    }
+    return c.JSON(200, Reply{TimeTaken: tt, NamesList: response.NamesList, SimScores: simScores})
 }

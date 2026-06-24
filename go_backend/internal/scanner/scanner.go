@@ -215,6 +215,7 @@ func rebuildTFIDF(cfg config.Config, emit func(string)) {
         "-m", "cmd.generateTFIDF",
         "--db-path", cfg.DBPath,
         "--model-dir", cfg.AppDataDir,
+        "--build-profiles",
     )
     if err != nil {
         emit(fmt.Sprintf("[TFIDF] Failed: %v", err))

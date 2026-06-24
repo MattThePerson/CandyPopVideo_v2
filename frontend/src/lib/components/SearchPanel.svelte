@@ -2,6 +2,7 @@
     import { onMount } from 'svelte';
     import { navigate } from '$lib/router/router.svelte';
     import { settings, type ResultsPerPage } from '$lib/stores/settings.svelte';
+    import SimilarItemsPanel from './SimilarItemsPanel.svelte';
 
     const PER_PAGE_OPTIONS: ResultsPerPage[] = [4, 8, 16, 24, 36];
 
@@ -124,6 +125,22 @@
     function randomVideo() {
         const seed = Math.floor(Math.random() * 1_000_000);
         navigate(`/search?sortby=random-${seed}`);
+    }
+
+    let expansionType = $state<'performers' | 'studios' | null>(null);
+
+    const singleActor  = $derived(actor.trim() !== '' && !actor.includes(','));
+    const singleStudio = $derived(studio.trim() !== '');
+    const expansionTarget = $derived(actor.trim() || studio.trim());
+
+    // Close expansion when its driving field changes (expansion would be stale)
+    $effect(() => {
+        if (expansionType === 'performers' && !singleActor) expansionType = null;
+        if (expansionType === 'studios'    && !singleStudio) expansionType = null;
+    });;
+
+    function toggleExpansion(type: 'performers' | 'studios') {
+        expansionType = expansionType === type ? null : type;
     }
 
     function activeIsInput(): boolean {
@@ -280,13 +297,33 @@
             <button class="tool-btn">date added dist</button>
             <button class="tool-btn">date released dist</button>
             <button class="tool-btn">word cloud</button>
-            <button class="tool-btn disabled" disabled>similar performers</button>
-            <button class="tool-btn disabled" disabled>similar studios</button>
+            <button
+                class="tool-btn"
+                class:disabled={!singleActor}
+                class:active={expansionType === 'performers'}
+                disabled={!singleActor}
+                onclick={() => toggleExpansion('performers')}
+            >similar performers</button>
+            <button
+                class="tool-btn"
+                class:disabled={!singleStudio}
+                class:active={expansionType === 'studios'}
+                disabled={!singleStudio}
+                onclick={() => toggleExpansion('studios')}
+            >similar studios</button>
         </div>
         <div class="bottom-right">
             <button class="tool-btn" onclick={randomVideo}>random video</button>
         </div>
     </div>
+
+    {#if expansionType !== null}
+        <SimilarItemsPanel
+            type={expansionType}
+            target={expansionTarget}
+            onClose={() => expansionType = null}
+        />
+    {/if}
 
 </div>
 
@@ -650,5 +687,9 @@
         color: #555;
         cursor: default;
         border-color: #333;
+    }
+    .tool-btn.active {
+        color: #D79C29;
+        border-color: #D79C29;
     }
 </style>
