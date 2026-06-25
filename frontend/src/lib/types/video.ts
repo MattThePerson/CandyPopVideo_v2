@@ -6,11 +6,19 @@ export interface VideoData {
     filename:         string;
 
     duration:         string;   // formatted duration string
+    duration_seconds: number;
     filesize_mb:      number;
     fps:              number;
-    resolution:       number;
+    height:           number;
+    width:            number;
+    resolution:       string;   // "1920x1080"
+    aspect_ratio:     string;
     bitrate:          number;
-    duration_seconds: number;
+    is_vfr:           boolean;
+    video_codec:      string;
+    audio_codec:      string;
+    pix_fmt:          string;
+    color_transfer:   string;
 
     source_id:        string;
 

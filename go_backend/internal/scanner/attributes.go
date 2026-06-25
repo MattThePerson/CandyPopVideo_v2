@@ -13,9 +13,17 @@ type VideoAttributes struct {
     DurationSeconds float64
     Duration        string
     FPS             float64
-    Resolution      int
+    Height          int
+    Width           int
+    Resolution      string // "1920x1080"
+    AspectRatio     string // "16:9"
     Bitrate         int
     FilesizeMB      float64
+    IsVFR           bool
+    VideoCodec      string
+    AudioCodec      string
+    PixFmt          string
+    ColorTransfer   string
 }
 
 // ProbeAttributes runs ffprobe on the given path and returns video attributes.
@@ -32,9 +40,15 @@ func ProbeAttributes(path string) (VideoAttributes, error) {
 
     var probe struct {
         Streams []struct {
-            CodecType   string `json:"codec_type"`
-            Height      int    `json:"height"`
-            RFrameRate  string `json:"r_frame_rate"`
+            CodecType          string `json:"codec_type"`
+            CodecName          string `json:"codec_name"`
+            Height             int    `json:"height"`
+            Width              int    `json:"width"`
+            RFrameRate         string `json:"r_frame_rate"`
+            AvgFrameRate       string `json:"avg_frame_rate"`
+            DisplayAspectRatio string `json:"display_aspect_ratio"`
+            PixFmt             string `json:"pix_fmt"`
+            ColorTransfer      string `json:"color_transfer"`
         } `json:"streams"`
         Format struct {
             Duration string `json:"duration"`
@@ -60,15 +74,60 @@ func ProbeAttributes(path string) (VideoAttributes, error) {
     }
 
     for _, s := range probe.Streams {
-        if s.CodecType != "video" {
-            continue
+        switch s.CodecType {
+        case "video":
+            if attrs.Height != 0 {
+                continue
+            }
+            attrs.Height = s.Height
+            attrs.Width = s.Width
+            attrs.FPS = parseFrameRate(s.RFrameRate)
+            attrs.IsVFR = detectVFR(s.RFrameRate, s.AvgFrameRate)
+            attrs.VideoCodec = s.CodecName
+            attrs.PixFmt = s.PixFmt
+            attrs.ColorTransfer = s.ColorTransfer
+            attrs.AspectRatio = s.DisplayAspectRatio
+            if attrs.AspectRatio == "" || attrs.AspectRatio == "0:1" {
+                attrs.AspectRatio = computeAspectRatio(s.Width, s.Height)
+            }
+            if s.Width > 0 && s.Height > 0 {
+                attrs.Resolution = fmt.Sprintf("%dx%d", s.Width, s.Height)
+            }
+        case "audio":
+            if attrs.AudioCodec == "" {
+                attrs.AudioCodec = s.CodecName
+            }
         }
-        attrs.Resolution = s.Height
-        attrs.FPS = parseFrameRate(s.RFrameRate)
-        break
     }
 
     return attrs, nil
+}
+
+// detectVFR returns true when r_frame_rate and avg_frame_rate differ by more
+// than 1%. Good heuristic for VFR content; a single dropped frame in a CFR
+// file can also trigger it. For certainty, sample packet durations instead.
+func detectVFR(rFrameRate, avgFrameRate string) bool {
+    rfps := parseFrameRate(rFrameRate)
+    afps := parseFrameRate(avgFrameRate)
+    if rfps == 0 || afps == 0 {
+        return false
+    }
+    return math.Abs(rfps-afps)/rfps > 0.01
+}
+
+func computeAspectRatio(w, h int) string {
+    if w == 0 || h == 0 {
+        return ""
+    }
+    g := gcd(w, h)
+    return fmt.Sprintf("%d:%d", w/g, h/g)
+}
+
+func gcd(a, b int) int {
+    for b != 0 {
+        a, b = b, a%b
+    }
+    return a
 }
 
 // parseFrameRate evaluates a fraction string like "30000/1001" → 29.97.

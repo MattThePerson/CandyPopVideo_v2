@@ -287,7 +287,9 @@ func dedupeStrings(existing, incoming []string) []string {
 func isSystemField(key string) bool {
     switch key {
     case "hash", "path", "filename", "date_added",
-        "duration", "duration_seconds", "filesize_mb", "fps", "resolution", "bitrate",
+        "duration", "duration_seconds", "filesize_mb", "fps", "bitrate",
+        "height", "width", "resolution", "aspect_ratio",
+        "is_vfr", "video_codec", "audio_codec", "pix_fmt", "color_transfer",
         "collection", "parent_dir", "path_relative", "is_linked",
         "tags", "tags_from_filename", "tags_from_path", "tags_from_json":
         return true

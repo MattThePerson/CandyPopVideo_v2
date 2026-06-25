@@ -272,7 +272,7 @@
         <!-- Quick stats -->
         <div class="quick-stats-bar">
             {#if video.duration}<span title="duration">{formatDuration(video.duration)}</span>{/if}
-            {#if video.resolution}<span class="sep"></span><span title="resolution">{video.resolution}p</span>{/if}
+            {#if video.height}<span class="sep"></span><span title="resolution">{video.height}p</span>{/if}
             {#if video.fps}<span class="sep"></span><span title="framerate">{video.fps} fps</span>{/if}
             {#if video.bitrate}<span class="sep"></span><span title="bitrate">{formatBitrate(video.bitrate)}</span>{/if}
             {#if video.filesize_mb}<span class="sep"></span><span title="filesize">{formatFilesize(video.filesize_mb)}</span>{/if}

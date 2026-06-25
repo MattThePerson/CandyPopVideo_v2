@@ -257,8 +257,8 @@ func handleSortByDirectFields(vids []schemas.VideoData, attr string, reverse boo
 	case "bitrate":
 		slices.SortFunc(vids, func(a, b schemas.VideoData) int { return dirN(float64(a.Bitrate), float64(b.Bitrate)) })
 		return vids, true, nil
-	case "resolution":
-		slices.SortFunc(vids, func(a, b schemas.VideoData) int { return dirN(float64(a.Resolution), float64(b.Resolution)) })
+	case "height":
+		slices.SortFunc(vids, func(a, b schemas.VideoData) int { return dirN(float64(a.Height), float64(b.Height)) })
 		return vids, true, nil
 	}
 	return vids, false, nil

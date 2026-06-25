@@ -31,6 +31,7 @@ func InitDB(db_path string) error {
             return err
         }
     }
+
     return nil
 }
 

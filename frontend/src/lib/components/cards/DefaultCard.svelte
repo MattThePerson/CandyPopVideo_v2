@@ -319,8 +319,8 @@
             </div>
             <!-- top-right: resolution + bitrate -->
             <div class="stat-topright">
-                {#if video.resolution}
-                    <span class="chip">{video.resolution}p</span>
+                {#if video.height}
+                    <span class="chip">{video.height}p</span>
                 {/if}
                 {#if video.bitrate}
                     <span class="chip">{formatBitrate(video.bitrate)}</span>

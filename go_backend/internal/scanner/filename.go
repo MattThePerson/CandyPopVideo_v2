@@ -180,7 +180,11 @@ func GetFileMetadata(fullPath string, vd *schemas.VideoData, parser *string_pars
     clearFilenameFields(vd)
     PopulateFromParseResult(vd, ParseFilename(cleanPath, parser))
     if readJSON {
-        if files := FindSidecarFiles(fullPath, vd.SourceID); len(files) > 0 {
+        sidecarID := vd.SourceID
+        if sidecarID == "" {
+            sidecarID = vd.DVDCode
+        }
+        if files := FindSidecarFiles(fullPath, sidecarID); len(files) > 0 {
             vd.TagsFromJSON, vd.Views, vd.Likes, vd.Metadata = nil, 0, 0, nil
             ApplySidecarToVideoData(vd, MergeSidecarFiles(files))
         }

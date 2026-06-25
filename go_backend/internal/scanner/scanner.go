@@ -146,9 +146,17 @@ func applyAttributes(vd *schemas.VideoData, attrs VideoAttributes) {
     vd.DurationSeconds = attrs.DurationSeconds
     vd.Duration = attrs.Duration
     vd.FPS = attrs.FPS
+    vd.Height = attrs.Height
+    vd.Width = attrs.Width
     vd.Resolution = attrs.Resolution
+    vd.AspectRatio = attrs.AspectRatio
     vd.Bitrate = attrs.Bitrate
     vd.FilesizeMB = attrs.FilesizeMB
+    vd.IsVFR = attrs.IsVFR
+    vd.VideoCodec = attrs.VideoCodec
+    vd.AudioCodec = attrs.AudioCodec
+    vd.PixFmt = attrs.PixFmt
+    vd.ColorTransfer = attrs.ColorTransfer
 }
 
 func resolveVideo(

@@ -12,9 +12,18 @@ class VideoData:
     duration: str
     filesize_mb: float
     fps: float
-    resolution: int
+    height: int
     bitrate: int
     duration_seconds: float
+
+    width: int = 0
+    resolution: str = ""
+    aspect_ratio: str = ""
+    is_vfr: bool = False
+    video_codec: str = ""
+    audio_codec: str = ""
+    pix_fmt: str = ""
+    color_transfer: str = ""
 
     source_id:      Optional[str] = None
 
