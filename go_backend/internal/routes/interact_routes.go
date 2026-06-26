@@ -14,7 +14,6 @@ import (
 
 func IncludeInteractRoutes(e *echo.Group, db_path string) {
 
-
     e.GET("/get/:video_hash",       func(c echo.Context) error { return ECHO_get_interactions(c, db_path) })
     e.GET("/viewings/:video_hash",  func(c echo.Context) error { return ECHO_get_viewings(c, db_path) })
     e.GET("/viewings",              func(c echo.Context) error { return ECHO_get_recent_viewings(c, db_path) })

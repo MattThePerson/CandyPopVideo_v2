@@ -81,6 +81,10 @@ func (b *jobBroker) start(fn func(emit func(string))) bool {
 // ─── Route registration ──────────────────────────────────────────────────────
 
 func IncludeDashboardRoutes(e *echo.Group, store *config.ConfigStore) {
+    e.GET("/marked-fine",               func(c echo.Context) error { return ECHO_marked_fine_get(c, store.Current().AppDataDir) })
+    e.POST("/marked-fine/add/:hash",    func(c echo.Context) error { return ECHO_marked_fine_add(c, store.Current().AppDataDir) })
+    e.POST("/marked-fine/remove/:hash", func(c echo.Context) error { return ECHO_marked_fine_remove(c, store.Current().AppDataDir) })
+
     e.GET("/stats",                func(c echo.Context) error { return ECHO_dashboard_stats(c, store.Current().DBPath) })
     e.GET("/media-status",         func(c echo.Context) error { cfg := store.Current(); return ECHO_dashboard_media_status(c, cfg.DBPath, cfg.PreviewMediaDir) })
     e.GET("/problematic-videos",   func(c echo.Context) error { return ECHO_dashboard_problematic_videos(c, store.Current().DBPath) })
@@ -252,6 +256,7 @@ type ProblematicVideoEntry struct {
 type ProblematicVideosResponse struct {
     VFR         []ProblematicVideoEntry `json:"vfr"`
     AudioCodec  []ProblematicVideoEntry `json:"audio_codec"`
+    VideoCodec  []ProblematicVideoEntry `json:"video_codec"`
     PixFmt10Bit []ProblematicVideoEntry `json:"pix_fmt_10bit"`
     HEVC        []ProblematicVideoEntry `json:"hevc"`
     HDR         []ProblematicVideoEntry `json:"hdr"`
@@ -259,6 +264,15 @@ type ProblematicVideosResponse struct {
 
 var unsupportedAudioCodecs = map[string]bool{
     "ac3": true, "eac3": true, "dts": true, "truehd": true,
+}
+
+// Codecs browsers can decode natively (hevc handled separately).
+var supportedVideoCodecs = map[string]bool{
+    "h264": true, "avc1": true,
+    "vp8":  true, "vp09": true, "vp9": true,
+    "av1":  true, "av01": true,
+    "hevc": true, "hvc1": true, // hevc gets its own category, but is not "unsupported"
+    "":     true,               // no stream / unknown — don't false-positive
 }
 
 var hdrColorTransfers = map[string]bool{
@@ -274,6 +288,7 @@ func ECHO_dashboard_problematic_videos(c echo.Context, dbPath string) error {
     resp := ProblematicVideosResponse{
         VFR:         []ProblematicVideoEntry{},
         AudioCodec:  []ProblematicVideoEntry{},
+        VideoCodec:  []ProblematicVideoEntry{},
         PixFmt10Bit: []ProblematicVideoEntry{},
         HEVC:        []ProblematicVideoEntry{},
         HDR:         []ProblematicVideoEntry{},
@@ -290,11 +305,14 @@ func ECHO_dashboard_problematic_videos(c echo.Context, dbPath string) error {
         if unsupportedAudioCodecs[vd.AudioCodec] {
             resp.AudioCodec = append(resp.AudioCodec, entry(vd.AudioCodec))
         }
+        if !supportedVideoCodecs[vd.VideoCodec] && vd.VideoCodec != "hevc" && vd.VideoCodec != "hvc1" {
+            resp.VideoCodec = append(resp.VideoCodec, entry(vd.VideoCodec))
+        }
         if strings.Contains(vd.PixFmt, "10le") || strings.Contains(vd.PixFmt, "12le") {
             resp.PixFmt10Bit = append(resp.PixFmt10Bit, entry(vd.PixFmt))
         }
-        if vd.VideoCodec == "hevc" {
-            resp.HEVC = append(resp.HEVC, entry("hevc"))
+        if vd.VideoCodec == "hevc" || vd.VideoCodec == "hvc1" {
+            resp.HEVC = append(resp.HEVC, entry(vd.VideoCodec))
         }
         if hdrColorTransfers[vd.ColorTransfer] {
             resp.HDR = append(resp.HDR, entry(vd.ColorTransfer))

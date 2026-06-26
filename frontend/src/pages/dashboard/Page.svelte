@@ -1,6 +1,7 @@
 <!-- pages/dashboard/Page.svelte -->
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
+    import { navigate, routerState } from '$lib/router/router.svelte';
     import ScanTfidfSection      from './ScanTfidfSection.svelte';
     import MediaSection          from './MediaSection.svelte';
     import JobLog                from './JobLog.svelte';
@@ -25,6 +26,19 @@
     interface OverviewCounts { videos: number; collections: number; studios: number; actors: number; }
     interface ConfigStatus   { ok: boolean; errors: string[]; warnings: string[]; }
 
+    type TabId = 'worker' | 'content-filter' | 'problematic';
+
+    function tabFromSearch(search: string): TabId {
+        const t = new URLSearchParams(search).get('tab');
+        if (t === 'content-filter' || t === 'problematic') return t;
+        return 'worker';
+    }
+
+    function switchTab(tab: TabId) {
+        activeTab = tab;
+        navigate(tab === 'worker' ? '/dashboard' : `/dashboard?tab=${tab}`, { replace: true });
+    }
+
     let stats          = $state<DashboardStats | null>(null);
     let mediaStatus    = $state<MediaStatusResponse | null>(null);
     let mediaLoading   = $state(false);
@@ -32,6 +46,7 @@
     let logLines       = $state<string[]>([]);
     let overviewCounts = $state<OverviewCounts | null>(null);
     let configStatus   = $state<ConfigStatus | null>(null);
+    let activeTab      = $state<TabId>(tabFromSearch(routerState.search));
     let es: EventSource | null = null;
 
     async function fetchStats() {
@@ -80,6 +95,7 @@
     async function startJob(endpoint: string, body: object = {}) {
         if (jobRunning) return;
         logLines = [];
+        switchTab('worker');
 
         const res = await fetch(endpoint, {
             method: 'POST',
@@ -166,49 +182,64 @@
         </div>
     </div>
 
-    <!-- Two-column grid -->
+    <!-- Tab bar -->
+    <div class="tab-bar">
+        <button class="tab" class:active={activeTab === 'worker'}         onclick={() => switchTab('worker')}>Worker</button>
+        <button class="tab" class:active={activeTab === 'content-filter'} onclick={() => switchTab('content-filter')}>Content Filter</button>
+        <button class="tab" class:active={activeTab === 'problematic'}    onclick={() => switchTab('problematic')}>Problematic Videos</button>
+    </div>
+
+    <!-- Two-column grid — always 2-col so left-col width is consistent across tabs -->
     <div class="grid">
-        <!-- Left: controls -->
         <div class="left-col">
 
-            <!-- Scan + TF-IDF  |  Media Generation -->
-            <div class="ops-row">
-                <ScanTfidfSection
-                    disabled={jobRunning}
-                    onStartScan={handleScan}
-                    onStartTfidf={handleTfidf}
-                />
-                <MediaSection
-                    {stats}
-                    {mediaStatus}
-                    {mediaLoading}
-                    disabled={jobRunning}
-                    onStart={handleMedia}
-                    onRefreshStatus={fetchMediaStatus}
-                />
-            </div>
+            {#if activeTab === 'worker'}
 
-            <!-- Content Filters -->
-            <ContentFilterSection disabled={jobRunning} />
+                <!-- Scan + TF-IDF  |  Media Generation -->
+                <div class="ops-row">
+                    <ScanTfidfSection
+                        disabled={jobRunning}
+                        onStartScan={handleScan}
+                        onStartTfidf={handleTfidf}
+                    />
+                    <MediaSection
+                        {stats}
+                        {mediaStatus}
+                        {mediaLoading}
+                        disabled={jobRunning}
+                        onStart={handleMedia}
+                        onRefreshStatus={fetchMediaStatus}
+                    />
+                </div>
 
-            <!-- Maintenance -->
-            {#if stats && stats.unlinked_videos > 0}
-                <section class="card warn-card">
-                    <h2 class="section-title">Maintenance</h2>
-                    <p class="card-desc warn-text">
-                        {fmt(stats.unlinked_videos)} videos are marked unlinked (file no longer found on disk).
-                        Their interaction history is preserved. Re-scan after reconnecting drives.
-                    </p>
-                </section>
+                <!-- Maintenance -->
+                {#if stats && stats.unlinked_videos > 0}
+                    <section class="card warn-card">
+                        <h2 class="section-title">Maintenance</h2>
+                        <p class="card-desc warn-text">
+                            {fmt(stats.unlinked_videos)} videos are marked unlinked (file no longer found on disk).
+                            Their interaction history is preserved. Re-scan after reconnecting drives.
+                        </p>
+                    </section>
+                {/if}
+
+            {:else if activeTab === 'content-filter'}
+
+                <ContentFilterSection disabled={jobRunning} />
+
+            {:else if activeTab === 'problematic'}
+
+                <ProblematicVideos />
+
             {/if}
 
-            <!-- Problematic videos -->
-            <ProblematicVideos />
         </div>
 
-        <!-- Right: job log (sticky) -->
+        <!-- Right: job log (only rendered in worker tab) -->
         <div class="right-col">
-            <JobLog lines={logLines} running={jobRunning} />
+            {#if activeTab === 'worker'}
+                <JobLog lines={logLines} running={jobRunning} />
+            {/if}
         </div>
     </div>
 
@@ -227,7 +258,7 @@
         padding: 1.5rem 2rem 3rem;
         display: flex;
         flex-direction: column;
-        gap: 1.25rem;
+        gap: 0;
     }
 
     /* Top bar: edit-config button + overview side by side */
@@ -235,6 +266,7 @@
         display: flex;
         align-items: stretch;
         gap: 0.75rem;
+        margin-bottom: 0.75rem;
     }
 
     .edit-config-btn {
@@ -276,6 +308,32 @@
     .stat-chip { font-size: 1.05rem; font-weight: 500; color: #dcddd4; }
     .stat-chip.warn { color: #c8882a; }
     .sep { color: #2a2a2a; font-size: 1.1rem; }
+
+    /* Tab bar */
+    .tab-bar {
+        display: flex;
+        gap: 0.2rem;
+        margin-bottom: 1rem;
+    }
+
+    .tab {
+        padding: 0.3rem 0.9rem;
+        font-size: 0.78rem;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 5px;
+        color: #484848;
+        cursor: pointer;
+        transition: color 0.12s, border-color 0.12s;
+    }
+    .tab:hover { color: #777; border-color: rgba(255,255,255,0.07); }
+    .tab.active {
+        color: #aaa;
+        background: #0d1212;
+        border-color: rgba(255,255,255,0.08);
+    }
 
     /* Grid */
     .grid {
