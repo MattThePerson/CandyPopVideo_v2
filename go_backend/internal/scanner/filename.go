@@ -184,6 +184,9 @@ func GetFileMetadata(fullPath string, vd *schemas.VideoData, parser *string_pars
         if sidecarID == "" {
             sidecarID = vd.DVDCode
         }
+        if sidecarID == "" {
+            sidecarID = vd.Title
+        }
         if files := FindSidecarFiles(fullPath, sidecarID); len(files) > 0 {
             vd.TagsFromJSON, vd.Views, vd.Likes, vd.Metadata = nil, 0, 0, nil
             ApplySidecarToVideoData(vd, MergeSidecarFiles(files))

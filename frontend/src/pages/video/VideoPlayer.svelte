@@ -22,6 +22,7 @@
     let isSeeking = false;
 
     // Cleanup refs for event listeners
+    let seekThumbsVisibilityHandler: (() => void) | undefined;
     let videoEl: HTMLVideoElement | null = null;
     let onTimeUpdate:   (() => void) | null = null;
     let onPlay:         (() => void) | null = null;
@@ -117,7 +118,16 @@
             },
         });
 
-        loadSeekThumbs(player);
+        if (document.visibilityState === 'visible') {
+            loadSeekThumbs(player);
+        } else {
+            seekThumbsVisibilityHandler = () => {
+                document.removeEventListener('visibilitychange', seekThumbsVisibilityHandler!);
+                seekThumbsVisibilityHandler = undefined;
+                if (player) loadSeekThumbs(player);
+            };
+            document.addEventListener('visibilitychange', seekThumbsVisibilityHandler);
+        }
         setTimeout(() => { if (player) loadViewedSegments(player); }, 500);
         if (markers.length)      player.setMarkers(markers);
         if (datedMarkers.length) player.setDatedMarkers(datedMarkers);
@@ -186,6 +196,10 @@
             if (onEnded)        videoEl.removeEventListener('ended',       onEnded);
         }
         if (onBeforeUnload) window.removeEventListener('beforeunload', onBeforeUnload);
+        if (seekThumbsVisibilityHandler) {
+            document.removeEventListener('visibilitychange', seekThumbsVisibilityHandler);
+            seekThumbsVisibilityHandler = undefined;
+        }
         player?.destroy();
         player = null;
     });

@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
+    import { onMount, onDestroy } from 'svelte';
     import { navigate } from '$lib/router/router.svelte';
 
     /* Props */
@@ -28,7 +28,9 @@
         return Math.max(Math.floor((b - a) / (1000 * 60 * 60 * 24 * 365)), 18);
     }
 
-    onMount(async () => {
+    let visibilityHandler: (() => void) | undefined;
+
+    async function fetchActorData() {
         const [infoRes, countRes] = await Promise.allSettled([
             fetch(`/api/get/actor/${encodeURIComponent(name)}`).then(r => r.ok ? r.json() : null),
             fetch(`/api/get/actor-video-count/${encodeURIComponent(name)}`).then(r => r.ok ? r.json() : null),
@@ -42,6 +44,26 @@
         }
         if (countRes.status === 'fulfilled' && countRes.value) {
             videoCount = countRes.value.video_count ?? null;
+        }
+    }
+
+    onMount(() => {
+        if (document.visibilityState === 'visible') {
+            fetchActorData();
+        } else {
+            visibilityHandler = () => {
+                document.removeEventListener('visibilitychange', visibilityHandler!);
+                visibilityHandler = undefined;
+                fetchActorData();
+            };
+            document.addEventListener('visibilitychange', visibilityHandler);
+        }
+    });
+
+    onDestroy(() => {
+        if (visibilityHandler) {
+            document.removeEventListener('visibilitychange', visibilityHandler);
+            visibilityHandler = undefined;
         }
     });
 </script>

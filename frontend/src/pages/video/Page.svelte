@@ -27,6 +27,7 @@
     let undoInfo       = $state<{ oldFilename: string; newFilename: string } | null>(null);
 
     let keydownHandler: ((e: KeyboardEvent) => void) | undefined;
+    let similarVisibilityHandler: (() => void) | undefined;
 
     $effect(() => {
         const parts: string[] = [];
@@ -39,6 +40,20 @@
     });
 
     onMount(async () => {
+        keydownHandler = (e: KeyboardEvent) => {
+            if (e.key === ' ') {
+                const tag = (e.target as HTMLElement).tagName;
+                if (tag !== 'INPUT' && tag !== 'TEXTAREA') e.preventDefault();
+            }
+            if (e.key === 'F2' && video && !renameOpen) {
+                renameOpen = true;
+            }
+            if (e.key === 'Escape' && undoInfo && !renameOpen) {
+                undoInfo = null;
+            }
+        };
+        window.addEventListener('keydown', keydownHandler);
+
         /* Resolve the sentinel 'random' hash to a real one and update the URL
            (replace so the back button skips the /video/random entry). */
         if (hash === 'random') {
@@ -63,31 +78,38 @@
         }
         console.debug('video_data:', video);
 
-        similarLoading = true;
-        try {
-            const res = await fetch(`/api/query/get/similar-videos/${hash}`).then(r => r.json());
-            similar   = (res.Videos as VideoData[]).filter(v => v.hash !== hash);
-            queryTime = res.TimeTaken as number;
-        } catch {
-            similar   = [];
-            queryTime = null;
-        } finally {
-            similarLoading = false;
+        async function fetchSimilar() {
+            similarLoading = true;
+            try {
+                const res = await fetch(`/api/query/get/similar-videos/${hash}`).then(r => r.json());
+                similar   = (res.Videos as VideoData[]).filter(v => v.hash !== hash);
+                queryTime = res.TimeTaken as number;
+            } catch {
+                similar   = [];
+                queryTime = null;
+            } finally {
+                similarLoading = false;
+            }
         }
 
-        keydownHandler = (e: KeyboardEvent) => {
-            if (e.key === 'F2' && video && !renameOpen) {
-                renameOpen = true;
-            }
-            if (e.key === 'Escape' && undoInfo && !renameOpen) {
-                undoInfo = null;
-            }
-        };
-        window.addEventListener('keydown', keydownHandler);
+        if (document.visibilityState === 'visible') {
+            fetchSimilar();
+        } else {
+            similarVisibilityHandler = () => {
+                document.removeEventListener('visibilitychange', similarVisibilityHandler!);
+                similarVisibilityHandler = undefined;
+                fetchSimilar();
+            };
+            document.addEventListener('visibilitychange', similarVisibilityHandler);
+        }
     });
 
     onDestroy(() => {
         if (keydownHandler) window.removeEventListener('keydown', keydownHandler);
+        if (similarVisibilityHandler) {
+            document.removeEventListener('visibilitychange', similarVisibilityHandler);
+            similarVisibilityHandler = undefined;
+        }
     });
 
     // Unloads the player, sends the rename request, restores player on any outcome.
