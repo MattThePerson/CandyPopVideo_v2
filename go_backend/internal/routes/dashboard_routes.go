@@ -5,6 +5,7 @@ import (
     "net/http"
     "os"
     "slices"
+    "strings"
     "sync"
 
     "github.com/labstack/echo/v4"
@@ -80,12 +81,13 @@ func (b *jobBroker) start(fn func(emit func(string))) bool {
 // ─── Route registration ──────────────────────────────────────────────────────
 
 func IncludeDashboardRoutes(e *echo.Group, store *config.ConfigStore) {
-    e.GET("/stats",           func(c echo.Context) error { return ECHO_dashboard_stats(c, store.Current().DBPath) })
-    e.GET("/media-status",    func(c echo.Context) error { cfg := store.Current(); return ECHO_dashboard_media_status(c, cfg.DBPath, cfg.PreviewMediaDir) })
-    e.POST("/run-scan",       func(c echo.Context) error { return ECHO_dashboard_run_scan(c, store.Current()) })
-    e.POST("/generate-media", func(c echo.Context) error { return ECHO_dashboard_generate_media(c, store.Current()) })
-    e.POST("/rebuild-tfidf",  func(c echo.Context) error { return ECHO_dashboard_rebuild_tfidf(c, store.Current()) })
-    e.GET("/job-stream",      ECHO_dashboard_job_stream)
+    e.GET("/stats",                func(c echo.Context) error { return ECHO_dashboard_stats(c, store.Current().DBPath) })
+    e.GET("/media-status",         func(c echo.Context) error { cfg := store.Current(); return ECHO_dashboard_media_status(c, cfg.DBPath, cfg.PreviewMediaDir) })
+    e.GET("/problematic-videos",   func(c echo.Context) error { return ECHO_dashboard_problematic_videos(c, store.Current().DBPath) })
+    e.POST("/run-scan",            func(c echo.Context) error { return ECHO_dashboard_run_scan(c, store.Current()) })
+    e.POST("/generate-media",      func(c echo.Context) error { return ECHO_dashboard_generate_media(c, store.Current()) })
+    e.POST("/rebuild-tfidf",       func(c echo.Context) error { return ECHO_dashboard_rebuild_tfidf(c, store.Current()) })
+    e.GET("/job-stream",           ECHO_dashboard_job_stream)
 }
 
 // ─── Stats ───────────────────────────────────────────────────────────────────
@@ -235,6 +237,71 @@ func ECHO_dashboard_rebuild_tfidf(c echo.Context, cfg config.Config) error {
         return c.JSON(409, map[string]string{"error": "A job is already running"})
     }
     return c.JSON(202, map[string]string{"status": "started"})
+}
+
+// ─── Problematic videos ──────────────────────────────────────────────────────
+
+type ProblematicVideoEntry struct {
+    Hash      string `json:"hash"`
+    Name      string `json:"name"`
+    Value     string `json:"value"`
+    Path      string `json:"path"`
+    ParentDir string `json:"parent_dir"`
+}
+
+type ProblematicVideosResponse struct {
+    VFR         []ProblematicVideoEntry `json:"vfr"`
+    AudioCodec  []ProblematicVideoEntry `json:"audio_codec"`
+    PixFmt10Bit []ProblematicVideoEntry `json:"pix_fmt_10bit"`
+    HEVC        []ProblematicVideoEntry `json:"hevc"`
+    HDR         []ProblematicVideoEntry `json:"hdr"`
+}
+
+var unsupportedAudioCodecs = map[string]bool{
+    "ac3": true, "eac3": true, "dts": true, "truehd": true,
+}
+
+var hdrColorTransfers = map[string]bool{
+    "smpte2084": true, "arib-std-b67": true,
+}
+
+func ECHO_dashboard_problematic_videos(c echo.Context, dbPath string) error {
+    mp, err := db.GetCachedVideos(dbPath, 15, 3)
+    if err != nil {
+        return handleServerError(c, 500, "Unable to read database", err)
+    }
+
+    resp := ProblematicVideosResponse{
+        VFR:         []ProblematicVideoEntry{},
+        AudioCodec:  []ProblematicVideoEntry{},
+        PixFmt10Bit: []ProblematicVideoEntry{},
+        HEVC:        []ProblematicVideoEntry{},
+        HDR:         []ProblematicVideoEntry{},
+    }
+
+    for _, vd := range mp {
+        entry := func(value string) ProblematicVideoEntry {
+            return ProblematicVideoEntry{Hash: vd.Hash, Name: vd.Filename, Value: value, Path: vd.Path, ParentDir: vd.ParentDir}
+        }
+
+        if vd.IsVFR {
+            resp.VFR = append(resp.VFR, entry("vfr"))
+        }
+        if unsupportedAudioCodecs[vd.AudioCodec] {
+            resp.AudioCodec = append(resp.AudioCodec, entry(vd.AudioCodec))
+        }
+        if strings.Contains(vd.PixFmt, "10le") || strings.Contains(vd.PixFmt, "12le") {
+            resp.PixFmt10Bit = append(resp.PixFmt10Bit, entry(vd.PixFmt))
+        }
+        if vd.VideoCodec == "hevc" {
+            resp.HEVC = append(resp.HEVC, entry("hevc"))
+        }
+        if hdrColorTransfers[vd.ColorTransfer] {
+            resp.HDR = append(resp.HDR, entry(vd.ColorTransfer))
+        }
+    }
+
+    return c.JSON(200, resp)
 }
 
 // ─── SSE stream ──────────────────────────────────────────────────────────────

@@ -201,8 +201,8 @@
         return i > 0 ? p.slice(0, i) : p;
     }
 
-    function copyParentPath() {
-        navigator.clipboard.writeText(parentDir(video.path)).catch(() => {});
+    function copy(text: string) {
+        navigator.clipboard.writeText(text).catch(() => {});
     }
 
     // ── Formatters ─────────────────────────────────────────────
@@ -425,20 +425,67 @@
                 <span class="info-label">last seen</span>
                 <span class="info-val">{interact.last_viewed ? formatDate(interact.last_viewed) : 'never'}</span>
             </div>
-            {#if video.path}
-                <div class="info-row">
-                    <span class="info-label">dir</span>
-                    <button class="copy-path" onclick={copyParentPath} title="Click to copy path">
-                        {parentDir(video.path)}
-                    </button>
-                </div>
-            {/if}
             {#if video.views || video.likes}
                 <div class="info-row platform-stats">
                     {#if video.views}<span title="platform views">▶ {fmtCount(video.views)} views</span>{/if}
                     {#if video.likes}<span title="platform likes">♥ {fmtCount(video.likes)} likes</span>{/if}
                 </div>
             {/if}
+
+            <!-- Collapsible technical details -->
+            <details class="tech-details">
+                <summary class="tech-summary">file &amp; technical info</summary>
+                <div class="tech-grid">
+                    {#if video.date_added}
+                        <span class="tl" title="When this file was first scanned into the library">added</span>
+                        <span class="tv">{formatDate(video.date_added)}</span>
+                    {/if}
+                    {#if video.date_downloaded}
+                        <span class="tl" title="File modification time at the time of first scan (proxy for download date)">downloaded</span>
+                        <span class="tv">{formatDate(video.date_downloaded)}</span>
+                    {/if}
+                    {#if video.path}
+                        <span class="tl" title="Full path to the video file on disk — click value to copy">filepath</span>
+                        <button class="copy-path" onclick={() => copy(video.path)} title="Click to copy full path">
+                            {video.path}
+                        </button>
+                        <span class="tl" title="Parent directory — click value to copy">directory</span>
+                        <button class="copy-path" onclick={() => copy(parentDir(video.path))} title="Click to copy directory path">
+                            {parentDir(video.path)}
+                        </button>
+                    {/if}
+                    {#if video.resolution}
+                        <span class="tl" title="Width × height in pixels, and display aspect ratio">resolution</span>
+                        <span class="tv" title="{video.width}×{video.height}px{video.aspect_ratio ? `, aspect ratio ${video.aspect_ratio}` : ''}">{video.resolution}{video.aspect_ratio ? ` (${video.aspect_ratio})` : ''}</span>
+                    {/if}
+                    {#if video.fps}
+                        <span class="tl" title={video.is_vfr ? 'Frames per second — variable frame rate detected, may cause playback issues' : 'Frames per second'}>fps</span>
+                        <span class="tv" title={video.is_vfr ? 'Variable frame rate — r_frame_rate and avg_frame_rate differ by >1%' : ''}>{video.fps}{video.is_vfr ? ' · VFR ⚠' : ''}</span>
+                    {/if}
+                    {#if video.video_codec}
+                        <span class="tl" title="Video codec · pixel format · color transfer function">video</span>
+                        <span class="tv" title="codec: {video.video_codec}{video.pix_fmt ? `, pixel format: ${video.pix_fmt}` : ''}{video.color_transfer ? `, color transfer: ${video.color_transfer}` : ''}">{video.video_codec}{video.pix_fmt ? ` · ${video.pix_fmt}` : ''}{video.color_transfer ? ` · ${video.color_transfer}` : ''}</span>
+                    {/if}
+                    {#if video.audio_codec}
+                        <span class="tl" title="Audio codec">audio</span>
+                        <span class="tv" title="codec: {video.audio_codec}">{video.audio_codec}</span>
+                    {/if}
+                    {#if video.bitrate}
+                        <span class="tl" title="Average bitrate (video + audio combined)">bitrate</span>
+                        <span class="tv" title="{video.bitrate} kbps">{formatBitrate(video.bitrate)}</span>
+                    {/if}
+                    {#if video.filesize_mb}
+                        <span class="tl" title="File size on disk">filesize</span>
+                        <span class="tv" title="{video.filesize_mb.toFixed(1)} MB">{formatFilesize(video.filesize_mb)}</span>
+                    {/if}
+                    {#if video.hash}
+                        <span class="tl" title="SHA-256 content hash (first 3×64KB chunks) — click value to copy">hash</span>
+                        <button class="copy-path hash-val" onclick={() => copy(video.hash)} title="Click to copy hash">
+                            {video.hash}
+                        </button>
+                    {/if}
+                </div>
+            </details>
         </div>
 
     </div>
@@ -663,7 +710,7 @@
         border: 1px solid #1e1e1e;
         border-radius: 6px;
         padding: 0.5rem 0.8rem;
-        min-width: 24rem;
+        width: 30rem;
     }
 
     .info-row {
@@ -689,16 +736,70 @@
     .copy-path {
         all: unset;
         cursor: pointer;
-        font-size: 0.75rem;
+        font-size: 0.72rem;
+        color: #555;
+        white-space: normal;
+        word-break: break-all;
+        transition: color 0.1s;
+        font-family: monospace;
+        line-height: 1.4;
+    }
+    .copy-path:hover { color: #999; }
+    .copy-path:hover::after { content: ' ⎘'; }
+
+    .tech-details {
+        border-top: 1px solid #1e1e1e;
+        padding-top: 0.4rem;
+        margin-top: 0.1rem;
+    }
+
+    .tech-summary {
+        font-size: 0.68rem;
+        color: #444;
+        letter-spacing: 0.06em;
+        text-transform: lowercase;
+        cursor: pointer;
+        list-style: none;
+        user-select: none;
+    }
+    .tech-summary::-webkit-details-marker { display: none; }
+    .tech-summary:hover { color: #666; }
+
+    .tech-grid {
+        display: grid;
+        grid-template-columns: 4.5rem 1fr;
+        gap: 0.22rem 0.6rem;
+        margin-top: 0.45rem;
+        align-items: baseline;
+    }
+
+    .tl {
+        font-size: 0.68rem;
+        color: #444;
+        letter-spacing: 0.03em;
+        text-transform: lowercase;
+        padding-top: 0.05rem;
+        flex-shrink: 0;
+    }
+
+    .tv {
+        font-size: 0.72rem;
         color: #666;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        max-width: 32rem;
-        transition: color 0.1s;
     }
-    .copy-path:hover { color: #aaa; }
-    .copy-path:hover::after { content: ' ⎘'; }
+
+    .hash-val {
+        font-family: monospace;
+        font-size: 0.66rem;
+        color: #3a3a3a !important;
+        letter-spacing: 0.04em;
+        word-break: break-all;
+        white-space: normal;
+        line-height: 1.4;
+    }
+    .hash-val:hover { color: #666 !important; }
 
     .platform-stats {
         gap: 1rem;

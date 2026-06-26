@@ -103,7 +103,9 @@ func ECHO_fav_add(c echo.Context, db_path string) error {
 			return c.String(400, "Video is already favourited")
 		}
 		inter.IsFavourite = true
-		inter.FavouritedDate = getCurrentTime()
+		if inter.FavouritedDate == "" {
+			inter.FavouritedDate = getCurrentTime()
+		}
 
 		return c.String(200, "Favourite aded")
 	})
@@ -117,7 +119,6 @@ func ECHO_fav_remove(c echo.Context, db_path string) error {
 			return c.String(400, "Video is already NOT favourited")
 		}
 		inter.IsFavourite = false
-		inter.FavouritedDate = ""
 
 		return c.String(200, "Favourite added")
 	})

@@ -5,6 +5,7 @@
     import MediaSection          from './MediaSection.svelte';
     import JobLog                from './JobLog.svelte';
     import ContentFilterSection  from './ContentFilterSection.svelte';
+    import ProblematicVideos     from './ProblematicVideos.svelte';
     import type { ScanOptions }  from './ScanTfidfSection.svelte';
     import type { MediaOptions } from './MediaSection.svelte';
 
@@ -187,6 +188,9 @@
                 />
             </div>
 
+            <!-- Content Filters -->
+            <ContentFilterSection disabled={jobRunning} />
+
             <!-- Maintenance -->
             {#if stats && stats.unlinked_videos > 0}
                 <section class="card warn-card">
@@ -198,8 +202,8 @@
                 </section>
             {/if}
 
-            <!-- Content Filters (bottom) -->
-            <ContentFilterSection disabled={jobRunning} />
+            <!-- Problematic videos -->
+            <ProblematicVideos />
         </div>
 
         <!-- Right: job log (sticky) -->

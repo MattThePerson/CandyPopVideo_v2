@@ -11,13 +11,19 @@ type VideoData struct {
 
     // video attributes
     Duration        string  `json:"duration"`
+    DurationSeconds float64 `json:"duration_seconds"`
     FilesizeMB      float64 `json:"filesize_mb"`
     FPS             float64 `json:"fps"`
-    Resolution      int     `json:"resolution"`
+    Height          int     `json:"height"`
+    Width           int     `json:"width"`
+    Resolution      string  `json:"resolution"` // "1920x1080"
+    AspectRatio     string  `json:"aspect_ratio"`
     Bitrate         int     `json:"bitrate"`
-    DurationSeconds float64 `json:"duration_seconds"`
-    // VFR             bool
-    // 
+    IsVFR           bool    `json:"is_vfr"`
+    VideoCodec      string  `json:"video_codec"`
+    AudioCodec      string  `json:"audio_codec"`
+    PixFmt          string  `json:"pix_fmt"`
+    ColorTransfer   string  `json:"color_transfer"`
 
     SourceID string `json:"source_id"`
 
@@ -38,8 +44,6 @@ type VideoData struct {
     DateReleased string `json:"date_released"`
     Description  string `json:"description"`
     DVDCode      string `json:"dvd_code"`
-    // D18Url       		string `json:"d18_url"`
-    // DateReleasedD18     string `json:"date_released_d18"`
 
     Actors          []string `json:"actors"`
     PrimaryActors   []string `json:"primary_actors"`
@@ -51,11 +55,9 @@ type VideoData struct {
     TagsFromPath     []string `json:"tags_from_path"`
     TagsFromJSON     []string `json:"tags_from_json"`
     Genres           []string `json:"genres"`
-    // TagsFromD18	     []string `json:"tags_from_d18"`
 
     // crawled interactions
     Views int `json:"views"`
-    // Rating float64 `json:"rating"`
     Likes int `json:"likes"`
 
     Metadata map[string]any `json:"metadata"`

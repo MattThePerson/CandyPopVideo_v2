@@ -222,15 +222,12 @@
     }
     function timeAgo(dateStr: string): string {
         const diff = Math.floor((Date.now() - new Date(dateStr.replace(' ', 'T')).getTime()) / 1000);
-        const units: [number, string][] = [
-            [31536000, 'year'], [2592000, 'month'], [604800, 'week'],
-            [86400, 'day'], [3600, 'hour'], [60, 'minute'], [1, 'second'],
-        ];
-        for (const [secs, name] of units) {
-            const n = Math.floor(diff / secs);
-            if (n >= 1) return `${n} ${name}${n !== 1 ? 's' : ''}`;
-        }
-        return 'just now';
+        const pl = (n: number, unit: string) => `${n} ${unit}${n !== 1 ? 's' : ''}`;
+        if (diff < 259_200)      return pl(Math.floor(diff / 3600),     'hour');    // < 72h
+        if (diff < 2_678_400)    return pl(Math.floor(diff / 86400),    'day');     // < 31d
+        if (diff < 15_552_000)   return pl(Math.floor(diff / 604800),   'week');    // < 6mo
+        if (diff < 124_416_000)  return pl(Math.floor(diff / 2592000),  'month');   // < 48mo
+        return pl(Math.floor(diff / 31536000), 'year');
     }
     const GRADE_COLORS: Record<string, string> = {
         'C':  '#888',  'C+': '#aaa',
