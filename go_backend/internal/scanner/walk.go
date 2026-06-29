@@ -34,10 +34,9 @@ func collectVideoFiles(
     since time.Time,
     novelOnly bool,
 ) ([]VideoFile, int) {
-    seen := map[string]bool{}
+    best := map[string]VideoFile{} // path → most-specific (longest root) collection entry
     dirMtime := map[string]time.Time{}
     touchedDirs := map[string]bool{}
-    var results []VideoFile
 
     filterLower := strings.ToLower(strings.TrimSpace(pathFilter))
 
@@ -104,21 +103,23 @@ func collectVideoFiles(
                     }
                 }
 
-                if seen[path] {
-                    return nil
-                }
-                seen[path] = true
-
-                results = append(results, VideoFile{
+                vf := VideoFile{
                     Path:           path,
                     CollectionName: collName,
                     CollectionRoot: root,
-                })
+                }
+                if ex, ok := best[path]; !ok || len(root) > len(ex.CollectionRoot) {
+                    best[path] = vf
+                }
                 return nil
             })
         }
     }
 
+    results := make([]VideoFile, 0, len(best))
+    for _, vf := range best {
+        results = append(results, vf)
+    }
     sort.Slice(results, func(i, j int) bool { return results[i].Path < results[j].Path })
     return results, len(touchedDirs)
 }
