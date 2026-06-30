@@ -67,7 +67,7 @@ func deriveFields(c *Config, appDataDir string) {
     c.TfidfMatrixPath    = filepath.Join(appDataDir, "tdidf_matrix.pkl")
     c.ActorProfilesPath  = filepath.Join(appDataDir, "actor_profiles.pkl")
     c.StudioProfilesPath = filepath.Join(appDataDir, "studio_profiles.pkl")
-    c.ActorInfoDir       = filepath.Join(appDataDir, "actors")
+    c.ActorInfoDir       = filepath.Join(c.PreviewMediaDir, "actors")
 }
 
 func parseConfig(data []byte, appDataDir string) (Config, error) {

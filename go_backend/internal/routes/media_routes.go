@@ -17,7 +17,7 @@ import (
 
 // onDemandSem limits concurrent on-demand media generation triggered by hover events.
 // Without this, hovering 24 cards simultaneously would spawn 24*n concurrent ffmpeg processes.
-var onDemandSem = make(chan struct{}, 3)
+var onDemandSem = make(chan struct{}, 1)
 
 func IncludeMediaRoutes(e *echo.Group, db_path string, preview_media_dir string, subtitle_folders []string) {
 
@@ -197,7 +197,7 @@ func ECHO_ensure_seek_thumbs(c echo.Context, db_path string, preview_media_dir s
 
 	fmt.Printf("[MEDIA] Generating 'Seek Thumbs' for: %s ...\n", video_hash)
 	onDemandSem <- struct{}{}
-	err = mediagen.GenerateSpritesheet(vd.Path, vid_media_dir, "seekthumbs", 400, 300, 12)
+	err = mediagen.GenerateSpritesheet(vd.Path, vid_media_dir, "seekthumbs", 400, 300, 1)
 	<-onDemandSem
 	if err != nil {
 		return handleServerError(c, 500, "Unable to generate seek thumbs", err)

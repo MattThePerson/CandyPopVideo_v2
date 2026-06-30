@@ -69,7 +69,7 @@ func GenerateSpritesheet(videoPath, outDir, stem string, nFrames, height, worker
                     "-v", "error",
                     "-f", "mjpeg", "pipe:1",
                 )
-                cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+                cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: 0x00004000} // BELOW_NORMAL_PRIORITY_CLASS
                 var stderr bytes.Buffer
                 cmd.Stderr = &stderr
                 data, err := cmd.Output()
