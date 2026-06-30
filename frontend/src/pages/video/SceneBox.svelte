@@ -43,29 +43,29 @@
 -->
 
 <div class="scene-box">
+    <div class="scene-tabs">
+        <button
+            class="scene-tab"
+            class:active={activeTab === 'description'}
+            disabled={!hasDesc}
+            onclick={() => activeTab = 'description'}
+        >description</button>
+        <button
+            class="scene-tab"
+            class:active={activeTab === 'comments'}
+            disabled={!hasComments}
+            onclick={() => activeTab = 'comments'}
+        >comments</button>
+        <button
+            class="scene-tab"
+            class:active={activeTab === 'platform'}
+            disabled={!hasPlatform}
+            onclick={() => activeTab = 'platform'}
+        >platform</button>
+    </div>
     {#if !hasAny}
         <p class="nothing-here">nothing here</p>
     {:else}
-        <div class="scene-tabs">
-            <button
-                class="scene-tab"
-                class:active={activeTab === 'description'}
-                disabled={!hasDesc}
-                onclick={() => activeTab = 'description'}
-            >description</button>
-            <button
-                class="scene-tab"
-                class:active={activeTab === 'comments'}
-                disabled={!hasComments}
-                onclick={() => activeTab = 'comments'}
-            >comments</button>
-            <button
-                class="scene-tab"
-                class:active={activeTab === 'platform'}
-                disabled={!hasPlatform}
-                onclick={() => activeTab = 'platform'}
-            >platform</button>
-        </div>
         <div class="scene-content" class:expanded>
             {#if activeTab === 'description'}
                 <p class="description-text">{video.description}</p>
@@ -121,6 +121,9 @@
         color: #333;
         letter-spacing: 0.04em;
         margin: 0;
+        text-align: center;
+        user-select: none;
+        cursor: default;
     }
 
     /* tabs */
@@ -147,7 +150,7 @@
 
     /* content */
     .scene-content {
-        max-height: 10rem;
+        max-height: 6rem;
         overflow: hidden;
         padding: 0.65rem 0.75rem;
         box-sizing: border-box;

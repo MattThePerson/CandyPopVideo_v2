@@ -44,6 +44,7 @@ export interface PlayerState {
 
 export interface TrackInfo {
     id: number;
+    type?: string;
     lang?: string;
     title?: string;
 }

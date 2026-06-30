@@ -233,33 +233,42 @@ func ECHO_get_subs(c echo.Context, db_path string, subtitle_folders []string) er
         return handleServerError(c, 500, "Unable to read from database", err)
     }
 
-    // get id to use
-    var filebase = filepath.Base(vd.Path)
+    // get id for srt file: "<id>.srt"
+    id_options := []string{
+        vd.SourceID,
+        vd.DVDCode,
+        strings.TrimSuffix(vd.Filename, filepath.Ext(vd.Path)),
+    }
     id := ""
-    if vd.DVDCode != "" {
-        id = vd.DVDCode
-    } else if vd.SourceID != "" {
-        id = vd.SourceID
-    } else {
-        id = strings.TrimSuffix(filebase, filepath.Ext(vd.Path))
+    for _, s := range id_options {
+        if s != "" {
+            id = s
+            break
+        }
     }
 
     // construct subtitle folder list
     var check_folders = []string{
-        filebase,
-        filepath.Join(filebase, ".subtitles"),
+        vd.ParentDir,
+        filepath.Join(vd.ParentDir, ".subtitles"),
     }
     check_folders = append(check_folders, subtitle_folders...)
 
     // check folders
+    srt_file := id + ".srt" // can be ".srt"
     for _, f := range check_folders {
-        pth := fmt.Sprintf("%s/%s.srt", f, id)
+        pth := filepath.Join(f, srt_file)
         if _, err := os.Stat(pth); err == nil {
             if check {
                 return c.String(200, "All good bro")
             }
             return c.File(pth)
         }
+    }
+
+    // TODO: return function which ties to extract embedded subtitle stream
+    if id == "" {
+        return c.NoContent(204)
     }
 
     return c.NoContent(204)

@@ -29,13 +29,20 @@
     let interactions = $state<VideoInteractions | null>(null);
     let isFavourite = $state(false);
     let favLoading = $state(false);
+    let hasSubs = $state(false);
 
     onMount(async () => {
-        try {
-            const data = await fetch(`/api/interact/get/${video.hash}`).then(r => r.json()) as VideoInteractions;
-            interactions = data;
-            isFavourite = data.is_favourite;
-        } catch { /* non-critical */ }
+        const [interactRes, subsRes] = await Promise.allSettled([
+            fetch(`/api/interact/get/${video.hash}`).then(r => r.json()) as Promise<VideoInteractions>,
+            fetch(`/media/get/subtitles/${video.hash}?check=true`),
+        ]);
+        if (interactRes.status === 'fulfilled') {
+            interactions = interactRes.value;
+            isFavourite = interactRes.value.is_favourite;
+        }
+        if (subsRes.status === 'fulfilled' && subsRes.value.ok) {
+            hasSubs = true;
+        }
     });
 
     // Optimistic — flips the UI immediately and reverts if the API call fails.
@@ -392,7 +399,10 @@
                     <span class="muted">vt unknown</span>
                 {/if}
             </div>
-            <div>
+            <div class="details-right">
+                {#if hasSubs}
+                    <span class="subs-badge" title="subtitles available">cc</span>
+                {/if}
                 {#if addedAgo}
                     <span title="date added: {video.date_downloaded.slice(0, 10)}">{addedAgo} ago</span>
                 {/if}
@@ -635,6 +645,24 @@
         display: flex;
         align-items: center;
         gap: 0.65rem;
+    }
+
+    .details-right {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .subs-badge {
+        font-family: monospace;
+        font-size: 0.65rem;
+        font-weight: bold;
+        letter-spacing: 0.5px;
+        color: #6af;
+        border: 1px solid #6af7;
+        border-radius: 3px;
+        padding: 0 3px;
+        line-height: 1.4;
     }
 
     .muted { color: #555; }

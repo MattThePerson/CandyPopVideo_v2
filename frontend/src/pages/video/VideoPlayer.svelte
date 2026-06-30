@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
-    import { PassionPlayer } from '$lib/player/PassionPlayer.js';
+    import { PassionPlayer, type TrackInfo } from '$lib/player/PassionPlayer.js';
     import { settings } from '$lib/stores/settings.svelte';
 
     /* Props */
@@ -21,6 +21,12 @@
     // Prevents timeupdate from overwriting lastKnownTime during the seek event sequence
     // (browser fires: seeking → timeupdate → seeked; timeupdate fires with the NEW time).
     let isSeeking = false;
+
+    // Subtitle state
+    let subsTrackEl: HTMLTrackElement | null = null;
+    let subsVttUrl: string | null = null;
+    let subsActiveSid = 0;
+    const subsTracks: TrackInfo[] = [{ id: 1, type: 'sub', lang: 'en', title: 'Subtitles' }];
 
     // Cleanup refs for event listeners
     let seekThumbsVisibilityHandler: (() => void) | undefined;
@@ -59,6 +65,37 @@
             const data = await res.json();
             p.setViewedSegments(data);
         } catch { /* non-critical */ }
+    }
+
+    // Fetch SRT, convert to WebVTT blob, attach <track> to video, wire cuechange → setSubtitleState.
+    async function loadSubtitles(p: PassionPlayer, srtUrl: string, vid: HTMLVideoElement) {
+        try {
+            const res = await fetch(srtUrl);
+            if (!res.ok) return;
+            const srt = await res.text();
+            const vtt = 'WEBVTT\n\n' + srt.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+            subsVttUrl = URL.createObjectURL(new Blob([vtt], { type: 'text/vtt' }));
+
+            subsTrackEl = document.createElement('track');
+            subsTrackEl.kind = 'subtitles';
+            subsTrackEl.label = 'Subtitles';
+            subsTrackEl.srclang = 'en';
+            subsTrackEl.src = subsVttUrl;
+            vid.appendChild(subsTrackEl);
+
+            // Set mode immediately — don't wait for 'load' (unreliable in Shadow DOM / blob URLs).
+            // Setting mode='hidden' triggers the browser to start loading the track resource.
+            subsTrackEl.track.mode = 'hidden';
+            subsActiveSid = 1;
+            p.setSubtitleState(null, subsTracks, 1);
+
+            subsTrackEl.track.addEventListener('cuechange', () => {
+                if (subsActiveSid === 0) return;
+                const cues = subsTrackEl!.track.activeCues;
+                const text = cues?.length ? (cues[0] as VTTCue).text : null;
+                p.setSubtitleState(text, subsTracks, 1);
+            });
+        } catch { /* no subtitles */ }
     }
 
     // Ensures the seek spritesheet is generated server-side, then fetches both
@@ -117,6 +154,19 @@
                     body: JSON.stringify(updated),
                 }).catch(() => {});
             },
+            onSubtitleChange: (sid: number) => {
+                subsActiveSid = sid;
+                if (!subsTrackEl || !player) return;
+                if (sid === 0) {
+                    subsTrackEl.track.mode = 'disabled';
+                    player.setSubtitleState(null, subsTracks, 0);
+                } else {
+                    subsTrackEl.track.mode = 'hidden';
+                    const cues = subsTrackEl.track.activeCues;
+                    const text = cues?.length ? (cues[0] as VTTCue).text : null;
+                    player.setSubtitleState(text, subsTracks, sid);
+                }
+            },
         });
 
         if (document.visibilityState === 'visible') {
@@ -146,6 +196,8 @@
             });
             mo.observe(shadow, { childList: true, subtree: true });
         });
+
+        if (subsUrl) loadSubtitles(player, subsUrl, videoEl);
 
         // Gate timeupdate on !isSeeking: the browser fires seeking→timeupdate→seeked,
         // so timeupdate would overwrite lastKnownTime with the new position before seeked runs.
@@ -201,6 +253,7 @@
             document.removeEventListener('visibilitychange', seekThumbsVisibilityHandler);
             seekThumbsVisibilityHandler = undefined;
         }
+        if (subsVttUrl) { URL.revokeObjectURL(subsVttUrl); subsVttUrl = null; }
         player?.destroy();
         player = null;
     });

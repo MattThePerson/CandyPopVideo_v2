@@ -185,6 +185,11 @@
         if (n >= 1_000)     return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
         return String(n);
     }
+
+    const TAG_LIMIT = 7;
+    let tagsExpanded = $state(false);
+    const visibleTags = $derived(tagsExpanded ? (video.tags ?? []) : (video.tags ?? []).slice(0, TAG_LIMIT));
+    const hiddenCount = $derived((video.tags?.length ?? 0) - TAG_LIMIT);
 </script>
 
 <!--
@@ -337,11 +342,16 @@
         <!-- Tags -->
         {#if video.tags?.length}
             <div class="tags-bar">
-                {#each video.tags as tag}
+                {#each visibleTags as tag}
                     <a class="tag-chip" href={searchLink('tag', tag)}
                        onclick={(e) => navSearch(e, 'tag', tag)}
                        title="tag">{tag}</a>
                 {/each}
+                {#if hiddenCount > 0 && !tagsExpanded}
+                    <button class="tag-chip tag-more" onclick={() => tagsExpanded = true}>+{hiddenCount} more</button>
+                {:else if tagsExpanded}
+                    <button class="tag-chip tag-more" onclick={() => tagsExpanded = false}>show less</button>
+                {/if}
             </div>
         {/if}
 
@@ -361,6 +371,7 @@
 <style>
     .main-tab {
         display: flex;
+        justify-content: center;
         gap: 2rem;
         padding: 0.75rem 2.5rem 2rem;
         box-sizing: border-box;
@@ -371,10 +382,10 @@
     .left-col {
         flex: 55;
         min-width: 0;
+        max-width: 40rem;
     }
 
     .left-content {
-        max-width: 43rem;
         display: flex;
         flex-direction: column;
     }
@@ -461,10 +472,11 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.9rem;
+        font-size: 0.78rem;
         font-family: inherit;
-        padding: 0.5rem 0.9rem;
-        border-radius: 6px;
+        height: 2rem;
+        padding: 0 0.5rem;
+        border-radius: 4px;
         border: 1px solid #2a2a2a;
         background: #111;
         color: #777;
@@ -571,6 +583,7 @@
     .right-col {
         flex: 45;
         min-width: 0;
+        max-width: 40rem;
         display: flex;
         flex-direction: column;
         gap: 0.6rem;
@@ -613,4 +626,19 @@
         text-decoration: none;
     }
     .tag-chip:hover { background: #222; color: #aaa; }
+
+    .tag-more {
+        all: unset;
+        cursor: pointer;
+        white-space: nowrap;
+        font-size: 0.67rem;
+        font-weight: 700;
+        background: none;
+        border-radius: 5px;
+        padding: 1.5px 6px;
+        color: #555;
+        border: 1px solid #2a2a2a;
+        transition: color 0.12s, border-color 0.12s;
+    }
+    .tag-more:hover { color: #999; border-color: #555; }
 </style>
