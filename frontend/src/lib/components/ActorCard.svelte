@@ -129,7 +129,7 @@
     img {
         width: 100%;
         height: auto;
-        transform: scale(200%) translateY(-5%);
+        transform: scale(200%) translateY(10%);
         transform-origin: top center;
         display: block;
     }

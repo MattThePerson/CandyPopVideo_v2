@@ -63,7 +63,7 @@
         if (includeTags.length)                   out = out.filter(v => includeTags.every(t => searchText(v).includes(t)));
         if (excludeTags.length)                   out = out.filter(v => !excludeTags.some(t => searchText(v).includes(t)));
         return out;
-    }, 8);
+    }, 4);
 
     $effect(() => { filterRelated; filterStudio; filterCollection; filterActors; includeTags; excludeTags; pager.reset(); });
 
@@ -244,7 +244,7 @@
         max-width: 120rem;
         width: 100%;
         margin: 0 auto;
-        padding: 1.5rem 4rem 2rem;
+        padding: 1.5rem 2rem 2rem;
         border-top: 1px solid #1a1a1a;
     }
 

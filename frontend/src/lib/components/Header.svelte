@@ -1,9 +1,15 @@
 <script lang="ts">
+    import { tick } from 'svelte';
     import { routerState, navigate } from '../router/router.svelte';
+    import { settings } from '../stores/settings.svelte';
 
     let configMenuOpen = $state(false);
     let scanDropOpen   = $state(false);
     let scanning       = $state(false);
+    let searchOpen     = $state(false);
+    let searchTerm     = $state('');
+    let searchInputEl  = $state<HTMLInputElement | null>(null);
+    let goAnchorEl     = $state<HTMLAnchorElement | null>(null);
 
     const pageLinks = [
         { href: '/', label: 'home' },
@@ -21,6 +27,22 @@
         configMenuOpen = !configMenuOpen;
     }
 
+    async function openSearch() {
+        searchOpen = true;
+        await tick();
+        searchInputEl?.focus();
+    }
+
+    function closeSearch() {
+        searchOpen = false;
+        searchTerm = '';
+    }
+
+    function toggleSearch() {
+        if (searchOpen) closeSearch();
+        else openSearch();
+    }
+
     // Closes dropdowns when the user clicks outside them.
     function handleWindowMouseDown(e: MouseEvent) {
         const target = e.target as Element;
@@ -32,10 +54,52 @@
             if (!target.closest('.header-scan-split'))
                 scanDropOpen = false;
         }
+        if (searchOpen) {
+            if (!target.closest('#search-popup-button') && !target.closest('.search-popup'))
+                closeSearch();
+        }
     }
 
-    function goRandomVideo() {
-        navigate('/video/random');
+    function getSearchUrl(term: string) {
+        return '/search?include=' + encodeURIComponent(term);
+    }
+
+    function handleWindowKeydown(e: KeyboardEvent) {
+        if (e.key === 'Escape') {
+            configMenuOpen = false;
+            if (searchOpen) closeSearch();
+        }
+        // Open search on '/' when not in a text field and not in fullscreen
+        if (e.key === '/' && !searchOpen && !document.fullscreenElement) {
+            const tag = (e.target as HTMLElement).tagName?.toLowerCase();
+            const editable = (e.target as HTMLElement).isContentEditable;
+            if (tag !== 'input' && tag !== 'textarea' && !editable) {
+                e.preventDefault();
+                openSearch();
+            }
+        }
+    }
+
+    function handleSearchInputKeydown(e: KeyboardEvent) {
+        if (e.key === 'Enter') {
+            const term = searchTerm.trim();
+            if (term) {
+                const url = getSearchUrl(term);
+                if (e.ctrlKey || e.metaKey) {
+                    const w = window.open(url, '_blank');
+                    if (e.shiftKey) w?.focus();
+                } else if (e.shiftKey) {
+                    window.open(url, '_blank', 'popup=0');
+                } else {
+                    goAnchorEl?.click();
+                }
+            }
+            closeSearch();
+            e.stopPropagation();
+        } else if (e.key === 'Escape') {
+            closeSearch();
+            e.stopPropagation();
+        }
     }
 
     async function fireScan(novelOnly: boolean) {
@@ -57,7 +121,7 @@
 ========================================================================================================================
 -->
 
-<svelte:window onmousedown={handleWindowMouseDown} />
+<svelte:window onmousedown={handleWindowMouseDown} onkeydown={handleWindowKeydown} />
 
 <header>
     <nav class="flex justify-between px-[2.5%] bg-black border border-white/20 min-h-[3.1rem]">
@@ -81,17 +145,47 @@
                 {/each}
             </span>
 
-            <button type="button" class="icon-button" onclick={goRandomVideo} aria-label="Random video">
+            <a href="/video/random" class="icon-button" aria-label="Random video">
                 <svg fill="#000000" width="32" height="32" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
                     <path d="M504.971 359.029c9.373 9.373 9.373 24.569 0 33.941l-80 79.984c-15.01 15.01-40.971 4.49-40.971-16.971V416h-58.785a12.004 12.004 0 0 1-8.773-3.812l-70.556-75.596 53.333-57.143L352 336h32v-39.981c0-21.438 25.943-31.998 40.971-16.971l80 79.981zM12 176h84l52.781 56.551 53.333-57.143-70.556-75.596A11.999 11.999 0 0 0 122.785 96H12c-6.627 0-12 5.373-12 12v56c0 6.627 5.373 12 12 12zm372 0v39.984c0 21.46 25.961 31.98 40.971 16.971l80-79.984c9.373-9.373 9.373-24.569 0-33.941l-80-79.981C409.943 24.021 384 34.582 384 56.019V96h-58.785a12.004 12.004 0 0 0-8.773 3.812L96 336H12c-6.627 0-12 5.373-12 12v56c0 6.627 5.373 12 12 12h110.785c3.326 0 6.503-1.381 8.773-3.812L352 176h32z"/>
                 </svg>
-            </button>
-
-            <a href="/search" class="icon-button" aria-label="Search">
-                <svg fill="#000000" width="32" height="32" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
-                    <path fill-rule="evenodd" d="M12.027 9.92L16 13.95 14 16l-4.075-3.976A6.465 6.465 0 0 1 6.5 13C2.91 13 0 10.083 0 6.5 0 2.91 2.917 0 6.5 0 10.09 0 13 2.917 13 6.5a6.463 6.463 0 0 1-.973 3.42zM1.997 6.452c0 2.48 2.014 4.5 4.5 4.5 2.48 0 4.5-2.015 4.5-4.5 0-2.48-2.015-4.5-4.5-4.5-2.48 0-4.5 2.014-4.5 4.5z"/>
-                </svg>
             </a>
+
+            <!-- Search popup -->
+            <div class="search-popup-anchor relative">
+                <button
+                    type="button"
+                    id="search-popup-button"
+                    class="icon-button"
+                    onclick={toggleSearch}
+                    aria-label="Search"
+                >
+                    <svg fill="#000000" width="32" height="32" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" d="M12.027 9.92L16 13.95 14 16l-4.075-3.976A6.465 6.465 0 0 1 6.5 13C2.91 13 0 10.083 0 6.5 0 2.91 2.917 0 6.5 0 10.09 0 13 2.917 13 6.5a6.463 6.463 0 0 1-.973 3.42zM1.997 6.452c0 2.48 2.014 4.5 4.5 4.5 2.48 0 4.5-2.015 4.5-4.5 0-2.48-2.015-4.5-4.5-4.5-2.48 0-4.5 2.014-4.5 4.5z"/>
+                    </svg>
+                </button>
+                {#if searchOpen}
+                    <div class="search-popup">
+                        <div class="search-popup-row">
+                            <input
+                                bind:this={searchInputEl}
+                                bind:value={searchTerm}
+                                type="text"
+                                placeholder="search..."
+                                class="search-popup-input"
+                                onkeydown={handleSearchInputKeydown}
+                            />
+                            <a
+                                bind:this={goAnchorEl}
+                                href={searchTerm.trim() ? getSearchUrl(searchTerm.trim()) : '/search'}
+                                class="search-go-btn"
+                                onclick={() => closeSearch()}
+                                onauxclick={(e) => { if (e.button === 1) closeSearch(); }}
+                            >Go</a>
+                        </div>
+                    </div>
+                {/if}
+            </div>
 
             <!-- Scan split-button -->
             <div class="header-scan-split" class:scanning>
@@ -131,7 +225,29 @@
 
                 {#if configMenuOpen}
                     <div class="config-menu">
-                        <p class="text-[#aaa] text-sm whitespace-nowrap">Settings coming soon.</p>
+                        <div class="settings-title">Settings</div>
+                        <label class="settings-toggle">
+                            <span class="toggle-wrap">
+                                <input
+                                    type="checkbox"
+                                    checked={settings.devMode}
+                                    onchange={() => settings.devMode = !settings.devMode}
+                                />
+                                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                            </span>
+                            <span>Dev mode</span>
+                        </label>
+                        <label class="settings-toggle">
+                            <span class="toggle-wrap">
+                                <input
+                                    type="checkbox"
+                                    checked={settings.focusMode}
+                                    onchange={() => settings.focusMode = !settings.focusMode}
+                                />
+                                <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                            </span>
+                            <span>Video page: focus mode</span>
+                        </label>
                     </div>
                 {/if}
             </div>
@@ -264,6 +380,57 @@
         background: rgb(204, 105, 179);
     }
 
+    /* Search popup */
+    .search-popup-anchor {
+        position: relative;
+    }
+    .search-popup {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: -4px;
+        background: #070c0c;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: 8px;
+        padding: 0.3rem;
+        z-index: 9999;
+        width: 280px;
+    }
+    .search-popup-row {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+    .search-popup-input {
+        flex: 1;
+        min-width: 0;
+        background: transparent;
+        border: none;
+        outline: none;
+        color: #eee;
+        font-family: 'Inter';
+        font-size: 0.9rem;
+        padding: 0.3rem 0.45rem;
+    }
+    .search-popup-input::placeholder {
+        color: #555;
+    }
+    .search-go-btn {
+        flex-shrink: 0;
+        background: #01b8b8;
+        color: #000;
+        border: none;
+        border-radius: 5px;
+        padding: 0.22rem 0.6rem;
+        font-family: 'Inter';
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: none;
+        transition: background 0.15s;
+    }
+    .search-go-btn:hover { background: #00d0d0; }
+
+    /* Settings gear */
     #config-menu-button {
         margin-top: 2px;
         transition: transform 0.4s ease-out;
@@ -276,10 +443,75 @@
         position: absolute;
         top: 35px;
         right: 15px;
-        background: black;
-        border: 1px solid rgba(255, 255, 255, 0.6);
+        background: #070c0c;
+        border: 1px solid rgba(255, 255, 255, 0.25);
         border-radius: 10px;
-        padding: 0.7rem 0.8rem;
+        padding: 0.65rem 0.9rem 0.8rem;
         z-index: 9999;
+        min-width: 280px;
+    }
+
+    .settings-title {
+        color: #888;
+        font-family: 'Inter';
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .settings-toggle {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        cursor: pointer;
+        padding: 0.3rem 0;
+        color: #ccc;
+        font-family: 'Inter';
+        font-size: 0.83rem;
+        user-select: none;
+    }
+    .settings-toggle:hover { color: #eee; }
+
+    .toggle-wrap {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        flex-shrink: 0;
+    }
+    .toggle-wrap input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-track {
+        width: 2rem;
+        height: 1.05rem;
+        border-radius: 999px;
+        background: #333;
+        position: relative;
+        transition: background 0.18s;
+    }
+    .toggle-wrap input:checked + .toggle-track {
+        background: #01b8b8;
+    }
+
+    .toggle-thumb {
+        position: absolute;
+        top: 50%;
+        left: 2px;
+        transform: translateY(-50%);
+        width: 0.65rem;
+        height: 0.65rem;
+        border-radius: 50%;
+        background: #888;
+        transition: transform 0.18s, background 0.18s;
+    }
+    .toggle-wrap input:checked + .toggle-track .toggle-thumb {
+        transform: translateX(0.95rem) translateY(-50%);
+        background: white;
     }
 </style>

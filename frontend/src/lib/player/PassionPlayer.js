@@ -121,8 +121,9 @@ function _buildRuleMap(dict) {
 }
 
 class KeybindEngine {
-    constructor(dict, dispatch) {
+    constructor(dict, dispatch, isBlocked = null) {
         this._dispatch = dispatch;
+        this._isBlocked = isBlocked;
         this._ruleMap = _buildRuleMap(dict);
         this._dtState = null;
         this._holdState = null;
@@ -156,6 +157,7 @@ class KeybindEngine {
     }
 
     _onKeydown(e) {
+        if (this._isBlocked?.()) return;
         const tag = document.activeElement?.tagName;
         if (tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable) return;
         const result = this._match(e);
@@ -186,6 +188,7 @@ class KeybindEngine {
         }
 
         if (dtRule) {
+            if (e.repeat) return;
             if (this._dtState && this._dtState.code === rule.code &&
                 this._dtState.mods.ctrl === e.ctrlKey && this._dtState.mods.shift === e.shiftKey) {
                 clearTimeout(this._dtState.timer);
@@ -233,7 +236,7 @@ export class PassionPlayer {
         styles = null,
         quiet = true,
         disable_keybinds = false,
-        controlsOverlayKey = 't',
+        controlsOverlayKey = 'p',
         // headless callbacks
         onPlay = null,
         onPause = null,
@@ -359,6 +362,11 @@ export class PassionPlayer {
 
         this._viewedSegments = [];
 
+        this._renamingMarker = false;
+        this._markersVisible = true;
+        this._cKeyCleanup = null;
+        this._pendingRenameInput = null;
+
         this._init();
     }
 
@@ -446,6 +454,8 @@ export class PassionPlayer {
         clearTimeout(this._volumeOsdTimer);
         this._keybindEngine?.destroy();
         this._keybindEngine = null;
+        this._cKeyCleanup?.();
+        this._cKeyCleanup = null;
         if (this._seekDragMoveHandler) {
             document.removeEventListener('mousemove', this._seekDragMoveHandler);
             document.removeEventListener('mouseup', this._seekDragUpHandler);
@@ -573,6 +583,7 @@ export class PassionPlayer {
                 this._updateBottomBarFill(perc);
                 const cur = this.$('.time-duration-container .current');
                 if (cur) cur.textContent = this._formatTime(this.video.currentTime);
+                this._updateMarkerActiveStates();
             });
         }
 
@@ -668,34 +679,42 @@ export class PassionPlayer {
 
     _showControls() {
         const controls = this.$('.controls-bar');
-        const progress = this.$('#progress-bar-default');
+        const progressTrack = this.$('.progress-bar-wrapper');
+        const viewedLayer = this.$('.pp-viewed-segments-layer');
         const settings = this.$('.pp-settings-control');
         const player = this.$('.PassionPlayer');
         const filename = this.$('.pp-filename');
         const bottomBar = this.$('.pp-bottom-bar');
         if (controls) { controls.style.transitionDuration = '0ms'; controls.style.opacity = '1'; }
-        if (progress) { progress.style.transitionDuration = '0ms'; progress.style.opacity = '1'; }
+        if (progressTrack) { progressTrack.style.transitionDuration = '0ms'; progressTrack.style.opacity = '1'; }
+        if (viewedLayer) { viewedLayer.style.transitionDuration = '0ms'; viewedLayer.style.opacity = '1'; }
         if (settings) { settings.style.transitionDuration = '0ms'; settings.style.opacity = '1'; }
         if (filename) { filename.style.transitionDuration = '0ms'; filename.style.opacity = '1'; }
         if (bottomBar) { bottomBar.style.transitionDuration = '0ms'; bottomBar.style.opacity = '0'; }
         if (player) player.style.cursor = '';
+        if (this.video) this.video.style.cursor = '';
         this._controlsVisible = true;
         this.onUIVisible?.(true);
     }
 
     _hideControls() {
+        const isPaused = this.video ? this.video.paused : this._paused;
+        if (isPaused) return;
         const controls = this.$('.controls-bar');
-        const progress = this.$('#progress-bar-default');
+        const progressTrack = this.$('.progress-bar-wrapper');
+        const viewedLayer = this.$('.pp-viewed-segments-layer');
         const settings = this.$('.pp-settings-control');
         const player = this.$('.PassionPlayer');
         const filename = this.$('.pp-filename');
         const bottomBar = this.$('.pp-bottom-bar');
         if (controls) { controls.style.transitionDuration = '500ms'; controls.style.opacity = '0'; }
-        if (progress) { progress.style.transitionDuration = '500ms'; progress.style.opacity = '0'; }
+        if (progressTrack) { progressTrack.style.transitionDuration = '500ms'; progressTrack.style.opacity = '0'; }
+        if (viewedLayer) { viewedLayer.style.transitionDuration = '500ms'; viewedLayer.style.opacity = '0'; }
         if (settings) { settings.style.transitionDuration = '500ms'; settings.style.opacity = '0'; }
         if (filename) { filename.style.transitionDuration = '500ms'; filename.style.opacity = '0'; }
         if (bottomBar) { bottomBar.style.transitionDuration = '500ms'; bottomBar.style.opacity = '0.75'; }
         if (player) player.style.cursor = 'none';
+        if (this.video) this.video.style.cursor = 'none';
         this._controlsVisible = false;
         this._closeSubtitleMenu();
         this._closeSettingsMenu();
@@ -824,10 +843,10 @@ export class PassionPlayer {
             <h2>Keyboard Shortcuts</h2>
             ${group('Seek', [
                 row(['A','←','J'], 'Back 7s'),
-                row(['Shift+A','Shift+←'], 'Back 2s'),
+                row(['Shift+A','Shift+←'], 'Back 1s'),
                 row(['Q'], 'Back 45s'),
                 row(['D','→','L'], 'Forward 7s'),
-                row(['Shift+D','Shift+→'], 'Forward 2s'),
+                row(['Shift+D','Shift+→'], 'Forward 1s'),
                 row(['E'], 'Forward 45s'),
                 row(['1–9'], 'Jump to 10%–90%'),
                 row(['0'], 'Jump to start'),
@@ -847,14 +866,16 @@ export class PassionPlayer {
                 row(['W','M'], 'Toggle mute'),
             ].join(''))}
             ${group('Markers', [
-                row(['R'], 'Add marker at current position'),
-                row(['R', 'R'], 'Remove nearest marker'),
-                row(['Shift+E'], 'Jump to next marker'),
-                row(['Shift+Q'], 'Jump to previous marker'),
+                row(['C'], 'Add marker / press again to delete (when on marker)'),
+                row(['C', '(hold)'], 'Rename marker (when on marker)'),
+                row(['Shift+C'], 'Toggle markers visibility'),
+                row(['Shift+E'], 'Jump to next marker / start'),
+                row(['Shift+Q'], 'Jump to previous marker / start'),
+                row(['I'], 'Add dated marker at current position'),
             ].join(''))}
             ${group('Playheads', [
-                row(['C'], 'Add playhead at current position'),
-                row(['C', '(hold)'], 'Delete nearest playhead'),
+                row(['T'], 'Add playhead at current position'),
+                row(['T', '(hold)'], 'Delete current playhead'),
                 row(['Ctrl+N'], 'Cycle to next playhead'),
                 row(['Ctrl+Shift+N'], 'Cycle to previous playhead'),
             ].join(''))}
@@ -900,12 +921,12 @@ export class PassionPlayer {
             'seekToStart':           'home',
             'toggleKeybindsOverlay': overlayKey,
             // Phase 2:
-            'addMarker':             'r',
-            'removeMarker':          'r+r',
+            'toggleMarkersVisibility': 'shift-c',
             'cycleMarkerNext':       'shift-e',
             'cycleMarkerPrev':       'shift-q',
-            'spawnNewPlayhead':      'c',
-            'deleteCurrentPlayhead': 'c[hold]',
+            'addDatedMarker':        'i',
+            'spawnNewPlayhead':      't',
+            'deleteCurrentPlayhead': 't[hold]',
             'cyclePlayheadNext':     'ctrl-n',
             'cyclePlayheadPrev':     'ctrl-shift-n',
             'addLoopPoint':          'v',
@@ -913,7 +934,12 @@ export class PassionPlayer {
             'toggleLooping':         'shift-v',
         };
 
-        this._keybindEngine = new KeybindEngine(KEYBINDS, (action, extras) => this._handleAction(action, extras));
+        this._keybindEngine = new KeybindEngine(
+            KEYBINDS,
+            (action, extras) => this._handleAction(action, extras),
+            () => this._renamingMarker
+        );
+        this._addCKeyListeners();
     }
 
     _handleAction(action, { digit } = {}) {
@@ -933,10 +959,10 @@ export class PassionPlayer {
             case 'togglePlayback':        this.togglePlayback(); break;
             case 'toggleFullscreen':      this.toggleFullscreen(); break;
             case 'back-7s':               seekDelta(-7);  break;
-            case 'back-2s':               seekDelta(-2);  break;
+            case 'back-2s':               seekDelta(-1);  break;
             case 'back-45s':              seekDelta(-45); break;
             case 'forward-7s':            seekDelta(7);   break;
-            case 'forward-2s':            seekDelta(2);   break;
+            case 'forward-2s':            seekDelta(1);   break;
             case 'forward-45s':           seekDelta(45);  break;
             case 'seekToStart':
                 if (pb) { this.setPlaybackTime(0, pb); this.showOSD('Back to start'); this._showSeekOSD(); }
@@ -960,10 +986,10 @@ export class PassionPlayer {
             case 'cycleCssFilter':        this._cycleCssFilter(+1);  break;
             case 'cycleMpvPreset':        this._cycleMpvPreset(+1);  break;
             case 'cycleMpvPresetBack':    this._cycleMpvPreset(-1);  break;
-            case 'addMarker':             this._addMarker();          break;
-            case 'removeMarker':          this._removeNearestMarker(); break;
+            case 'toggleMarkersVisibility': this._toggleMarkersVisibility(); break;
             case 'cycleMarkerNext':       this._cycleMarker(+1);      break;
             case 'cycleMarkerPrev':       this._cycleMarker(-1);      break;
+            case 'addDatedMarker':        this._addDatedMarker();     break;
             case 'spawnNewPlayhead':      this._spawnPlayhead();      break;
             case 'deleteCurrentPlayhead': this._deleteCurrentPlayhead(); break;
             case 'cyclePlayheadNext':     this._cyclePlayhead(+1);    break;
@@ -1044,7 +1070,7 @@ export class PassionPlayer {
 
     // ── Markers ──────────────────────────────────────────────────────────────
 
-    _addMarker() {
+    _doAddMarker() {
         const time = this.video ? this.video.currentTime : this._currentTime;
         const n = ++this._markerCounter;
         this._markers.push({ id: n, time, color: '', name: `Marker ${n}` });
@@ -1056,18 +1082,12 @@ export class PassionPlayer {
 
     _removeNearestMarker() {
         if (!this._markers.length) { this.showOSD('No markers'); return; }
-        const cur = this.video ? this.video.currentTime : this._currentTime;
-        let nearest = null, minDist = Infinity;
-        for (const m of this._markers) {
-            const d = Math.abs(m.time - cur);
-            if (d < minDist) { minDist = d; nearest = m; }
-        }
-        if (nearest) {
-            this._markers = this._markers.filter(m => m.id !== nearest.id);
-            this._renderMarkers();
-            this.showOSD(`${nearest.name} removed`);
-            this.onMarkersUpdate?.(this._markers.map(m => [m.time, m.color ?? '', m.name ?? '']));
-        }
+        const active = this._getActiveMarker();
+        if (!active) { this.showOSD('Not on a marker'); return; }
+        this._markers = this._markers.filter(m => m.id !== active.id);
+        this._renderMarkers();
+        this.showOSD(`${active.name} removed`);
+        this.onMarkersUpdate?.(this._markers.map(m => [m.time, m.color ?? '', m.name ?? '']));
     }
 
     _renderMarkers() {
@@ -1089,20 +1109,180 @@ export class PassionPlayer {
     }
 
     _cycleMarker(dir) {
-        if (!this._markers.length) { this.showOSD('No markers'); return; }
-        const cur = this.video ? this.video.currentTime : this._currentTime;
-        let target;
-        if (dir > 0) {
-            target = this._markers.find(m => m.time > cur + 0.1) ?? this._markers[0];
-        } else {
-            target = [...this._markers].reverse().find(m => m.time < cur - 0.1) ?? this._markers[this._markers.length - 1];
-        }
+        if (!this._markers.length) return;
+        const vt = this.video ? this.video.currentTime : this._currentTime;
         const dur = this.video ? this.video.duration : this._duration;
-        if (!dur) return;
         const pb = this.$('#progress-bar-default .progress-bar');
-        this.setPlaybackTime(target.time / dur, pb);
-        this.showOSD(target.name);
+        if (!dur || !pb) return;
+
+        const active = this._getActiveMarker();
+        const refTime = active ? active.time : vt;
+
+        if (dir > 0) {
+            const target = this._markers.find(m => m.time > refTime);
+            if (!target) {
+                this.setPlaybackTime(0, pb);
+                this.showOSD('Back to start');
+                this._showSeekOSD();
+                return;
+            }
+            this.setPlaybackTime(target.time / dur, pb);
+            this.showOSD(target.name);
+        } else {
+            if (vt < 0.5) {
+                const last = this._markers[this._markers.length - 1];
+                this.setPlaybackTime(last.time / dur, pb);
+                this.showOSD(last.name);
+                this._showSeekOSD();
+                return;
+            }
+            const target = [...this._markers].reverse().find(m => m.time < refTime);
+            if (!target) {
+                this.setPlaybackTime(0, pb);
+                this.showOSD('Back to start');
+                this._showSeekOSD();
+                return;
+            }
+            this.setPlaybackTime(target.time / dur, pb);
+            this.showOSD(target.name);
+        }
         this._showSeekOSD();
+    }
+
+    _getActiveMarker() {
+        const vt = this.video ? this.video.currentTime : this._currentTime;
+        return this._markers.find(m => vt >= m.time && vt < m.time + 0.5) ?? null;
+    }
+
+    _updateMarkerActiveStates() {
+        const vt = this.video ? this.video.currentTime : this._currentTime;
+        const markerEls = this.$$('.pp-marker');
+        this._markers.forEach((m, i) => {
+            markerEls[i]?.classList.toggle('pp-marker--active', vt >= m.time && vt < m.time + 0.5);
+        });
+    }
+
+    _toggleMarkersVisibility() {
+        this._markersVisible = !this._markersVisible;
+        const layer = this.$('.pp-markers-layer');
+        if (layer) layer.style.display = this._markersVisible ? '' : 'none';
+        this.showOSD(this._markersVisible ? 'Markers visible' : 'Markers hidden');
+    }
+
+    _addCKeyListeners() {
+        let holdTimer = null;
+        let holdFired = false;
+        let dtPending = false;
+        let dtTimer = null;
+
+        const isBlocked = () => {
+            if (this._renamingMarker) return true;
+            const tag = document.activeElement?.tagName;
+            return tag === 'INPUT' || tag === 'TEXTAREA' || !!document.activeElement?.isContentEditable;
+        };
+
+        const onKeydown = (e) => {
+            if (e.code !== 'KeyC' || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
+            if (e.repeat || isBlocked()) return;
+            e.preventDefault();
+            if (holdTimer !== null) return;
+            holdFired = false;
+            holdTimer = setTimeout(() => {
+                holdFired = true;
+                holdTimer = null;
+                if (dtTimer) { clearTimeout(dtTimer); dtTimer = null; dtPending = false; }
+                this._renameActiveMarker();
+            }, 400);
+        };
+
+        const onKeyup = (e) => {
+            if (e.code !== 'KeyC' || e.shiftKey || e.ctrlKey || e.altKey || e.metaKey) return;
+            if (holdTimer === null && !holdFired) return;
+            if (holdTimer !== null) { clearTimeout(holdTimer); holdTimer = null; }
+            if (holdFired) {
+                holdFired = false;
+                // Focus only now (key is physically up) so repeat 'c' events don't flood the input
+                if (this._pendingRenameInput) {
+                    this._pendingRenameInput.focus();
+                    this._pendingRenameInput.select();
+                    this._pendingRenameInput = null;
+                }
+                return;
+            }
+
+            // tap (released before 400ms)
+            if (dtPending) {
+                clearTimeout(dtTimer);
+                dtTimer = null;
+                dtPending = false;
+                this._removeNearestMarker();
+            } else {
+                const active = this._getActiveMarker();
+                if (active) {
+                    this.showOSD('Press C again to delete marker');
+                    dtPending = true;
+                    dtTimer = setTimeout(() => { dtPending = false; }, 600);
+                } else {
+                    this._doAddMarker();
+                }
+            }
+        };
+
+        document.addEventListener('keydown', onKeydown);
+        document.addEventListener('keyup', onKeyup);
+
+        this._cKeyCleanup = () => {
+            document.removeEventListener('keydown', onKeydown);
+            document.removeEventListener('keyup', onKeyup);
+            if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+            if (dtTimer) { clearTimeout(dtTimer); dtTimer = null; }
+        };
+    }
+
+    _renameActiveMarker() {
+        const active = this._getActiveMarker();
+        if (!active) return;
+        const markerEls = this.$$('.pp-marker');
+        const idx = this._markers.findIndex(m => m.id === active.id);
+        const markerEl = markerEls[idx];
+        if (!markerEl) return;
+        const labelEl = markerEl.querySelector('.pp-marker-label');
+        if (!labelEl) return;
+
+        labelEl.style.visibility = 'hidden';
+        this._renamingMarker = true;
+
+        const input = document.createElement('input');
+        input.className = 'pp-marker-rename-input';
+        input.type = 'text';
+        input.value = active.name;
+        markerEl.appendChild(input);
+
+        let done = false;
+        const finish = (save) => {
+            if (done) return;
+            done = true;
+            if (save) {
+                active.name = input.value.trim() || active.name;
+                this._renderMarkers();
+                this.onMarkersUpdate?.(this._markers.map(m => [m.time, m.color ?? '', m.name ?? '']));
+            }
+            this._renamingMarker = false;
+            this._pendingRenameInput = null;
+            labelEl.style.visibility = '';
+            input.remove();
+        };
+
+        input.addEventListener('keydown', (e) => {
+            e.stopPropagation();
+            if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+            else if (e.key === 'Escape' || e.key === 'Tab') { e.preventDefault(); finish(false); }
+        });
+        input.addEventListener('blur', () => finish(false));
+
+        // Don't focus yet — _addCKeyListeners focuses on KeyC keyup so the held key
+        // doesn't flood the input with 'c' characters before the user releases.
+        this._pendingRenameInput = input;
     }
 
     // ── Playheads ────────────────────────────────────────────────────────────
@@ -1898,7 +2078,7 @@ button:focus {
 video {
     height: 100%;
     width: 100%;
-    cursor: pointer;
+    cursor: default;
     user-drag: none;
     -webkit-user-drag: none;
     user-select: none;
@@ -2505,8 +2685,9 @@ video {
 .pp-marker-label {
     position: absolute;
     bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0;
+    transform-origin: bottom left;
+    transform: rotate(-30deg);
     color: rgba(100, 170, 255, 0.9);
     font-size: 9px;
     white-space: nowrap;
@@ -2515,6 +2696,32 @@ video {
     user-select: none;
     line-height: 1;
     font-weight: 500;
+}
+.pp-marker-rename-input {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 18, 28, 0.95);
+    border: 1px solid rgba(100, 170, 255, 0.7);
+    border-radius: 3px;
+    color: #e8e8e8;
+    font-size: 10px;
+    font-family: inherit;
+    padding: 2px 5px;
+    width: 110px;
+    outline: none;
+    z-index: 100;
+    pointer-events: all;
+}
+.pp-marker--active {
+    background: rgba(255, 200, 80, 0.95);
+    height: 14px;
+    width: 4px;
+}
+.pp-marker--active .pp-marker-label {
+    color: rgba(255, 200, 80, 0.95);
+    font-weight: 700;
 }
 .pp-playhead {
     position: absolute;
@@ -2644,18 +2851,21 @@ video {
     background: rgba(0,0,0,0.88);
     z-index: 50;
     display: none;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
-    overflow-y: auto;
-    padding: 32px 16px;
+    padding: 24px 16px;
 }
 .pp-keybinds-content {
     color: #fff;
-    max-width: 520px;
+    max-width: 840px;
     width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 32px;
 }
 .pp-keybinds-content h2 {
-    margin: 0 0 20px;
+    grid-column: 1 / -1;
+    margin: 0 0 16px;
     font-size: 17px;
     font-weight: 600;
     color: #fff;
@@ -2701,7 +2911,8 @@ video {
     font-size: 13px;
 }
 .pp-keybinds-dismiss {
-    margin-top: 24px;
+    grid-column: 1 / -1;
+    margin-top: 16px;
     font-size: 12px;
     color: #555;
     text-align: center;

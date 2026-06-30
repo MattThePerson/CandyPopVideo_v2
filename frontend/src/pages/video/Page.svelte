@@ -193,14 +193,14 @@
         <VideoBelow {video} {interact} />
     {/if}
 
-    <!-- related videos -->
-    {#if video}
-        <RelatedVideos {video} onRelatedLoaded={(hashes) => { relatedHashes = hashes; }} />
-    {/if}
-
     <!-- similar videos -->
     {#if video}
         <SimilarVideos {video} {similar} loading={similarLoading} {queryTime} {relatedHashes} />
+    {/if}
+
+    <!-- related videos -->
+    {#if video}
+        <RelatedVideos {video} onRelatedLoaded={(hashes) => { relatedHashes = hashes; }} />
     {/if}
 
 </div>
@@ -232,7 +232,7 @@
 <style>
     .page {
         width: 100%;
-        padding-bottom: 4rem;
+        padding-bottom: 12rem;
     }
 
     .player-wrap {

@@ -13,7 +13,7 @@
 
     const sizeMap: Record<CardSize, { width: string; aspectRatio: string }> = {
         small:  { width: '20.5rem', aspectRatio: '14/9' },
-        medium: { width: '25rem',   aspectRatio: '16/9' },
+        medium: { width: '24rem',   aspectRatio: '16/9' },
         large:  { width: '33rem',   aspectRatio: '18/9' },
         xl:     { width: '40rem',   aspectRatio: '19/9' },
     };

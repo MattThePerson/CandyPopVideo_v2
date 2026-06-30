@@ -167,13 +167,13 @@
         flex-direction: column;
         align-items: center;
         width: 100%;
-        padding-bottom: 4rem;
+        padding-bottom: 12rem;
     }
 
     .results-section {
         width: 100%;
         max-width: 120rem;
-        padding: 0.5rem 4rem 0;
+        padding: 0.5rem 2rem 0;
     }
 
     .results-center {
