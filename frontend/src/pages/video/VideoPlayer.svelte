@@ -1,6 +1,7 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
     import { PassionPlayer } from '$lib/player/PassionPlayer.js';
+    import { settings } from '$lib/stores/settings.svelte';
 
     /* Props */
     let { hash, title, fps = null, markers = [], datedMarkers = [] }: {
@@ -66,12 +67,12 @@
     async function loadSeekThumbs(p: PassionPlayer) {
         p.setSeekThumbsLoading(true);
         try {
-            const ensureRes = await fetch(`/media/ensure/seek-thumbnails/${hash}`);
+            const ensureRes = await fetch(`/media/ensure/seek-thumbnails/${hash}${settings.devParam}`);
             if (!ensureRes.ok) { p.setSeekThumbsLoading(false); return; }
 
             const [vttText, imgBlob] = await Promise.all([
-                fetch(`/static/preview-media/0x${hash}/seekthumbs.vtt`).then(r => r.ok ? r.text() : Promise.reject()),
-                fetch(`/static/preview-media/0x${hash}/seekthumbs.jpg`).then(r => r.ok ? r.blob() : Promise.reject()),
+                fetch(`/media/preview/${hash}/seekthumbs.vtt${settings.devParam}`).then(r => r.ok ? r.text() : Promise.reject()),
+                fetch(`/media/preview/${hash}/seekthumbs.jpg${settings.devParam}`).then(r => r.ok ? r.blob() : Promise.reject()),
             ]);
 
             const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -94,8 +95,8 @@
 
         player = new PassionPlayer({
             hostEl,
-            src: `/media/get/video/${hash}`,
-            poster: `/media/get/poster/${hash}`,
+            src: `/media/get/video/${hash}${settings.devParam}`,
+            poster: `/media/get/poster/${hash}${settings.devParam}`,
             title,
             subtitles_srt_src: subsUrl,
             autoplay: false,

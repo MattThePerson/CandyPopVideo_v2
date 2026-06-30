@@ -5,6 +5,7 @@
     import Spinner from '$lib/components/Spinner.svelte';
     import CoverageBar from './CoverageBar.svelte';
     import type { ViewingRow } from './types';
+    import { settings } from '$lib/stores/settings.svelte';
 
     interface Entry {
         hash:       string;
@@ -113,7 +114,7 @@
                     onclick={() => navigate(`/video/${entry.hash}`)}
                     aria-label="Watch {title}"
                 >
-                    <img src="/media/get/poster/{entry.hash}" alt="" class="thumb" />
+                    <img src="/media/get/poster/{entry.hash}{settings.devParam}" alt="" class="thumb" />
                     <div class="play-hover">▶</div>
                 </button>
 

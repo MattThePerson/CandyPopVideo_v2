@@ -67,4 +67,6 @@ export interface VideoInteractions {
     markers:       [number, string, string][];  // [video_time, color, tag]
     dated_markers: [number, string][];          // [video_time, datetime]
     comments:      [string, string][];          // [comment, datetime]
+
+    popularity_score: number;
 }

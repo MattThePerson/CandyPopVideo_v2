@@ -6,9 +6,8 @@
     import RenameOverlay from '$lib/components/RenameOverlay.svelte';
     import type { VideoData, VideoInteractions } from '$lib/types/video';
     import VideoPlayer from './VideoPlayer.svelte';
-    import VideoDetails from './VideoDetails.svelte';
     import VideoBelow from './VideoBelow.svelte';
-    import RelatedVideos from './RelatedVideos.svelte';
+    import RelatedVideos from '$lib/components/RelatedVideos.svelte';
     import SimilarVideos from '$lib/components/SimilarVideos.svelte';
 
     /* Props */
@@ -183,14 +182,9 @@
         {/if}
     </div>
 
-    <!-- video details -->
+    <!-- video below: main tab (details), info, thumbnails -->
     {#if video && interact}
-        <VideoDetails {hash} {video} {interact} />
-    {/if}
-
-    <!-- optional below section: description + comments -->
-    {#if video && interact && (video.description || (interact.comments?.length ?? 0) > 0)}
-        <VideoBelow {video} {interact} />
+        <VideoBelow {hash} {video} {interact} />
     {/if}
 
     <!-- similar videos -->
@@ -232,7 +226,7 @@
 <style>
     .page {
         width: 100%;
-        padding-bottom: 12rem;
+        padding-bottom: 48rem;
     }
 
     .player-wrap {

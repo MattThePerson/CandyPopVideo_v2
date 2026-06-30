@@ -52,12 +52,13 @@ func main() {
     if err := db.InitDB(cfg.DBPath); err != nil {
         log.Fatalf("Failed to initialize database: %v", err)
     }
-    if err := db.MigrateInteractionsTable(cfg.DBPath); err != nil {
-        log.Fatalf("Failed to migrate interactions table: %v", err)
-    }
-    if err := db.MigrateViewingsTable(cfg.DBPath); err != nil {
-        log.Fatalf("Failed to migrate viewings table: %v", err)
-    }
+    routes.InitDevHashes(cfg.DBPath, "dev")
+    // if err := db.MigrateInteractionsTable(cfg.DBPath); err != nil {
+    //     log.Fatalf("Failed to migrate interactions table: %v", err)
+    // }
+    // if err := db.MigrateViewingsTable(cfg.DBPath); err != nil {
+    //     log.Fatalf("Failed to migrate viewings table: %v", err)
+    // }
 
     stateStore := config.NewAppStateStore(cfg.AppDataDir)
 
@@ -107,7 +108,7 @@ func main() {
 
     e.Static("/assets", "frontend/dist/assets")
 
-    e.Static("/static/preview-media", cfg.PreviewMediaDir+"/preview")
+    // e.Static("/static/preview-media", cfg.PreviewMediaDir+"/preview")
     e.Static("/static/actor-store", cfg.ActorInfoDir)
 
     e.GET("/*", func(c echo.Context) error {

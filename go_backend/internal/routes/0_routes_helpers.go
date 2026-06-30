@@ -59,7 +59,7 @@ func getPreviewThumbnail(vid_media_dir string, large_thumbs bool) (string, error
 	if len(entries) < 10 {
 		return "", errors.New("not enough images in preview media dir")
 	}
-	
+
 	// get seeded random file
 	var res = "360"
 	if large_thumbs {
@@ -134,4 +134,32 @@ func formatStringForIntComparability(input string) string {
 	return strings.Join(parts, " ")
 }
 
+var devHashes []string
 
+// InitDevHashes loads all video hashes from the named collection into the package-level
+// devHashes slice. Call once at startup (guarded by --dev if desired). resolveDevHash
+// draws from this slice; if the collection is empty or missing it falls back to the
+// original hash so the server stays functional.
+func InitDevHashes(db_path, collection string) {
+    mp, err := db.ReadSerializedMapFromTable[schemas.VideoData](db_path, "videos")
+    if err != nil {
+        log.Printf("[DEV] InitDevHashes: failed to read videos table: %v", err)
+        return
+    }
+    var hashes []string
+    for hsh, vd := range mp {
+        if strings.EqualFold(vd.Collection, collection) {
+            hashes = append(hashes, hsh)
+        }
+    }
+    devHashes = hashes
+    log.Printf("[DEV] Loaded %d hashes from collection %q", len(devHashes), collection)
+}
+
+func resolveDevHash(hash string, devArg string) string {
+    if devArg != "true" || len(devHashes) == 0 {
+        return hash
+    }
+    idx, _ := strconv.ParseInt(hash, 16, 0)
+    return devHashes[int(idx)%len(devHashes)]
+}

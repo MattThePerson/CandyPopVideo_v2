@@ -5,6 +5,8 @@
     import type { CardSize } from '$lib/stores/settings.svelte';
     import { navigate } from '$lib/router/router.svelte';
     import Spinner from '$lib/components/Spinner.svelte';
+    import { settings } from '$lib/stores/settings.svelte';
+    import { POPULARITY_DESCRIPTION } from '$lib/util/popularity';
 
     /* Props */
     let { video, size, width: wOverride, aspectRatio: arOverride }: {
@@ -94,14 +96,14 @@
         if (teaserState !== 'idle') return;
         teaserState = 'loading';
         try {
-            const ensureRes = await fetch(`/media/ensure/teaser-thumbs-small/${video.hash}`);
+            const ensureRes = await fetch(`/media/ensure/teaser-thumbs-small/${video.hash}${settings.devParam}`);
             if (!ensureRes.ok) { teaserState = 'failed'; return; }
-            const vttRes = await fetch(`/static/preview-media/0x${video.hash}/teaser_thumbs_small.vtt`);
+            const vttRes = await fetch(`/media/preview/${video.hash}/teaser_thumbs_small.vtt${settings.devParam}`);
             if (!vttRes.ok) { teaserState = 'failed'; return; }
             const cues = parseVtt(await vttRes.text());
             if (!cues.length) { teaserState = 'failed'; return; }
             const img = new Image();
-            img.src = `/static/preview-media/0x${video.hash}/teaser_thumbs_small.jpg`;
+            img.src = `/media/preview/${video.hash}/teaser_thumbs_small.jpg${settings.devParam}`;
             await new Promise<void>(res => { img.onload = () => res(); img.onerror = () => res(); });
             if (!img.naturalWidth) { teaserState = 'failed'; return; }
             spriteCues = cues;
@@ -255,6 +257,19 @@
     let isNewVideo  = $derived(video.date_downloaded ? isNew(video.date_downloaded) : false);
     let viewtimeStr = $derived(interactions ? formatViewtime(interactions.viewtime) : '');
 
+    let favTitle = $derived.by(() => {
+        if (!isFavourite) return 'Add to favourites';
+        const date = interactions?.favourited_date;
+        if (!date) return 'Favourited';
+        return `favourited on ${date} (${timeAgo(date)} ago)`;
+    });
+
+    let popularityStr = $derived(
+        interactions && interactions.popularity_score > 0
+            ? interactions.popularity_score.toFixed(1)
+            : null
+    );
+
     let markersTitle = $derived.by(() => {
         if (!interactions?.markers?.length) return '';
         const tags = interactions.markers.map(m => m[2]).filter(Boolean);
@@ -283,7 +298,7 @@
         onmousemove={handleMouseMove}
         onmouseleave={handleMouseLeave}
     >
-        <img class="poster" class:hidden={isHovering && teaserState !== 'failed'} class:contain={posterContain} src="/media/get/poster/{video.hash}" alt="" onload={handlePosterLoad} />
+        <img class="poster" class:hidden={isHovering && teaserState !== 'failed'} class:contain={posterContain} src="/media/get/poster/{video.hash}{settings.devParam}" alt="" onload={handlePosterLoad} />
 
         {#if showSprite && spriteStyle}
             {#if isVertical}
@@ -370,6 +385,9 @@
                             </svg>
                         </span>
                     {/if}
+                    {#if popularityStr}
+                        <span title={POPULARITY_DESCRIPTION}>★ {popularityStr}</span>
+                    {/if}
                 {:else}
                     <span class="muted">vt unknown</span>
                 {/if}
@@ -387,7 +405,7 @@
                 class="fav-btn"
                 class:loaded={interactions !== null}
                 class:is-fav={isFavourite}
-                title="toggle favourite"
+                title={favTitle}
                 onclick={toggleFavourite}
                 aria-label="toggle favourite"
             >

@@ -46,7 +46,7 @@ func ECHO_get_interactions(c echo.Context, db_path string) error {
     if err != nil && !errors.Is(err, sql.ErrNoRows) {
         return handleServerError(c, 500, "Unable to read interactions row", err)
     }
-    return c.JSON(200, inter)
+    return c.JSON(200, inter.ToResponse())
 }
 
 // ECHO_get_viewings returns all viewings for a single video, newest first.

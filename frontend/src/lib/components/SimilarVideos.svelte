@@ -91,6 +91,13 @@
 
     function removeIncludeTag(i: number) { includeTags = includeTags.filter((_, idx) => idx !== i); }
     function removeExcludeTag(i: number) { excludeTags = excludeTags.filter((_, idx) => idx !== i); }
+
+    let visible = $state(localStorage.getItem('similar-videos-visible') !== 'false');
+
+    function toggleVisible() {
+        visible = !visible;
+        localStorage.setItem('similar-videos-visible', String(visible));
+    }
 </script>
 
 <!--
@@ -100,117 +107,130 @@
 -->
 
 <section class="similar-section">
-    <div class="similar-header">
-        <div class="similar-title-row">
-            <h2 class="similar-title">SIMILAR VIDEOS</h2>
+    <div class="similar-title-row">
+        <button class="toggle-btn" onclick={toggleVisible} aria-label="Toggle similar videos">
+            {#if visible}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+            {:else}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+            {/if}
+            <h2 class="similar-title" class:dimmed={!visible}>SIMILAR VIDEOS</h2>
+        </button>
+        {#if visible}
             {#if queryTime !== null}
                 <span class="query-time">{queryTime.toFixed(2)}s</span>
             {/if}
             {#if activeFilterTags}
                 <span class="active-filter-tags">{activeFilterTags}</span>
             {/if}
-        </div>
-
-        <div class="filter-btns">
-            {#if relatedHashes !== undefined}
-                <button
-                    class="filter-btn"
-                    class:active={filterRelated}
-                    disabled={relatedInSimilar === 0}
-                    onclick={() => { filterRelated = !filterRelated; }}
-                >
-                    FILTER RELATED{relatedInSimilar > 0 ? ` (${relatedInSimilar})` : ''}
-                </button>
-            {/if}
-
-            <div class="filter-group" class:group-disabled={!video.collection}>
-                <span class="group-label">Collection:</span>
-                <div class="btn-pair">
+            <div class="filter-btns">
+                {#if relatedHashes !== undefined}
                     <button
                         class="filter-btn"
-                        class:active={filterCollection === 'same'}
-                        disabled={!video.collection}
-                        onclick={() => { filterCollection = filterCollection === 'same' ? null : 'same'; }}
-                    >SAME</button>
-                    <button
-                        class="filter-btn diff-btn"
-                        class:active-diff={filterCollection === 'different'}
-                        disabled={!video.collection}
-                        onclick={() => { filterCollection = filterCollection === 'different' ? null : 'different'; }}
-                    >DIFFERENT</button>
+                        class:active={filterRelated}
+                        disabled={relatedInSimilar === 0}
+                        onclick={() => { filterRelated = !filterRelated; }}
+                    >
+                        FILTER RELATED{relatedInSimilar > 0 ? ` (${relatedInSimilar})` : ''}
+                    </button>
+                {/if}
+
+                <div class="filter-group" class:group-disabled={!video.collection}>
+                    <span class="group-label">Collection:</span>
+                    <div class="btn-pair">
+                        <button
+                            class="filter-btn"
+                            class:active={filterCollection === 'same'}
+                            disabled={!video.collection}
+                            onclick={() => { filterCollection = filterCollection === 'same' ? null : 'same'; }}
+                        >SAME</button>
+                        <button
+                            class="filter-btn diff-btn"
+                            class:active-diff={filterCollection === 'different'}
+                            disabled={!video.collection}
+                            onclick={() => { filterCollection = filterCollection === 'different' ? null : 'different'; }}
+                        >DIFF</button>
+                    </div>
+                </div>
+
+                <div class="filter-group" class:group-disabled={!video.studio}>
+                    <span class="group-label">Studio:</span>
+                    <div class="btn-pair">
+                        <button
+                            class="filter-btn"
+                            class:active={filterStudio === 'same'}
+                            disabled={!video.studio}
+                            onclick={() => { filterStudio = filterStudio === 'same' ? null : 'same'; }}
+                        >SAME</button>
+                        <button
+                            class="filter-btn diff-btn"
+                            class:active-diff={filterStudio === 'different'}
+                            disabled={!video.studio}
+                            onclick={() => { filterStudio = filterStudio === 'different' ? null : 'different'; }}
+                        >DIFF</button>
+                    </div>
+                </div>
+
+                <div class="filter-group" class:group-disabled={!video.actors?.length}>
+                    <span class="group-label">Actors:</span>
+                    <div class="btn-pair">
+                        <button
+                            class="filter-btn"
+                            class:active={filterActors === 'same'}
+                            disabled={!video.actors?.length}
+                            onclick={() => { filterActors = filterActors === 'same' ? null : 'same'; }}
+                        >SAME</button>
+                        <button
+                            class="filter-btn diff-btn"
+                            class:active-diff={filterActors === 'different'}
+                            disabled={!video.actors?.length}
+                            onclick={() => { filterActors = filterActors === 'different' ? null : 'different'; }}
+                        >DIFF</button>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <span class="group-label">Include:</span>
+                    <input
+                        class="term-input"
+                        type="text"
+                        placeholder="term1, term2... (Enter)"
+                        bind:value={includeInput}
+                        onkeydown={handleIncludeKey}
+                    />
+                    {#each includeTags as tag, i}
+                        <span class="term-chip include">
+                            {tag}<button class="chip-remove" onclick={() => removeIncludeTag(i)}>×</button>
+                        </span>
+                    {/each}
+                </div>
+
+                <div class="filter-group">
+                    <span class="group-label">Exclude:</span>
+                    <input
+                        class="term-input"
+                        type="text"
+                        placeholder="term1, term2... (Enter)"
+                        bind:value={excludeInput}
+                        onkeydown={handleExcludeKey}
+                    />
+                    {#each excludeTags as tag, i}
+                        <span class="term-chip exclude">
+                            {tag}<button class="chip-remove" onclick={() => removeExcludeTag(i)}>×</button>
+                        </span>
+                    {/each}
                 </div>
             </div>
-
-            <div class="filter-group" class:group-disabled={!video.studio}>
-                <span class="group-label">Studio:</span>
-                <div class="btn-pair">
-                    <button
-                        class="filter-btn"
-                        class:active={filterStudio === 'same'}
-                        disabled={!video.studio}
-                        onclick={() => { filterStudio = filterStudio === 'same' ? null : 'same'; }}
-                    >SAME</button>
-                    <button
-                        class="filter-btn diff-btn"
-                        class:active-diff={filterStudio === 'different'}
-                        disabled={!video.studio}
-                        onclick={() => { filterStudio = filterStudio === 'different' ? null : 'different'; }}
-                    >DIFFERENT</button>
-                </div>
-            </div>
-
-            <div class="filter-group" class:group-disabled={!video.actors?.length}>
-                <span class="group-label">Actors:</span>
-                <div class="btn-pair">
-                    <button
-                        class="filter-btn"
-                        class:active={filterActors === 'same'}
-                        disabled={!video.actors?.length}
-                        onclick={() => { filterActors = filterActors === 'same' ? null : 'same'; }}
-                    >SAME</button>
-                    <button
-                        class="filter-btn diff-btn"
-                        class:active-diff={filterActors === 'different'}
-                        disabled={!video.actors?.length}
-                        onclick={() => { filterActors = filterActors === 'different' ? null : 'different'; }}
-                    >DIFFERENT</button>
-                </div>
-            </div>
-
-            <div class="filter-group">
-                <span class="group-label">Include:</span>
-                <input
-                    class="term-input"
-                    type="text"
-                    placeholder="term1, term2... (Enter)"
-                    bind:value={includeInput}
-                    onkeydown={handleIncludeKey}
-                />
-                {#each includeTags as tag, i}
-                    <span class="term-chip include">
-                        {tag}<button class="chip-remove" onclick={() => removeIncludeTag(i)}>×</button>
-                    </span>
-                {/each}
-            </div>
-
-            <div class="filter-group">
-                <span class="group-label">Exclude:</span>
-                <input
-                    class="term-input"
-                    type="text"
-                    placeholder="term1, term2... (Enter)"
-                    bind:value={excludeInput}
-                    onkeydown={handleExcludeKey}
-                />
-                {#each excludeTags as tag, i}
-                    <span class="term-chip exclude">
-                        {tag}<button class="chip-remove" onclick={() => removeExcludeTag(i)}>×</button>
-                    </span>
-                {/each}
-            </div>
-        </div>
+        {/if}
     </div>
 
+    {#if visible}
     {#if loading}
         <div class="similar-center">
             <Spinner />
@@ -231,6 +251,7 @@
     {:else if !loading && similar.length > 0}
         <p class="no-results">No results match the active filters.</p>
     {/if}
+    {/if}
 </section>
 
 <!--
@@ -244,31 +265,42 @@
         max-width: 120rem;
         width: 100%;
         margin: 0 auto;
-        padding: 1.5rem 2rem 2rem;
+        padding: 0.6rem 2rem 1rem;
         border-top: 1px solid #1a1a1a;
-    }
-
-    .similar-header {
-        display: flex;
-        flex-direction: column;
-        gap: 0.6rem;
-        margin-bottom: 1rem;
-        margin-left: 5rem;
+        border-bottom: 1px solid #1a1a1a;
     }
 
     .similar-title-row {
         display: flex;
-        align-items: baseline;
-        gap: 0.75rem;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        margin-bottom: 1rem;
+    }
+
+    .toggle-btn {
+        background: none;
+        border: none;
+        color: #555;
+        cursor: pointer;
+        padding: 0.1rem 0.6rem;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        border-radius: 4px;
+        margin-left: 0.75rem;
     }
 
     .similar-title {
         color: #aaa;
-        font-size: 1.15rem;
+        font-size: 0.85rem;
         font-weight: 600;
         letter-spacing: 0.1em;
         text-transform: uppercase;
+        transition: color 0.18s;
     }
+    .similar-title.dimmed { color: #444; }
 
     .query-time {
         font-size: 0.72rem;
@@ -298,7 +330,7 @@
         border: 1px solid #2a2a2a;
         color: #666;
         border-radius: 4px;
-        padding: 0.3rem 0.75rem;
+        padding: 0.3rem 0.45rem;
         font-size: 0.72rem;
         font-weight: 600;
         letter-spacing: 0.06em;
@@ -448,7 +480,7 @@
     .load-more-wrap {
         display: flex;
         justify-content: center;
-        margin-top: 1.5rem;
+        margin-top: 0.75rem;
     }
 
     .load-more {
@@ -456,8 +488,8 @@
         color: #aaa;
         border: 1px solid #333;
         border-radius: 6px;
-        padding: 0.5rem 2rem;
-        font-size: 0.8rem;
+        padding: 0.3rem 1.25rem;
+        font-size: 0.72rem;
         font-weight: bold;
         letter-spacing: 0.1em;
         cursor: pointer;

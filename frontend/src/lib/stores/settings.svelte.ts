@@ -33,6 +33,7 @@ function createSettings() {
         set resultsPerPage(v: ResultsPerPage) { resultsPerPage = v; localStorage.setItem('searchResultsPerPage', String(v)); },
         get devMode() { return devMode; },
         set devMode(v: boolean) { devMode = v; localStorage.setItem('devMode', String(v)); },
+        get devParam() { return devMode ? '?dev=true' : ''; },
         get focusMode() { return focusMode; },
         set focusMode(v: boolean) { focusMode = v; localStorage.setItem('focusMode', String(v)); },
     };

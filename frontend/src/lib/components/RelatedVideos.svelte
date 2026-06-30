@@ -234,8 +234,8 @@
                     <line x1="1" y1="1" x2="23" y2="23"/>
                 </svg>
                 {/if}
+                <h2 class="section-title" class:dimmed={!visible}>RELATED VIDEOS</h2>
             </button>
-            <h2 class="section-title" class:dimmed={!visible}>RELATED VIDEOS</h2>
         </div>
         {#if visible}
         <div class="scroll-btns">
@@ -296,15 +296,16 @@
 
 <style>
     .related-section {
-        padding: 1rem 2rem 1.5rem;
+        padding: 0.6rem 2rem 1rem;
         border-top: 1px solid #1a1a1a;
-        max-width: 89.375rem;
+        border-bottom: 1px solid #1a1a1a;
+        max-width: 120rem;
         margin: 0 auto;
     }
 
     .section-header {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
         margin-bottom: 0.75rem;
     }
@@ -320,20 +321,18 @@
         border: none;
         color: #555;
         cursor: pointer;
-        padding: 0.1rem 0.2rem;
+        padding: 0.1rem 0.6rem;
         line-height: 1;
         display: flex;
         align-items: center;
-        justify-content: center;
-        transition: color 0.15s;
-    }
-    .toggle-btn:hover {
-        color: #aaa;
+        gap: 0.45rem;
+        border-radius: 4px;
+        margin-left: 0.75rem;
     }
 
     .section-title {
         color: #aaa;
-        font-size: 0.75rem;
+        font-size: 0.85rem;
         font-weight: 600;
         letter-spacing: 0.1em;
         text-transform: uppercase;

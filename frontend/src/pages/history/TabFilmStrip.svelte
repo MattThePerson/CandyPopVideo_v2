@@ -4,6 +4,7 @@
     import type { VideoData } from '$lib/types/video';
     import Spinner from '$lib/components/Spinner.svelte';
     import type { ViewingRow, ViewingSession } from './types';
+    import { settings } from '$lib/stores/settings.svelte';
 
     type EnrichedSession = ViewingSession & { video?: VideoData };
 
@@ -128,13 +129,13 @@
                         >
                             <div class="card-media" style="--init: '{title[0].toUpperCase()}'">
                                 <img
-                                    src="/media/get/poster/{session.video_hash}"
+                                    src="/media/get/poster/{session.video_hash}{settings.devParam}"
                                     alt=""
                                     class="poster"
                                 />
                                 <!-- Progressive enhancement: teaser plays on hover if it exists -->
                                 <video
-                                    src="/static/preview-media/0x{session.video_hash}/teaser_small.mp4"
+                                    src="/media/preview/{session.video_hash}/teaser_small.mp4{settings.devParam}"
                                     muted
                                     loop
                                     preload="none"

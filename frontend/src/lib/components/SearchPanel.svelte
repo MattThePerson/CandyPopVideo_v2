@@ -2,6 +2,7 @@
     import { onMount } from 'svelte';
     import { navigate, routerState } from '$lib/router/router.svelte';
     import { settings, type ResultsPerPage } from '$lib/stores/settings.svelte';
+    import { POPULARITY_DESCRIPTION } from '$lib/util/popularity';
     import SimilarItemsPanel from './SimilarItemsPanel.svelte';
 
     const PER_PAGE_OPTIONS: ResultsPerPage[] = [4, 8, 16, 24, 36];
@@ -29,7 +30,7 @@
         { field: 'bitrate',         label: 'bitrate',         defaultDir: 'desc' as const, alphabetic: false, group: 0 },
         { field: 'views',           label: 'views',           defaultDir: 'desc' as const, alphabetic: false, group: 1 },
         { field: 'likes',           label: 'likes',           defaultDir: 'desc' as const, alphabetic: false, group: 1 },
-        { field: 'popularity',      label: 'popularity',      defaultDir: 'desc' as const, alphabetic: false, group: 2 },
+        { field: 'popularity',      label: 'popularity',      defaultDir: 'desc' as const, alphabetic: false, group: 2, description: POPULARITY_DESCRIPTION },
         { field: 'viewtime',        label: 'viewtime',        defaultDir: 'desc' as const, alphabetic: false, group: 2 },
         { field: 'last_viewed',     label: 'last watched',    defaultDir: 'desc' as const, alphabetic: false, group: 2 },
         { field: 'favourited_date', label: 'favourited time', defaultDir: 'desc' as const, alphabetic: false, group: 2 },
@@ -219,7 +220,7 @@
                                 {/if}
                             {/if}
                             <div class="sort-row" class:active={sortField === opt.field}>
-                                <button class="sort-row-label" onclick={() => clickSortLabel(opt.field, opt.alphabetic)}>
+                                <button class="sort-row-label" onclick={() => clickSortLabel(opt.field, opt.alphabetic)} title={opt.description ?? undefined}>
                                     {opt.label}
                                 </button>
                                 {#if opt.field !== 'random'}

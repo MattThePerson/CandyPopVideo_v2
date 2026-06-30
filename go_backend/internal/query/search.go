@@ -314,7 +314,7 @@ func handleSortByInteractions(vids []schemas.VideoData, attr string, reverse boo
 	var popularity = map[string]float64{}
 	if attr == "popularity" {
 		for _, vd := range filtered {
-			popularity[vd.Hash] = getInteractionPopularity(i[vd.Hash])
+			popularity[vd.Hash] = i[vd.Hash].GetUserPopularity()
 		}
 	}
 
@@ -341,19 +341,6 @@ func handleSortByInteractions(vids []schemas.VideoData, attr string, reverse boo
 	})
 
 	return filtered, nil
-}
-
-
-// getInteractionPopularity
-func getInteractionPopularity(i schemas.VideoInteractions) float64 {
-	var points float64
-	points += i.Viewtime/60 // 1 min/point
-	points += float64( i.Likes*2 ) // 2 mins
-	if i.IsFavourite { points += 2 } // 2 mins (TEMPORARILY LOWER!)
-	points += float64( len(i.Comments) * 3 ) // 3 mins
-	points += float64( len(i.Markers) * 1 ) // 1 mins
-	points += float64( len(i.DatedMarkers) * 5 ) // 5 mins
-	return points
 }
 
 
