@@ -11,6 +11,7 @@ import (
     "path/filepath"
     "strconv"
     "strings"
+    "log"
 
     "github.com/labstack/echo/v4"
 )
@@ -27,7 +28,7 @@ func IncludeMediaRoutes(e *echo.Group, db_path string, preview_media_dir string,
     e.GET("/ensure/teaser-small/:video_hash", func(c echo.Context) error { return ECHO_ensure_teaser_small(c, db_path, preview_media_dir) })
     e.GET("/ensure/teaser-thumbs-small/:video_hash", func(c echo.Context) error { return ECHO_ensure_teaser_thumbs_small(c, db_path, preview_media_dir) })
     e.GET("/ensure/seek-thumbnails/:video_hash", func(c echo.Context) error { return ECHO_ensure_seek_thumbs(c, db_path, preview_media_dir) })
-    e.GET("/get/subtitles/:video_hash", func(c echo.Context) error { return ECHO_get_subs(c, db_path, subtitle_folders) })
+    e.GET("/get/subtitles/:video_hash", func(c echo.Context) error { return ECHO_get_subs(c, db_path, preview_media_dir, subtitle_folders) })
 
     // e.GET("/get/poster-large/:video_hash", 			   func(c echo.Context) error { return c.String(501, "Not implemented") })
     // e.GET("/ensure/teaser-large/:video_hash", 		   func(c echo.Context) error { return c.String(501, "Not implemented") })
@@ -225,12 +226,19 @@ func ECHO_ensure_seek_thumbs(c echo.Context, db_path string, preview_media_dir s
 }
 
 // ECHO_get_subs ...
-func ECHO_get_subs(c echo.Context, db_path string, subtitle_folders []string) error {
+func ECHO_get_subs(c echo.Context, db_path string, preview_media_dir string, subtitle_folders []string) error {
     video_hash := c.Param("video_hash")
     check := c.QueryParam("check") == "true"
     vd, err := db.ReadSerializedRowFromTable[schemas.VideoData](db_path, "videos", video_hash)
     if err != nil {
         return handleServerError(c, 500, "Unable to read from database", err)
+    }
+
+    serve := func(path string) error {
+        if check {
+            return c.String(200, "All good bro")
+        }
+        return c.File(path)
     }
 
     // get id for srt file: "<id>.srt"
@@ -247,29 +255,33 @@ func ECHO_get_subs(c echo.Context, db_path string, subtitle_folders []string) er
         }
     }
 
-    // construct subtitle folder list
-    var check_folders = []string{
+    // check folders for external srt
+    check_folders := []string{
         vd.ParentDir,
         filepath.Join(vd.ParentDir, ".subtitles"),
     }
     check_folders = append(check_folders, subtitle_folders...)
-
-    // check folders
-    srt_file := id + ".srt" // can be ".srt"
     for _, f := range check_folders {
-        pth := filepath.Join(f, srt_file)
+        pth := filepath.Join(f, id+".srt")
         if _, err := os.Stat(pth); err == nil {
-            if check {
-                return c.String(200, "All good bro")
-            }
-            return c.File(pth)
+            return serve(pth)
         }
     }
 
-    // TODO: return function which ties to extract embedded subtitle stream
-    if id == "" {
-        return c.NoContent(204)
+    // check cached extracted subtitle
+    subtitles_dir := filepath.Join(preview_media_dir, "subtitles")
+    cached_path := filepath.Join(subtitles_dir, video_hash+".srt")
+    if _, err := os.Stat(cached_path); err == nil {
+        return serve(cached_path)
     }
 
-    return c.NoContent(204)
+    // extract embedded subtitle stream (mp4 only)
+    if filepath.Ext(vd.Path) != ".mp4" {
+        return c.NoContent(204)
+    }
+    if err := mediagen.ExtractSubtitleStream(vd.Path, cached_path); err != nil {
+        log.Printf("[SUBS] no subtitle stream in %s: %v", vd.Path, err)
+        return c.NoContent(204)
+    }
+    return serve(cached_path)
 }
