@@ -4,6 +4,7 @@
     import { routerState, initRouter, matchRoute } from './lib/router/router.svelte';
     import Header from './lib/components/Header.svelte';
     import Footer from './lib/components/Footer.svelte';
+    import { settings } from './lib/stores/settings.svelte';
 
     onMount(() => initRouter());
 
@@ -29,4 +30,6 @@
     {/if}
 </main>
 
-<Footer />
+{#if !settings.focusMode}
+    <Footer />
+{/if}

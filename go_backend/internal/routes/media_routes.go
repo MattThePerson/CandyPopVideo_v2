@@ -29,6 +29,7 @@ func IncludeMediaRoutes(e *echo.Group, db_path string, preview_media_dir string,
     e.GET("/ensure/teaser-thumbs-small/:video_hash", func(c echo.Context) error { return ECHO_ensure_teaser_thumbs_small(c, db_path, preview_media_dir) })
     e.GET("/ensure/seek-thumbnails/:video_hash", func(c echo.Context) error { return ECHO_ensure_seek_thumbs(c, db_path, preview_media_dir) })
     e.GET("/get/subtitles/:video_hash", func(c echo.Context) error { return ECHO_get_subs(c, db_path, preview_media_dir, subtitle_folders) })
+    e.GET("/get/preview-thumbs/:video_hash", func(c echo.Context) error { return ECHO_get_preview_thumbs(c, preview_media_dir) })
 
     // e.GET("/get/poster-large/:video_hash", 			   func(c echo.Context) error { return c.String(501, "Not implemented") })
     // e.GET("/ensure/teaser-large/:video_hash", 		   func(c echo.Context) error { return c.String(501, "Not implemented") })
@@ -223,6 +224,26 @@ func ECHO_ensure_seek_thumbs(c echo.Context, db_path string, preview_media_dir s
         return c.String(200, "media exists")
     }
     return c.String(500, "Unable to create `Seek Thumbs` for hash: "+video_hash)
+}
+
+// ECHO_get_preview_thumbs returns the filenames of large (1080p) ML preview thumbnails for a video.
+// Returns an empty array if the previewthumbs directory doesn't exist or has no 1080 images.
+// Filenames can be resolved to URLs via /media/preview/:hash/previewthumbs/<filename>.
+func ECHO_get_preview_thumbs(c echo.Context, preview_media_dir string) error {
+    video_hash := c.Param("video_hash")
+    thumbs_dir := getVideoMediaDir(preview_media_dir, video_hash) + "/previewthumbs"
+
+    filenames := []string{}
+    entries, err := os.ReadDir(thumbs_dir)
+    if err == nil {
+        for _, e := range entries {
+            if strings.Contains(e.Name(), "1080") {
+                filenames = append(filenames, e.Name())
+            }
+        }
+    }
+
+    return c.JSON(200, filenames)
 }
 
 // ECHO_get_subs ...

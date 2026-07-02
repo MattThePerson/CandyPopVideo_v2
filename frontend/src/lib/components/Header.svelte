@@ -124,7 +124,7 @@
 <svelte:window onmousedown={handleWindowMouseDown} onkeydown={handleWindowKeydown} />
 
 <header>
-    <nav class="flex justify-between px-[2.5%] bg-black border border-white/20 min-h-[3.1rem]">
+    <nav class="flex justify-between px-[2.5%] bg-black min-h-[3.1rem]">
         <span class="flex items-center justify-center gap-1">
             <a href="/" class="no-underline px-1">
                 <span class="flex items-center gap-[0.2rem]">

@@ -5,10 +5,11 @@
     import Spinner from '$lib/components/Spinner.svelte';
     import RenameOverlay from '$lib/components/RenameOverlay.svelte';
     import type { VideoData, VideoInteractions } from '$lib/types/video';
+    import { settings } from '$lib/stores/settings.svelte';
     import VideoPlayer from './VideoPlayer.svelte';
-    import VideoBelow from './VideoBelow.svelte';
-    import RelatedVideos from '$lib/components/RelatedVideos.svelte';
-    import SimilarVideos from '$lib/components/SimilarVideos.svelte';
+    import FancyPreviewer from './FancyPreviewer.svelte';
+    import NormalLayout from './NormalLayout.svelte';
+    import FocusLayout from './FocusLayout.svelte';
 
     /* Props */
     let { hash }: { hash: string } = $props();
@@ -24,9 +25,23 @@
     let playerActive   = $state(true);
     let renameOpen     = $state(false);
     let undoInfo       = $state<{ oldFilename: string; newFilename: string } | null>(null);
+    let fancyOpen      = $state(true);
+    let videoElRef: HTMLVideoElement | null = null;
 
     let keydownHandler: ((e: KeyboardEvent) => void) | undefined;
     let similarVisibilityHandler: (() => void) | undefined;
+
+    $effect(() => {
+        if (settings.focusMode) {
+            fancyOpen = true;
+            window.scrollTo(0, 0);
+        }
+    });
+
+    $effect(() => {
+        document.body.style.backgroundColor = settings.focusMode ? '#000' : '';
+        return () => { document.body.style.backgroundColor = ''; };
+    });
 
     $effect(() => {
         const parts: string[] = [];
@@ -40,16 +55,32 @@
 
     onMount(async () => {
         keydownHandler = (e: KeyboardEvent) => {
-            if (e.key === ' ') {
-                const tag = (e.target as HTMLElement).tagName;
-                if (tag !== 'INPUT' && tag !== 'TEXTAREA') e.preventDefault();
+            const tag = (e.target as HTMLElement).tagName;
+            const inInput = tag === 'INPUT' || tag === 'TEXTAREA';
+
+            // Focus mode overlay toggle — highest priority for ESC and Space
+            if (settings.focusMode && !inInput && !renameOpen) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    if (fancyOpen) {
+                        fancyOpen = false;
+                    } else {
+                        videoElRef?.pause();
+                        fancyOpen = true;
+                    }
+                    return;
+                }
+                if (e.key === ' ' && fancyOpen) {
+                    e.preventDefault();
+                    fancyOpen = false;
+                    // Player's own Space listener handles playback toggle
+                    return;
+                }
             }
-            if (e.key === 'F2' && video && !renameOpen) {
-                renameOpen = true;
-            }
-            if (e.key === 'Escape' && undoInfo && !renameOpen) {
-                undoInfo = null;
-            }
+
+            if (e.key === ' ' && !inInput) e.preventDefault();
+            if (e.key === 'F2' && video && !renameOpen) renameOpen = true;
+            if (e.key === 'Escape' && undoInfo && !renameOpen) undoInfo = null;
         };
         window.addEventListener('keydown', keydownHandler);
 
@@ -91,15 +122,17 @@
             }
         }
 
-        if (document.visibilityState === 'visible') {
-            fetchSimilar();
-        } else {
-            similarVisibilityHandler = () => {
-                document.removeEventListener('visibilitychange', similarVisibilityHandler!);
-                similarVisibilityHandler = undefined;
+        if (!settings.focusMode) {
+            if (document.visibilityState === 'visible') {
                 fetchSimilar();
-            };
-            document.addEventListener('visibilitychange', similarVisibilityHandler);
+            } else {
+                similarVisibilityHandler = () => {
+                    document.removeEventListener('visibilitychange', similarVisibilityHandler!);
+                    similarVisibilityHandler = undefined;
+                    fetchSimilar();
+                };
+                document.addEventListener('visibilitychange', similarVisibilityHandler);
+            }
         }
     });
 
@@ -161,7 +194,7 @@
 ========================================================================================================================
 -->
 
-<div class="page">
+<div class="page" class:focus={settings.focusMode}>
 
     <!-- video player (unmounted during rename to release any file handle) -->
     <div class="player-wrap">
@@ -178,23 +211,24 @@
                 fps={video.fps}
                 markers={interact?.markers ?? []}
                 datedMarkers={interact?.dated_markers ?? []}
+                onVideoReady={(el) => { videoElRef = el; }}
             />
+        {/if}
+        {#if settings.focusMode && fancyOpen && video && interact}
+            <FancyPreviewer {hash} {video} {interact} />
         {/if}
     </div>
 
-    <!-- video below: main tab (details), info, thumbnails -->
     {#if video && interact}
-        <VideoBelow {hash} {video} {interact} />
-    {/if}
-
-    <!-- similar videos -->
-    {#if video}
-        <SimilarVideos {video} {similar} loading={similarLoading} {queryTime} {relatedHashes} />
-    {/if}
-
-    <!-- related videos -->
-    {#if video}
-        <RelatedVideos {video} onRelatedLoaded={(hashes) => { relatedHashes = hashes; }} />
+        {#if settings.focusMode}
+            <FocusLayout {hash} {video} {interact} />
+        {:else}
+            <NormalLayout
+                {hash} {video} {interact}
+                {similar} similarLoading={similarLoading} {queryTime} {relatedHashes}
+                onRelatedLoaded={(hashes) => { relatedHashes = hashes; }}
+            />
+        {/if}
     {/if}
 
 </div>
@@ -228,12 +262,19 @@
         width: 100%;
         padding-bottom: 48rem;
     }
+    .page.focus {
+        padding-bottom: 0;
+    }
 
     .player-wrap {
         width: 100%;
         height: 41rem;
         background: #000;
         position: relative;
+    }
+
+    .focus .player-wrap {
+        height: 48rem;
     }
 
     .player-center {

@@ -4,12 +4,13 @@
     import { settings } from '$lib/stores/settings.svelte';
 
     /* Props */
-    let { hash, title, fps = null, markers = [], datedMarkers = [] }: {
+    let { hash, title, fps = null, markers = [], datedMarkers = [], onVideoReady = null }: {
         hash: string;
         title: string;
         fps?: number | null;
         markers?: [number, string, string][];
         datedMarkers?: [number, string][];
+        onVideoReady?: ((el: HTMLVideoElement) => void) | null;
     } = $props();
 
     let hostEl: HTMLDivElement;
@@ -198,6 +199,7 @@
         });
 
         if (subsUrl) loadSubtitles(player, subsUrl, videoEl);
+        onVideoReady?.(videoEl);
 
         // Gate timeupdate on !isSeeking: the browser fires seeking→timeupdate→seeked,
         // so timeupdate would overwrite lastKnownTime with the new position before seeked runs.
