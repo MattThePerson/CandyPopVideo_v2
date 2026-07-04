@@ -277,14 +277,16 @@ func ECHO_get_subs(c echo.Context, db_path string, preview_media_dir string, sub
     }
 
     // check folders for external srt
+    parent_dir := filepath.Dir(vd.Path)
     check_folders := []string{
-        vd.ParentDir,
-        filepath.Join(vd.ParentDir, ".subtitles"),
+        parent_dir,
+        filepath.Join(parent_dir, ".subtitles"),
     }
     check_folders = append(check_folders, subtitle_folders...)
     for _, f := range check_folders {
         pth := filepath.Join(f, id+".srt")
         if _, err := os.Stat(pth); err == nil {
+            fmt.Println("FOUND IT")
             return serve(pth)
         }
     }
@@ -298,11 +300,11 @@ func ECHO_get_subs(c echo.Context, db_path string, preview_media_dir string, sub
 
     // extract embedded subtitle stream (mp4 only)
     if filepath.Ext(vd.Path) != ".mp4" {
-        return c.NoContent(204)
+        return c.NoContent(404)
     }
     if err := mediagen.ExtractSubtitleStream(vd.Path, cached_path); err != nil {
         log.Printf("[SUBS] no subtitle stream in %s: %v", vd.Path, err)
-        return c.NoContent(204)
+        return c.NoContent(404)
     }
     return serve(cached_path)
 }
