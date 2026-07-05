@@ -16,9 +16,10 @@ export default defineConfig({
     },
     server: {
         proxy: {
-            '/api':    'http://localhost:8124',
-            '/media':  'http://localhost:8124',
-            '/static': 'http://localhost:8124',
+            '/api':            'http://localhost:8124',
+            '/media':          'http://localhost:8124',
+            '/static':         'http://localhost:8124',
+            '/curated-sites':  'http://localhost:8124',
         },
     },
 })

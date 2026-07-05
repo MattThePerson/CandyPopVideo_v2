@@ -1,7 +1,7 @@
 <!-- pages/video/Page.svelte -->
 <script lang="ts">
     import { onMount, onDestroy, tick } from 'svelte';
-    import { navigate } from '$lib/router/router.svelte';
+    import { navigate, routerState } from '$lib/router/router.svelte';
     import Spinner from '$lib/components/Spinner.svelte';
     import RenameOverlay from '$lib/components/RenameOverlay.svelte';
     import type { VideoData, VideoInteractions } from '$lib/types/video';
@@ -13,6 +13,8 @@
 
     /* Props */
     let { hash }: { hash: string } = $props();
+
+    const autoplay = $derived(new URLSearchParams(routerState.search).has('autoplay'));
 
     let video          = $state<VideoData | null>(null);
     let interact       = $state<VideoInteractions | null>(null);
@@ -209,6 +211,7 @@
                 {hash}
                 title={video.filename}
                 fps={video.fps}
+                {autoplay}
                 markers={interact?.markers ?? []}
                 datedMarkers={interact?.dated_markers ?? []}
                 onVideoReady={(el) => { videoElRef = el; }}

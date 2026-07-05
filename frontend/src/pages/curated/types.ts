@@ -15,3 +15,9 @@ export interface CuratedCollectionMeta {
     description: string;
     query:       CuratedQuery;
 }
+
+export interface CuratedSiteMeta {
+    id:          string;
+    name:        string;
+    description: string;
+}

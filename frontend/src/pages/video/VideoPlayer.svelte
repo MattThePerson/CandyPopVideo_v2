@@ -4,10 +4,11 @@
     import { settings } from '$lib/stores/settings.svelte';
 
     /* Props */
-    let { hash, title, fps = null, markers = [], datedMarkers = [], onVideoReady = null }: {
+    let { hash, title, fps = null, autoplay = false, markers = [], datedMarkers = [], onVideoReady = null }: {
         hash: string;
         title: string;
         fps?: number | null;
+        autoplay?: boolean;
         markers?: [number, string, string][];
         datedMarkers?: [number, string][];
         onVideoReady?: ((el: HTMLVideoElement) => void) | null;
@@ -74,7 +75,10 @@
             const res = await fetch(srtUrl);
             if (!res.ok) return;
             const srt = await res.text();
-            const vtt = 'WEBVTT\n\n' + srt.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+            const vtt = 'WEBVTT\n\n' + srt
+                .replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2')
+                .replace(/<font color="([^"]+)">/gi, '<span style="color:$1">')
+                .replace(/<\/font>/gi, '</span>');
             subsVttUrl = URL.createObjectURL(new Blob([vtt], { type: 'text/vtt' }));
 
             subsTrackEl = document.createElement('track');
@@ -137,7 +141,7 @@
             poster: `/media/get/poster/${hash}${settings.devParam}`,
             title,
             subtitles_srt_src: subsUrl,
-            autoplay: false,
+            autoplay,
             quiet: false,
             resumeKey: hash,
             fps,
@@ -200,6 +204,15 @@
 
         if (subsUrl) loadSubtitles(player, subsUrl, videoEl);
         onVideoReady?.(videoEl);
+
+        if (autoplay) {
+            const tryPlay = () => videoEl!.play().catch(() => {});
+            if (videoEl.readyState >= 2) {
+                tryPlay();
+            } else {
+                videoEl.addEventListener('canplay', tryPlay, { once: true });
+            }
+        }
 
         // Gate timeupdate on !isSeeking: the browser fires seeking→timeupdate→seeked,
         // so timeupdate would overwrite lastKnownTime with the new position before seeked runs.

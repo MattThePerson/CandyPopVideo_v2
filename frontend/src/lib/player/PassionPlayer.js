@@ -1874,7 +1874,7 @@ export class PassionPlayer {
         this._subtitleTracks = tracks ?? [];
         this._activeSid = activeSid ?? 0;
         const textEl = this.$('.pp-subtitle-text');
-        if (textEl) { textEl.textContent = this._subtitleText; textEl.style.display = this._subtitleText ? '' : 'none'; }
+        if (textEl) { textEl.innerHTML = this._subtitleText; textEl.style.display = this._subtitleText ? '' : 'none'; }
         this._updateSubtitleBtn();
         if (this._subtitleMenuOpen) this._updateSubtitleMenu();
     }

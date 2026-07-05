@@ -96,7 +96,8 @@ func main() {
     routes.IncludeDashboardRoutes(e.Group("/api/dashboard"), store)
     routes.IncludeRenameRoutes(   e.Group("/api"),           store)
     routes.IncludeConfigRoutes(   e.Group("/api"),           store)
-    routes.IncludeStateRoutes(    e.Group("/api"),           stateStore)
+    routes.IncludeStateRoutes(       e.Group("/api"),           stateStore)
+    routes.IncludeCuratedSitesRoutes(e.Group("/api"),           "curated_sites")
 
     e.GET("/hello-there", func(c echo.Context) error {
         return c.String(200, "General Kenobi!")
@@ -110,6 +111,7 @@ func main() {
 
     // e.Static("/static/preview-media", cfg.PreviewMediaDir+"/preview")
     e.Static("/static/actor-store", cfg.ActorInfoDir)
+    e.Static("/curated-sites", "curated_sites")
 
     e.GET("/*", func(c echo.Context) error {
         filePath := "frontend/dist" + c.Request().URL.Path

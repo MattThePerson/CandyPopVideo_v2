@@ -16,8 +16,8 @@ _*/
 # custom
 .logs/
 .trash/
+curated_sites/
 BUFFER.md
-frontend/curated/
 
 # temp
 migration
