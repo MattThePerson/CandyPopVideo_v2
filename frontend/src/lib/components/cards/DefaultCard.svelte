@@ -14,10 +14,10 @@
     } = $props();
 
     const sizeMap: Record<CardSize, { width: string; aspectRatio: string }> = {
-        small:  { width: '20.5rem', aspectRatio: '14/9' },
-        medium: { width: '24rem',   aspectRatio: '16/9' },
-        large:  { width: '33rem',   aspectRatio: '18/9' },
-        xl:     { width: '40rem',   aspectRatio: '19/9' },
+        small:  { width: '20.5em', aspectRatio: '14/9' },
+        medium: { width: '24em',   aspectRatio: '16/9' },
+        large:  { width: '33em',   aspectRatio: '18/9' },
+        xl:     { width: '40em',   aspectRatio: '19/9' },
     };
     let dims = $derived({
         width:       wOverride  ?? sizeMap[size].width,
@@ -497,7 +497,7 @@
 <style>
     .card {
         border: 1px solid #88888819;
-        border-radius: 0.5rem;
+        border-radius: 0.5em;
         outline: 0.5px solid #4441;
         background: black;
         display: inline-block;
@@ -580,7 +580,7 @@
     }
 
     .collection-badge {
-        font-size: 13px;
+        font-size: 0.81em;
         padding: 0 5px 1.5px;
         color: #fffd;
         border: 1.8px solid #fffd;
@@ -591,7 +591,7 @@
     .collection-badge:hover { opacity: 0.8; }
 
     .new-badge {
-        font-size: 11px;
+        font-size: 0.69em;
         padding: 2px 5px 0;
         color: rgb(255, 27, 27);
         border: 1.8px solid rgb(255, 32, 32);
@@ -604,7 +604,7 @@
         padding: 1px 4px 0;
         color: white;
         border-radius: 5px;
-        font-size: 0.78rem;
+        font-size: 0.78em;
     }
 
     .duration-chip {
@@ -626,7 +626,7 @@
         display: flex;
         flex-direction: column;
         box-sizing: border-box;
-        min-height: 8rem;
+        min-height: 8em;
         overflow: hidden;
     }
 
@@ -636,26 +636,26 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        font-size: 0.71rem;
+        font-size: 0.71em;
         color: #999;
-        padding: 0.25rem 0.7rem;
+        padding: 0.25em 0.7em;
     }
 
     .details-left {
         display: flex;
         align-items: center;
-        gap: 0.65rem;
+        gap: 0.65em;
     }
 
     .details-right {
         display: flex;
         align-items: center;
-        gap: 0.4rem;
+        gap: 0.4em;
     }
 
     .subs-badge {
         font-family: monospace;
-        font-size: 0.65rem;
+        font-size: 0.65em;
         font-weight: bold;
         letter-spacing: 0.5px;
         color: #6af;
@@ -676,7 +676,7 @@
 
     .rating {
         font-family: 'Jaro', sans-serif;
-        font-size: 0.8rem;
+        font-size: 0.8em;
     }
 
     /* Title bar */
@@ -689,10 +689,10 @@
 
     .fav-btn {
         all: unset;
-        height: 1.3rem;
-        min-width: 1.2rem;
-        margin: 0.1rem 0.6rem;
-        padding: 0.2rem;
+        height: 1.3em;
+        min-width: 1.2em;
+        margin: 0.1em 0.6em;
+        padding: 0.2em;
         cursor: pointer;
         flex-shrink: 0;
     }
@@ -710,7 +710,7 @@
     .title-link { text-decoration: none; }
 
     .title-link h2 {
-        font-size: 1.3rem;
+        font-size: 1.3em;
         letter-spacing: -0.6px;
         font-weight: 400;
         margin: 0;
@@ -721,45 +721,45 @@
     /* Studio + actors */
 
     .studio-actors {
-        margin: 0.1rem 1rem 0 2rem;
+        margin: 0.1em 1em 0 2em;
         display: flex;
         flex-direction: column;
-        gap: 0.2rem;
+        gap: 0.2em;
     }
 
     .year-studio-row {
         display: flex;
         align-items: center;
-        gap: 0.6rem;
+        gap: 0.6em;
         color: #bbb;
-        margin-left: 1.2rem;
+        margin-left: 1.2em;
     }
 
     .year {
         font-weight: bold;
-        font-size: 0.85rem;
-        margin-right: 0.2rem;
+        font-size: 0.85em;
+        margin-right: 0.2em;
     }
 
     .studios-row {
         display: flex;
         align-items: center;
-        gap: 0.3rem;
+        gap: 0.3em;
         font-family: 'Inter', sans-serif;
         font-weight: 500;
         color: #777;
-        font-size: 1rem;
+        font-size: 1em;
     }
 
     .actors-row {
         display: flex;
         align-items: center;
         flex-wrap: wrap;
-        gap: 0.3rem;
+        gap: 0.3em;
         font-family: 'Inter', sans-serif;
         color: #888;
-        font-size: 1rem;
-        margin-bottom: 5px;
+        font-size: 1em;
+        margin-bottom: 0.3em;
     }
 
     .studios-row a,
@@ -798,14 +798,14 @@
         flex-wrap: wrap;
         justify-content: flex-end;
         gap: 3px;
-        margin: 0.5rem;
+        margin: 0.5em;
         margin-top: auto;
     }
 
     .tag {
         white-space: nowrap;
         font-family: sans-serif;
-        font-size: 0.67rem;
+        font-size: 0.67em;
         font-weight: bold;
         background: #151515;
         border-radius: 5px;
@@ -821,7 +821,7 @@
         cursor: pointer;
         white-space: nowrap;
         font-family: sans-serif;
-        font-size: 0.67rem;
+        font-size: 0.67em;
         font-weight: bold;
         background: #222;
         border-radius: 5px;

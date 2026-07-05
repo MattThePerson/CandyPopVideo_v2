@@ -24,6 +24,9 @@
     let similarLoading = $state(false);
     let queryTime      = $state<number | null>(null);
 
+    let suggested        = $state<VideoData[]>([]);
+    let suggestedLoading = $state(false);
+
     let playerActive   = $state(true);
     let renameOpen     = $state(false);
     let undoInfo       = $state<{ oldFilename: string; newFilename: string } | null>(null);
@@ -82,6 +85,14 @@
 
             if (e.key === ' ' && !inInput) e.preventDefault();
             if (e.key === 'F2' && video && !renameOpen) renameOpen = true;
+            if (e.key === 'F4' && !inInput) {
+                e.preventDefault();
+                const nextHash = suggested[0]?.hash;
+                if (nextHash) {
+                    if (e.shiftKey) window.open(`/video/${nextHash}`, '_blank');
+                    else navigate(`/video/${nextHash}`);
+                }
+            }
             if (e.key === 'Escape' && undoInfo && !renameOpen) undoInfo = null;
         };
         window.addEventListener('keydown', keydownHandler);
@@ -135,6 +146,22 @@
                 };
                 document.addEventListener('visibilitychange', similarVisibilityHandler);
             }
+        }
+
+        async function fetchSuggested() {
+            suggestedLoading = true;
+            try {
+                const res = await fetch(`/api/query/get/suggested-videos/${hash}?ignore_last=24h`).then(r => r.json());
+                suggested = (res.videos as VideoData[]).filter(v => v.hash !== hash);
+            } catch {
+                suggested = [];
+            } finally {
+                suggestedLoading = false;
+            }
+        }
+
+        if (settings.focusMode) {
+            setTimeout(fetchSuggested, 750);
         }
     });
 
@@ -224,7 +251,7 @@
 
     {#if video && interact}
         {#if settings.focusMode}
-            <FocusLayout {hash} {video} {interact} />
+            <FocusLayout {hash} {video} {interact} {suggested} suggestedLoading={suggestedLoading} />
         {:else}
             <NormalLayout
                 {hash} {video} {interact}

@@ -298,6 +298,7 @@
                 onplay={() => { teaserPaused = false; }}
                 onended={() => setMode(previewUrls.length > 0 ? 'thumbs' : 'poster') }
                 ontimeupdate={(e) => { const v = e.target as HTMLVideoElement; if (v.duration) teaserProgress = (v.currentTime / v.duration) * 100; }}
+                onclick={pauseTeaser}
             ></video>
         {/if}
     </div>
