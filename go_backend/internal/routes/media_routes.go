@@ -3,6 +3,7 @@ package routes
 import (
     "cpv_backend/internal/db"
     "cpv_backend/internal/mediagen"
+    "cpv_backend/internal/pyworker"
     "cpv_backend/internal/schemas"
     "fmt"
     "net/http"
@@ -16,24 +17,27 @@ import (
     "github.com/labstack/echo/v4"
 )
 
-// onDemandSem limits concurrent on-demand media generation triggered by hover events.
+// onDemandSem limits concurrent on-demand ffmpeg generation (hover events, teaser-large).
 // Without this, hovering 24 cards simultaneously would spawn 24*n concurrent ffmpeg processes.
 var onDemandSem = make(chan struct{}, 1)
+
+// previewThumbsSem limits concurrent Python preview-thumb generation (slow ML subprocess).
+// Separate from onDemandSem so a thumbs job and a teaser job don't block each other.
+var previewThumbsSem = make(chan struct{}, 1)
 
 func IncludeMediaRoutes(e *echo.Group, db_path string, preview_media_dir string, subtitle_folders []string) {
 
     e.GET("/get/video/:video_hash", func(c echo.Context) error { return ECHO_get_video(c, db_path) })
     e.GET("/get/poster/:video_hash", func(c echo.Context) error { return ECHO_get_poster(c, db_path, preview_media_dir) })
-    e.GET("/preview/:video_hash/*", func(c echo.Context) error { return ECHO_get_preview_media(c, db_path, preview_media_dir)} )
-    e.GET("/ensure/teaser-small/:video_hash", func(c echo.Context) error { return ECHO_ensure_teaser_small(c, db_path, preview_media_dir) })
+    e.GET("/preview/:video_hash/*",  func(c echo.Context) error { return ECHO_get_preview_media(c, db_path, preview_media_dir) })
+    e.HEAD("/preview/:video_hash/*", func(c echo.Context) error { return ECHO_get_preview_media(c, db_path, preview_media_dir) })
+    e.GET("/ensure/teaser-small/:video_hash",        func(c echo.Context) error { return ECHO_ensure_teaser_small(c, db_path, preview_media_dir) })
+    e.GET("/ensure/teaser-large/:video_hash",        func(c echo.Context) error { return ECHO_ensure_teaser_large(c, db_path, preview_media_dir) })
     e.GET("/ensure/teaser-thumbs-small/:video_hash", func(c echo.Context) error { return ECHO_ensure_teaser_thumbs_small(c, db_path, preview_media_dir) })
-    e.GET("/ensure/seek-thumbnails/:video_hash", func(c echo.Context) error { return ECHO_ensure_seek_thumbs(c, db_path, preview_media_dir) })
+    e.GET("/ensure/seek-thumbnails/:video_hash",     func(c echo.Context) error { return ECHO_ensure_seek_thumbs(c, db_path, preview_media_dir) })
+    e.GET("/ensure/preview-thumbs/:video_hash",      func(c echo.Context) error { return ECHO_ensure_preview_thumbs(c, db_path, preview_media_dir) })
     e.GET("/get/subtitles/:video_hash", func(c echo.Context) error { return ECHO_get_subs(c, db_path, preview_media_dir, subtitle_folders) })
     e.GET("/get/preview-thumbs/:video_hash", func(c echo.Context) error { return ECHO_get_preview_thumbs(c, preview_media_dir) })
-
-    // e.GET("/get/poster-large/:video_hash", 			   func(c echo.Context) error { return c.String(501, "Not implemented") })
-    // e.GET("/ensure/teaser-large/:video_hash", 		   func(c echo.Context) error { return c.String(501, "Not implemented") })
-    // e.GET("/ensure/teaser-thumbs-large/:video_hash",    func(c echo.Context) error { return c.String(501, "Not implemented") })
 
 }
 
@@ -162,6 +166,66 @@ func ECHO_ensure_teaser_small(c echo.Context, db_path string, preview_media_dir 
         return c.String(200, "media exists")
     }
     return c.String(500, "Unable to create `Video Teaser (small)` for hash: "+video_hash)
+}
+
+// ECHO_ensure_teaser_large generates teaser_large.mp4 at full resolution if missing.
+func ECHO_ensure_teaser_large(c echo.Context, db_path string, preview_media_dir string) error {
+    var video_hash = c.Param("video_hash")
+    video_hash = resolveDevHash(video_hash, c.QueryParam("dev"))
+    var vid_media_dir = getVideoMediaDir(preview_media_dir, video_hash)
+    var media_path = vid_media_dir + "/teaser_large.mp4"
+    if _, err := os.Stat(media_path); err == nil {
+        return c.String(200, "media exists")
+    }
+
+    vd, err := db.ReadSerializedRowFromTable[schemas.VideoData](db_path, "videos", video_hash)
+    if err != nil {
+        return handleServerError(c, 500, "Unable to read from database", err)
+    }
+
+    fmt.Printf("[MEDIA] Generating 'Video Teaser (large)' for: %s ...\n", video_hash)
+    onDemandSem <- struct{}{}
+    err = mediagen.GenerateTeaser(vd.Path, vid_media_dir, "teaser_large", vd.DurationSeconds, false)
+    <-onDemandSem
+    if err != nil {
+        return handleServerError(c, 500, "Unable to generate teaser large", err)
+    }
+
+    if _, err := os.Stat(media_path); err == nil {
+        return c.String(200, "generated")
+    }
+    return c.String(500, "Unable to create `Video Teaser (large)` for hash: "+video_hash)
+}
+
+// ECHO_ensure_preview_thumbs runs the ML preview-thumb Python worker if thumbs are missing.
+func ECHO_ensure_preview_thumbs(c echo.Context, db_path string, preview_media_dir string) error {
+    var video_hash = c.Param("video_hash")
+    video_hash = resolveDevHash(video_hash, c.QueryParam("dev"))
+
+    thumbsDir := getVideoMediaDir(preview_media_dir, video_hash) + "/previewthumbs"
+    if entries, err := os.ReadDir(thumbsDir); err == nil && len(entries) >= 10 {
+        return c.String(200, "preview thumbs already exist")
+    }
+
+    vd, err := db.ReadSerializedRowFromTable[schemas.VideoData](db_path, "videos", video_hash)
+    if err != nil {
+        return handleServerError(c, 500, "Unable to read from database", err)
+    }
+
+    fmt.Printf("[MEDIA] Generating 'Preview Thumbs' for: %s ...\n", video_hash)
+    previewThumbsSem <- struct{}{}
+    _, err = pyworker.Exec(
+        "-m", "cmd.generatePreviewThumbs",
+        "--video-path", vd.Path,
+        "--hash", video_hash,
+        "--media-dir", preview_media_dir+"/preview",
+    )
+    <-previewThumbsSem
+    if err != nil {
+        return handleServerError(c, 500, "Unable to generate preview thumbs", err)
+    }
+
+    return c.String(200, "generated")
 }
 
 // ECHO_ensure_teaser_thumbs_small ...
