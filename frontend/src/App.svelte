@@ -4,6 +4,7 @@
     import { routerState, initRouter, matchRoute } from './lib/router/router.svelte';
     import Header from './lib/components/Header.svelte';
     import Footer from './lib/components/Footer.svelte';
+    import FileDragOverlay from './lib/components/FileDragOverlay.svelte';
     import { settings } from './lib/stores/settings.svelte';
 
     onMount(() => initRouter());
@@ -33,3 +34,5 @@
 {#if !settings.focusMode}
     <Footer />
 {/if}
+
+<FileDragOverlay />

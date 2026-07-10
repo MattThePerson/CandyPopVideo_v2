@@ -35,6 +35,7 @@ func IncludeQueryRoutes(e *echo.Group, db_path string, tfidfMatrixPath string, a
     e.GET("/get/suggested-videos/:video_hash",  func(c echo.Context) error { return ECHO_get_suggested_videos(c, db_path, tfidfMatrixPath, stateStore) })
     e.GET("/get/similar-actors/:name",          func(c echo.Context) error { return ECHO_get_similar_actors(c, actorProfilesPath) })
     e.GET("/get/similar-studios/:name",         func(c echo.Context) error { return ECHO_get_similar_studios(c, studioProfilesPath) })
+    e.GET("/find-by-filename",                  func(c echo.Context) error { return ECHO_find_by_filename(c, db_path, stateStore) })
 }
 
 
@@ -211,6 +212,41 @@ func ECHO_get_similar_studios(c echo.Context, studioProfilesPath string) error {
     }
     return c.JSON(200, Reply{TimeTaken: tt, NamesList: response.NamesList, SimScores: simScores})
 }
+
+// ECHO_find_by_filename searches for videos whose filename matches the given query param (case-insensitive).
+func ECHO_find_by_filename(c echo.Context, db_path string, stateStore *config.AppStateStore) error {
+    filename := c.QueryParam("filename")
+    if filename == "" {
+        return c.String(400, "filename query param required")
+    }
+
+    vids, err := getFilteredVideos(db_path, stateStore)
+    if err != nil {
+        return handleServerError(c, 500, "Unable to read videos table", err)
+    }
+
+    type Match struct {
+        Hash     string `json:"hash"`
+        Title    string `json:"title"`
+        Filename string `json:"filename"`
+    }
+    lowerFilename := strings.ToLower(filename)
+    matches := []Match{}
+    for _, vd := range vids {
+        if strings.ToLower(vd.Filename) == lowerFilename {
+            title := vd.Title
+            if title == "" {
+                title = vd.SceneTitle
+            }
+            if title == "" {
+                title = vd.Filename
+            }
+            matches = append(matches, Match{Hash: vd.Hash, Title: title, Filename: vd.Filename})
+        }
+    }
+    return c.JSON(200, map[string]any{"matches": matches})
+}
+
 
 // parseDuration extends time.ParseDuration to accept "d", "day", "days" suffixes.
 func parseDuration(s string) (time.Duration, error) {
