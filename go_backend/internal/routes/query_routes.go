@@ -4,6 +4,7 @@ import (
     "encoding/json"
     "fmt"
     "slices"
+    "strconv"
     "strings"
     "time"
 
@@ -211,18 +212,53 @@ func ECHO_get_similar_studios(c echo.Context, studioProfilesPath string) error {
     return c.JSON(200, Reply{TimeTaken: tt, NamesList: response.NamesList, SimScores: simScores})
 }
 
+// parseDuration extends time.ParseDuration to accept "d", "day", "days" suffixes.
+func parseDuration(s string) (time.Duration, error) {
+    lower := strings.ToLower(strings.TrimSpace(s))
+    for _, sfx := range []string{"days", "day", "d"} {
+        if strings.HasSuffix(lower, sfx) {
+            numStr := strings.TrimSpace(lower[:len(lower)-len(sfx)])
+            if n, err := strconv.ParseFloat(numStr, 64); err == nil {
+                return time.Duration(n * float64(24*time.Hour)), nil
+            }
+        }
+    }
+    return time.ParseDuration(s)
+}
+
 // ECHO_get_suggested_videos — TF-IDF similar videos re-ranked by user popularity + platform stats,
-// with recently-viewed videos filtered out. Query param ignore_last (Go duration, default "24h").
+// with recently-viewed videos filtered out.
+// Query params: ignore_last (duration, default "24h"), pop_mult (float, default 1),
+// plat_mult (float, default 1), pool_size (int, default 128).
 func ECHO_get_suggested_videos(c echo.Context, db_path string, tfidfMatrixPath string, stateStore *config.AppStateStore) error {
     videoHash := c.Param("video_hash")
 
     ignoreLast := 24 * time.Hour
     if raw := c.QueryParam("ignore_last"); raw != "" {
-        if d, err := time.ParseDuration(raw); err == nil {
+        if d, err := parseDuration(raw); err == nil {
             ignoreLast = d
         }
     }
     cutoff := time.Now().Add(-ignoreLast)
+
+    popMult := 1.0
+    if raw := c.QueryParam("pop_mult"); raw != "" {
+        if v, err := strconv.ParseFloat(raw, 64); err == nil {
+            popMult = v
+        }
+    }
+    platMult := 1.0
+    if raw := c.QueryParam("plat_mult"); raw != "" {
+        if v, err := strconv.ParseFloat(raw, 64); err == nil {
+            platMult = v
+        }
+    }
+    poolSize := 128
+    if raw := c.QueryParam("pool_size"); raw != "" {
+        if v, err := strconv.Atoi(raw); err == nil && v > 0 {
+            poolSize = v
+        }
+    }
 
     type SubprocessResponse struct {
         HashesList []string
@@ -258,7 +294,6 @@ func ECHO_get_suggested_videos(c echo.Context, db_path string, tfidfMatrixPath s
         return handleServerError(c, 500, "Unable to read interactions table", err)
     }
 
-    const poolSize = 128
     type cand struct {
         video    schemas.VideoData
         simScore float64
@@ -300,7 +335,7 @@ func ECHO_get_suggested_videos(c echo.Context, db_path string, tfidfMatrixPath s
         candidates = append(candidates, cand{
             video:    vd,
             simScore: simScore,
-            total:    simScore + popScore + platScore,
+            total:    simScore + popScore*popMult + platScore*platMult,
         })
     }
 

@@ -148,20 +148,8 @@
             }
         }
 
-        async function fetchSuggested() {
-            suggestedLoading = true;
-            try {
-                const res = await fetch(`/api/query/get/suggested-videos/${hash}?ignore_last=24h`).then(r => r.json());
-                suggested = (res.videos as VideoData[]).filter(v => v.hash !== hash);
-            } catch {
-                suggested = [];
-            } finally {
-                suggestedLoading = false;
-            }
-        }
-
         if (settings.focusMode) {
-            setTimeout(fetchSuggested, 750);
+            setTimeout(() => fetchSuggested(), 750);
         }
     });
 
@@ -172,6 +160,20 @@
             similarVisibilityHandler = undefined;
         }
     });
+
+    async function fetchSuggested(params?: { ignoreLast: string; popMult: number; platMult: number; poolSize: number }) {
+        const p = params ?? { ignoreLast: '24h', popMult: 1, platMult: 1, poolSize: 128 };
+        suggestedLoading = true;
+        try {
+            const url = `/api/query/get/suggested-videos/${hash}?ignore_last=${encodeURIComponent(p.ignoreLast)}&pop_mult=${p.popMult}&plat_mult=${p.platMult}&pool_size=${p.poolSize}`;
+            const res = await fetch(url).then(r => r.json());
+            suggested = (res.videos as VideoData[]).filter(v => v.hash !== hash);
+        } catch {
+            suggested = [];
+        } finally {
+            suggestedLoading = false;
+        }
+    }
 
     // Unloads the player, sends the rename request, restores player on any outcome.
     async function executeRename(newStem: string): Promise<{ ok: boolean; error?: string }> {
@@ -251,7 +253,7 @@
 
     {#if video && interact}
         {#if settings.focusMode}
-            <FocusLayout {hash} {video} {interact} {suggested} suggestedLoading={suggestedLoading} />
+            <FocusLayout {hash} {video} {interact} {suggested} suggestedLoading={suggestedLoading} onRefetch={fetchSuggested} />
         {:else}
             <NormalLayout
                 {hash} {video} {interact}

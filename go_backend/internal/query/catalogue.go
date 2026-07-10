@@ -98,15 +98,15 @@ func getItemInfo(vids []schemas.VideoData, item_extractor_func func(schemas.Vide
 		for _, item := range item_extractor_func(vd) {
 			item_counts[item] = item_counts[item] + 1
 			// update item newest video
-			newest_date_added, ok := newest_video[item]
+			newest_date_downloaded, ok := newest_video[item]
 			if !ok {
-				newest_date_added = "1970-01-01T00:01"
+				newest_date_downloaded = "1970-01-01T00:01"
 			}
-			if vd.DateAdded > newest_date_added {
-				newest_video[item] = vd.DateAdded
+			if vd.DateDownloaded > newest_date_downloaded {
+				newest_video[item] = vd.DateDownloaded
 			}
 			// update new videos
-			if secondsFromNow(vd.DateAdded) < (60*60*24*7) {
+			if secondsFromNow(vd.DateDownloaded) < (60*60*24*7) {
 				new_videos[item] = new_videos[item] + 1
 			}
 		}

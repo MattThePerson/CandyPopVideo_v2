@@ -223,6 +223,7 @@
         onSeeked     = () => {
             submitSection(sectionStart, lastKnownTime);
             isSeeking = false;
+            lastKnownTime = videoEl!.currentTime;
             sectionStart = videoEl!.paused ? null : videoEl!.currentTime;
         };
         onEnded      = () => { submitSection(sectionStart, videoEl!.currentTime); sectionStart = null; };

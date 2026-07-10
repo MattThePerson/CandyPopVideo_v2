@@ -5,36 +5,37 @@
     import DefaultCard from '$lib/components/cards/DefaultCard.svelte';
 
     /* Props */
-    let { suggested = [], loading = false }: {
+    let { suggested = [], loading = false, onRefetch }: {
         suggested?: VideoData[];
         loading?: boolean;
+        onRefetch?: (p: { ignoreLast: string; popMult: number; platMult: number; poolSize: number }) => void;
     } = $props();
 
     let sidebarOpen   = $state(false);
     let hasBeenOpened = $state(false);
     let loadedCount   = $state(2);
 
-    // Reset load count when a new video's suggestions arrive.
-    $effect(() => {
-        if (suggested.length) loadedCount = 2;
-    });
+    $effect(() => { if (suggested.length) loadedCount = 2; });
 
     const visibleVideos = $derived(suggested.slice(0, loadedCount));
     const canLoadMore   = $derived(loadedCount < suggested.length);
     const nextHref      = $derived(suggested[0] ? `/video/${suggested[0].hash}` : null);
 
-    let wrapEl: HTMLDivElement | undefined;
-    let sidebarEl: HTMLDivElement | undefined;
+    let wrapEl:    HTMLDivElement    | undefined;
+    let sidebarEl: HTMLDivElement    | undefined;
+    let popupEl:   HTMLDivElement    | undefined;
+    let gearBtnEl: HTMLButtonElement | undefined;
+
+    let sidebarMaxHeight    = $state('0px');
+    let sidebarBottomOffset = $state('3rem');
 
     async function loadNext() {
         loadedCount++;
         await tick();
         if (sidebarEl) sidebarEl.scrollTo({ top: sidebarEl.scrollHeight, behavior: 'smooth' });
     }
-    let sidebarMaxHeight = $state('0px');
 
-    // max-height = distance from viewport top to the buttons row, minus a top buffer
-    // so the panel fills exactly between the header and the buttons.
+    // max-height = distance from viewport top to the buttons row, minus a top buffer.
     function updateMaxHeight() {
         if (!wrapEl) return;
         const topPx = wrapEl.getBoundingClientRect().top;
@@ -42,16 +43,15 @@
     }
 
     function toggleSidebar() {
-        if (!sidebarOpen) {
-            hasBeenOpened = true;
-            updateMaxHeight();
-        }
+        if (!sidebarOpen) { hasBeenOpened = true; updateMaxHeight(); }
         sidebarOpen = !sidebarOpen;
     }
 
     function onDocClick(e: MouseEvent) {
-        if (!sidebarOpen) return;
-        if (wrapEl && !wrapEl.contains(e.target as Node)) sidebarOpen = false;
+        const t = e.target as Node;
+        if (sidebarOpen  && wrapEl  && !wrapEl.contains(t))  sidebarOpen  = false;
+        if (settingsOpen && popupEl && !popupEl.contains(t)
+            && gearBtnEl && !gearBtnEl.contains(t))          settingsOpen = false;
     }
 
     onMount(() => {
@@ -63,6 +63,49 @@
         document.removeEventListener('click', onDocClick);
         window.removeEventListener('resize', updateMaxHeight);
     });
+
+    // ── Settings ──────────────────────────────────────────────────────────────
+
+    let settingsOpen  = $state(false);
+    let ignoreLast    = $state('24h');
+    let popMult       = $state('1.0');
+    let platMult      = $state('1.0');
+    let poolSize      = $state('128');
+    let ignoreLastErr = $state(false);
+    let popMultErr    = $state(false);
+    let platMultErr   = $state(false);
+    let poolSizeErr   = $state(false);
+
+    const DURATION_RE = /^\d+(\.\d+)?\s*(ns|us|µs|ms|s|m|h|days?|d)$/i;
+
+    function validate(): boolean {
+        ignoreLastErr = !DURATION_RE.test(ignoreLast.trim());
+        popMultErr    = isNaN(+popMult)  || +popMult  < 0 || +popMult  > 5;
+        platMultErr   = isNaN(+platMult) || +platMult < 0 || +platMult > 5;
+        poolSizeErr   = !Number.isInteger(+poolSize)  || +poolSize <= 0;
+        return !ignoreLastErr && !popMultErr && !platMultErr && !poolSizeErr;
+    }
+
+    function onFieldKeydown(e: KeyboardEvent) {
+        if (e.key !== 'Enter') return;
+        (e.currentTarget as HTMLElement).blur();
+        if (validate()) onRefetch?.({ ignoreLast: ignoreLast.trim(), popMult: +popMult, platMult: +platMult, poolSize: +poolSize });
+    }
+
+    function restoreDefaults() {
+        ignoreLast = '24h'; popMult = '1.0'; platMult = '1.0'; poolSize = '128';
+        ignoreLastErr = false; popMultErr = false; platMultErr = false; poolSizeErr = false;
+        onRefetch?.({ ignoreLast: '24h', popMult: 1, platMult: 1, poolSize: 128 });
+    }
+
+    function toggleSettings() { settingsOpen = !settingsOpen; }
+
+    // Push the overlay up by the popup height when settings are open.
+    $effect(() => {
+        sidebarBottomOffset = settingsOpen && popupEl
+            ? `calc(3rem + ${popupEl.getBoundingClientRect().height + 6}px)`
+            : '3rem';
+    });
 </script>
 
 <!--
@@ -73,7 +116,7 @@
 
 <div class="sp-wrap" bind:this={wrapEl}>
 
-    <div class="sp-sidebar" class:is-open={sidebarOpen} aria-hidden={!sidebarOpen}>
+    <div class="sp-sidebar" class:is-open={sidebarOpen} aria-hidden={!sidebarOpen} style="bottom: {sidebarBottomOffset}">
         <div class="sp-inner" class:is-open={sidebarOpen} style="max-height: {sidebarMaxHeight}" bind:this={sidebarEl}>
         {#if hasBeenOpened}
             {#if loading && suggested.length === 0}
@@ -115,6 +158,30 @@
         >
             Suggested
         </button>
+        <div class="sp-settings-wrap">
+            {#if settingsOpen}
+                <div class="sp-popup" bind:this={popupEl}>
+                    <div class="sp-popup-row">
+                        <label class="sp-lbl">Ignore last</label>
+                        <input class="sp-inp" class:sp-err={ignoreLastErr} bind:value={ignoreLast} onkeydown={onFieldKeydown} />
+                    </div>
+                    <div class="sp-popup-row">
+                        <label class="sp-lbl">Popularity ×</label>
+                        <input class="sp-inp" class:sp-err={popMultErr}    bind:value={popMult}    onkeydown={onFieldKeydown} />
+                    </div>
+                    <div class="sp-popup-row">
+                        <label class="sp-lbl">Platform ×</label>
+                        <input class="sp-inp" class:sp-err={platMultErr}   bind:value={platMult}   onkeydown={onFieldKeydown} />
+                    </div>
+                    <div class="sp-popup-row">
+                        <label class="sp-lbl">Pool size</label>
+                        <input class="sp-inp" class:sp-err={poolSizeErr}   bind:value={poolSize}   onkeydown={onFieldKeydown} />
+                    </div>
+                    <button class="sp-restore" onclick={restoreDefaults}>Restore defaults</button>
+                </div>
+            {/if}
+            <button class="sp-btn sp-gear" class:active={settingsOpen} onclick={toggleSettings} bind:this={gearBtnEl} aria-label="Suggestion settings">⚙</button>
+        </div>
     </div>
 
 </div>
@@ -131,10 +198,10 @@
     }
 
     /* Container: fixed at right: 0, never moves — no page overflow.
-       overflow: hidden clips the translateX'd inner as it slides. */
+       overflow: hidden clips the translateX'd inner as it slides.
+       bottom is set via inline style so the settings popup can push it up. */
     .sp-sidebar {
         position: absolute;
-        bottom: 3rem;
         right: 0;
         width: 21rem;
         overflow: hidden;
@@ -208,6 +275,80 @@
         color: #555;
         text-align: center;
     }
+
+    /* ── Settings popup ── */
+
+    .sp-settings-wrap {
+        position: relative;
+    }
+
+    .sp-popup {
+        position: absolute;
+        bottom: calc(100% + 6px);
+        right: 0;
+        z-index: 2002;
+        background: #1a1a1a;
+        border: 1px solid #3a3a3a;
+        border-radius: 5px;
+        padding: 0.6rem 0.75rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        min-width: 12.5rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    }
+
+    .sp-popup-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.8rem;
+    }
+
+    .sp-lbl {
+        font-size: 0.63rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #666;
+        white-space: nowrap;
+    }
+
+    .sp-inp {
+        all: unset;
+        box-sizing: border-box;
+        font-size: 0.7rem;
+        font-family: monospace;
+        color: #ccc;
+        background: #111;
+        border: 1px solid #333;
+        border-radius: 3px;
+        padding: 0.18rem 0.4rem;
+        width: 4.5rem;
+        text-align: right;
+        transition: border-color 0.15s;
+    }
+    .sp-inp:focus { border-color: #555; outline: none; }
+    .sp-inp.sp-err { border-color: #800; color: #f66; }
+
+    .sp-restore {
+        all: unset;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 0.6rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: #444;
+        text-align: center;
+        padding-top: 0.35rem;
+        margin-top: 0.1rem;
+        border-top: 1px solid #2a2a2a;
+        transition: color 0.15s;
+    }
+    .sp-restore:hover { color: #777; }
+
+    .sp-gear { font-size: 0.9rem; padding: 0.22rem 0.48rem; }
 
     /* ── Buttons ── */
 
