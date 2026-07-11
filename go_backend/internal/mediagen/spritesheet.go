@@ -14,7 +14,6 @@ import (
     "strconv"
     "strings"
     "sync"
-    "syscall"
 )
 
 type frameResult struct {
@@ -69,7 +68,7 @@ func GenerateSpritesheet(videoPath, outDir, stem string, nFrames, height, worker
                     "-v", "error",
                     "-f", "mjpeg", "pipe:1",
                 )
-                cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: 0x00004000} // BELOW_NORMAL_PRIORITY_CLASS
+                configureProc(cmd, true) // hide window + below-normal priority (Windows only)
                 var stderr bytes.Buffer
                 cmd.Stderr = &stderr
                 data, err := cmd.Output()
@@ -147,7 +146,7 @@ func probeVideoInfo(videoPath string) (width, height int, duration float64, err 
         "-show_streams", "-show_format",
         videoPath,
     )
-    cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+    configureProc(cmd, false) // hide window (Windows only)
     out, err := cmd.Output()
     if err != nil {
         return 0, 0, 0, fmt.Errorf("ffprobe: %w", err)

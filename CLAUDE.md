@@ -105,7 +105,7 @@ data/                   # static data files (e.g. English stopwords reference fo
 
 ## Configuration
 
-Config is stored in `<OS UserConfigDir>/CandyPopVideo/config.yaml` (Windows: `%AppData%\Roaming\CandyPopVideo\config.yaml`, Linux: `~/.config/CandyPopVideo/config.yaml`). The Go binary embeds a default template at `go_backend/internal/config/default_config.yaml` and writes it on first run if the directory doesn't exist. `data/config.yaml` is a reference copy of the same template. Config can be edited via the dashboard's "Edit Config" button, which opens `/config` — a CodeMirror (YAML + vim) editor with live validation and hot-reload.
+Config is stored in `<OS UserConfigDir>/CandyPopVideo/config.yaml` (Windows: `%AppData%\Roaming\CandyPopVideo\config.yaml`, Linux: `~/.config/CandyPopVideo/config.yaml`). The Go binary embeds a default template at `go_backend/internal/config/default_config.yaml` (the single source of truth — `//go:embed` cannot reach outside the package dir, so it must live beside `config.go`) and writes it on first run if the directory doesn't exist. Config can be edited via the dashboard's "Edit Config" button, which opens `/config` — a CodeMirror (YAML + vim) editor with live validation and hot-reload.
 
 Storage is split by responsibility:
 - **OS app data dir** (`<OS UserConfigDir>/CandyPopVideo/`) — `app.db`, TF-IDF model pickles (`tdidf.pkl`, `tdidf_matrix.pkl`), actor-info cache (`actors/`), `config.yaml` itself.

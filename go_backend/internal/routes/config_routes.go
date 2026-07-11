@@ -65,7 +65,9 @@ func validateConfigYAML(body []byte, store *config.ConfigStore) ConfigValidation
     if len(res.Errors) == 0 {
         res.OK = true
         current := store.Current()
-        if strings.TrimSpace(cfg.PreviewMediaDir) != current.PreviewMediaDir {
+        // current.PreviewMediaDir is already ~-expanded by the config store, so
+        // expand the incoming value too — otherwise "~/x" vs "/home/u/x" always differs.
+        if config.ExpandHome(strings.TrimSpace(cfg.PreviewMediaDir)) != current.PreviewMediaDir {
             res.RequiresRestart = true
         }
     }

@@ -5,6 +5,7 @@ import (
     "fmt"
     "os"
     "path/filepath"
+    "strings"
     "sync"
 
     "gopkg.in/yaml.v3"
@@ -75,8 +76,27 @@ func parseConfig(data []byte, appDataDir string) (Config, error) {
     if err := yaml.Unmarshal(data, &c); err != nil {
         return c, err
     }
+    // Go's file APIs don't expand a leading ~ (that's a shell convention), so do it
+    // here — otherwise a value like "~/.CandyPopVideo/media" creates a literal "~" dir.
+    c.PreviewMediaDir = ExpandHome(c.PreviewMediaDir)
     deriveFields(&c, appDataDir)
     return c, nil
+}
+
+// ExpandHome replaces a leading "~" (alone, or followed by a path separator) with
+// the user's home directory. Any other value is returned unchanged.
+func ExpandHome(p string) string {
+    if p != "~" && !strings.HasPrefix(p, "~/") && !strings.HasPrefix(p, `~\`) {
+        return p
+    }
+    home, err := os.UserHomeDir()
+    if err != nil {
+        return p
+    }
+    if p == "~" {
+        return home
+    }
+    return filepath.Join(home, p[2:])
 }
 
 // ─── ConfigStore ─────────────────────────────────────────────────────────────
