@@ -1,6 +1,6 @@
 # CandyPop Video (v2)
 
-**IMPORTANT**: This project and README are incomplete!
+**IMPORTANT**: This project and README are incomplete (and currently completely out of date)!
 
 ## About
 
@@ -88,5 +88,3 @@ To explore your videos with the app you need to scan them and generate preview m
 | `--update <FILTER>` | Scan and generate media for all videos that contain the given `FILTER` |
 
 To get the full list of args, use `--help`.
-
-
