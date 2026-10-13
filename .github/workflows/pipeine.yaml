@@ -6,16 +6,35 @@ on:
     branches: [main]
 
 jobs:
-  lint_build:
+  # job: lint and build frontend
+  frontend_lint_build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
-      - run: make install-python
-      - run: make build-go
       - run: make install-npm
       - run: cd frontend && npm run lint && npm run check
       - run: make build-npm
+  # job: build Go
+  go_build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: 'go_backend/go.mod'
+          check-latest: false
+      - run: make build-go
+  # job: install python
+  python_install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+      - run: make install-python
 
