@@ -1,0 +1,17 @@
+
+name: Lint & Build
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  lint_build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: make install-python
+      - run: make build-go
+      - run: make install-npm
+      - run: cd frontend && npm run lint && npm run check
+      - run: make build-npm
+
