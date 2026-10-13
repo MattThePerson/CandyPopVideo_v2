@@ -8,6 +8,7 @@ import (
     "os/exec"
     "path/filepath"
     "runtime"
+    "strings"
     "sync"
     "time"
 )
@@ -41,6 +42,7 @@ func Exec(args ...string) (float64, error) {
     cmd.Dir = Root()
     if output, err := cmd.CombinedOutput(); err != nil {
         log.Printf("STDOUT\n****\n%s\n****", string(output))
+        logSubprocessFailure(args, output, err)
         return -1, err
     }
     return time.Since(start).Seconds(), nil
@@ -55,12 +57,36 @@ func ExecOutput[R any](args ...string) (R, error) {
     output, err := cmd.CombinedOutput()
     if err != nil {
         log.Printf("STDOUT\n****\n%s\n****", string(output))
+        logSubprocessFailure(args, output, err)
         return reply, err
     }
     if err := json.Unmarshal(output, &reply); err != nil {
         return reply, fmt.Errorf("parsing subprocess JSON: %w — output: %s", err, string(output))
     }
     return reply, nil
+}
+
+// logSubprocessFailure appends a failed Python subprocess's args, error, and
+// combined output to .logs/pyworker.log (relative to cwd = project root),
+// matching the .logs/renames.log convention. Best-effort: logging failures are
+// reported to the console but never propagate to the caller.
+func logSubprocessFailure(args []string, output []byte, cause error) {
+    if err := os.MkdirAll(".logs", 0755); err != nil {
+        log.Printf("[pyworker] Failed to create .logs dir: %v", err)
+        return
+    }
+    f, err := os.OpenFile(".logs/pyworker.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+    if err != nil {
+        log.Printf("[pyworker] Failed to open pyworker log: %v", err)
+        return
+    }
+    defer f.Close()
+    fmt.Fprintf(f, "[%s] FAILED: %s\n  error: %v\n  output:\n%s\n\n",
+        time.Now().UTC().Format(time.RFC3339),
+        strings.Join(args, " "),
+        cause,
+        string(output),
+    )
 }
 
 // findRoot populates rootPath by walking up from the executable dir and cwd.
