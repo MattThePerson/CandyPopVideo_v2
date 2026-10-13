@@ -9,6 +9,10 @@ jobs:
   lint_build:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
       - run: make install-python
       - run: make build-go
       - run: make install-npm
